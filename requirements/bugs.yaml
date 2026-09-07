@@ -4586,3 +4586,63 @@ bugs:
     test_cases:
       - tests/unit/stampanteCheNonRisponde.test.js
 
+  - id: BUG-103
+    title: "Dopo una pubblicazione l'app resta con la pagina bianca sul telefono"
+    area: "firebase.json (hosting)"
+    severity: critica
+    priority: P1
+    description: >
+      Visto in produzione il 07/09/2026, pochi minuti dopo il deploy della
+      1.5.7: «in produzione si e' rotta la visualizzazione da smartphone, ho
+      una pagina completamente bianca quando lo apro».
+      NON ERA IL CODICE DELLA 1.5.7. Controllato dal vivo sul sito: la
+      pagina rispondeva, tutti e dodici i file che carica rispondevano 200
+      con la dimensione giusta, il bundle online conteneva «1.5.7» e il
+      service worker era il v4. Il deploy era andato a buon fine.
+      IL MECCANISMO, due pezzi innocui che insieme non lo sono. `index.html`
+      era servito con la cache di default di Firebase Hosting, `max-age=3600`
+      — un'ora: dopo la pubblicazione il telefono continuava a usare la
+      pagina di PRIMA, che chiede i file del rilascio precedente, i quali
+      hanno l'impronta del contenuto nel nome e sull'hosting non ci sono
+      piu'. E la riscrittura `**` → `/index.html`, che serve all'app per le
+      sue pagine interne, fa si' che un file mancante non risponda «non
+      c'e'» ma **200 con dentro dell'HTML**. Il browser chiede un pezzo di
+      JavaScript, riceve una pagina, prova a eseguirla e si ferma: niente si
+      disegna, e non c'e' nessun errore da leggere. Verificato a mano: una
+      richiesta a `/assets/index-VECCHIOHASH.js` torna 200 text/html.
+      PERCHE' SOLO SUL TELEFONO: e' li' che l'app era aperta al momento
+      della pubblicazione, quindi e' li' che la pagina vecchia era in cache.
+      Un browser che apre il sito per la prima volta prende quella nuova e
+      funziona.
+      NON E' UNA REGRESSIONE, ed e' stato verificato perche' era il primo
+      sospetto di chi l'ha segnalato («a me sembra una regressione»).
+      `firebase.json` non ha MAI avuto una sezione `headers` — zero
+      occorrenze in tutta la storia del repository, dal commit che ha
+      portato l'app su Firebase Hosting — la riscrittura c'e' da sempre, e
+      `vite.config` non e' stato toccato fra la 1.5.5 e la 1.5.7, quindi gli
+      hash nei nomi c'erano gia'. La porta era aperta da mesi: quello che e'
+      cambiato e' la probabilita' di passarci, perche' questa pubblicazione
+      ha rifatto l'intero pacchetto (100 commit) ed e' avvenuta MENTRE
+      qualcuno aveva l'app aperta. Nei rilasci precedenti, se in quell'ora
+      nessuno la teneva aperta, il difetto passava inosservato e si curava
+      da se'.
+      Quello che non si puo' escludere, e va detto: in questo rilascio anche
+      il service worker e' cambiato (cache v3 → v4, REQ-OFFLINE-007). Il
+      cambio di nome fa cancellare la cache vecchia e il nuovo prende il
+      comando subito. Non crea il percorso che porta alla pagina bianca —
+      quello e' l'HTML in cache del BROWSER, non del service worker — ma
+      puo' averne spostato i tempi. Non e' dimostrabile a posteriori.
+      LA CURA (REQ-DEV-016): intestazioni in `firebase.json`. `no-cache` su
+      `/`, `/index.html`, `/sw.js` e `/manifest.webmanifest`; un anno e
+      `immutable` su `/assets/**`. Con un test che legge il file e verifica
+      tutte e due le meta' del meccanismo.
+      E TORNARE INDIETRO NON SAREBBE SERVITO: la 1.5.5 ha lo stesso identico
+      problema, e ripubblicarla avrebbe cambiato di nuovo i nomi dei file,
+      cioe' avrebbe rotto la pagina un'altra volta per un'altra ora.
+    status: fixed
+    in_produzione: false
+    generate_issue: true
+    labels: [bug, pwa, dev]
+    test_cases:
+      - tests/unit/cachePubblicazione.test.js
+

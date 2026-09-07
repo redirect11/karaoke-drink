@@ -1,5 +1,24 @@
 # Cosa è cambiato
 
+## 1.5.8 — 7 settembre 2026
+
+### Per chi sta al banco
+
+- **Dopo un aggiornamento l'app non resta più con la pagina bianca.**
+  Pubblicando la 1.5.7 chi aveva l'app già aperta sul telefono se l'è
+  trovata completamente bianca: nessun errore, niente. Il motivo stava
+  nella configurazione del sito, non nel programma — il telefono teneva in
+  memoria per un'ora la pagina vecchia, che andava a cercare pezzi
+  dell'aggiornamento precedente ormai sostituiti. Adesso la pagina viene
+  ricontrollata a ogni apertura, quindi un aggiornamento si prende subito e
+  per intero. Chi si trovasse ancora la pagina bianca da prima: basta
+  chiudere e riaprire l'app.
+
+- **E l'app si apre più in fretta.** Le parti del programma che non
+  cambiano fra un aggiornamento e l'altro adesso restano sul dispositivo
+  invece di essere riscaricate ogni ora.
+
+
 ## 1.5.7 — 7 settembre 2026
 
 ### Per chi sta al banco

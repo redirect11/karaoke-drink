@@ -22,12 +22,12 @@ fallire la suite, e un requisito che cita un test inesistente pure.
 
 | | Quante | Cosa vuol dire |
 |---|---|---|
-| ✅ | 192 | fatto e coperto dai test |
+| ✅ | 193 | fatto e coperto dai test |
 | ⚠️  | 15 | fatto ma nessun test lo verifica |
 | ⬜ | 20 | da fare |
 | 🗑 | 7 | non più valido |
 
-**234 voci** in tutto. **207** descrivono il sistema com'è oggi e
+**235 voci** in tutto. **208** descrivono il sistema com'è oggi e
 stanno in «[Cosa fa il sistema](#cosa-fa-il-sistema)»; **20** sono lavori
 previsti e stanno in un capitolo a parte, perché un impegno preso non è una
 cosa che l'app fa; **10** difetti noti sono ancora aperti.
@@ -59,7 +59,7 @@ come «vero oggi», non come «garantito».
 | [Dati e ambienti](#dati-e-ambienti) | 2 | — | Il modello dei dati, gli ambienti (test e produzione) e il modo di travasarli. |
 | [Intelligenza artificiale](#intelligenza-artificiale) | — | 1 | Dove l’intelligenza artificiale entra nel lavoro del locale. |
 | [Interfaccia](#interfaccia) | 23 | 1 | Le regole dell’interfaccia: tema, navigazione, spazi, cosa si vede e cosa si toglie. |
-| [Come si lavora al progetto](#come-si-lavora-al-progetto) | 14 | 1 | Non è comportamento dell’app: è il metodo con cui la si costruisce. |
+| [Come si lavora al progetto](#come-si-lavora-al-progetto) | 15 | 1 | Non è comportamento dell’app: è il metodo con cui la si costruisce. |
 | [STAT](#stat) | 1 | — |  |
 | [LIC](#lic) | 1 | — |  |
 
@@ -2662,6 +2662,14 @@ OGNI PROVA È DOPPIA, ed è il punto di questo requisito: che l'abuso sia blocca
 STANNO PER CONTO LORO, fuori da `npm test`: senza emulatore acceso non partirebbero e renderebbero rossa la CI per un motivo che non è un difetto. Si lanciano con `npm run test:regole`, dopo aver acceso gli emulatori (vedi docs/ambiente-locale.md). Per la stessa ragione non contano per la copertura: quello che misurano non è codice nostro.
 
 **Dove**: `tests/regole/, vitest.regole.config.mjs, firestore.rules` · **Lo dimostrano**: `tests/regole/counters.test.js`, `tests/regole/orders.test.js`
+
+#### REQ-DEV-016 — Quello che dice quali pezzi caricare non si tiene in cache
+
+`index.html` e `sw.js` sono i due file che dicono all'app QUALI pezzi andare a prendere, e si ricontrollano a ogni apertura (`no-cache`, che non vuol dire «non salvarlo» ma «prima di usarlo chiedi se è cambiato»). I file sotto `/assets/`, che hanno l'impronta del contenuto nel nome, si tengono per un anno e si dichiarano immutabili: a parità di nome quel file non cambia mai, quindi richiederlo è tempo buttato.
+
+PERCHÉ NON È UN DETTAGLIO DI PRESTAZIONI. Senza queste righe la cache di default di Firebase Hosting tiene la PAGINA per un'ora: dopo una pubblicazione il telefono continua a usare quella vecchia, che chiede i file del rilascio precedente — e quelli, avendo l'impronta nel nome, non esistono più. La riscrittura `**` → `/index.html` (che serve all'app, per le sue pagine interne) fa il resto: un file mancante non risponde «non c'è», risponde 200 con dentro dell'HTML. Il browser prova a eseguire HTML come JavaScript e si ferma lì: pagina bianca, nessun errore a schermo, e si sistema da sola solo allo scadere dell'ora. È BUG-103, visto in produzione il 07/09/2026. Un test legge `firebase.json` e verifica le due metà — le intestazioni e la riscrittura — perché questa regola non ha nessuna schermata che la mostri: chi riordinasse quel file toglierebbe tre righe senza sapere cosa fanno, e il danno si vedrebbe un mese dopo, su un telefono, senza niente da leggere.
+
+**Dove**: `firebase.json (hosting.headers)` · **Lo dimostrano**: `tests/unit/cachePubblicazione.test.js`
 
 ### STAT
 
