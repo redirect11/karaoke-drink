@@ -4541,6 +4541,44 @@ bugs:
       l'app. Il tempo massimo di 15 secondi con `scordaConnessione` (BUG-086)
       la chiude. Non sapendo se la sera del 05/09 sia stata questa o l'altra
       — l'app non e' stata riaperta per provare — si chiudono tutte e due.
+      CONFERMATO SUL CAMPO IL 07/09/2026, e non piu' per lettura del codice.
+      La stampante ha smesso di stampare di nuovo, in produzione; premendo
+      «Test stampa» (Impostazioni → Stampante) si e' sbloccata subito. Quel
+      tasto e' l'unico gesto dell'app che prima di stampare BUTTA il
+      collegamento e ne apre uno nuovo — e il fatto che sia partito, invece
+      di restare in attesa, esclude l'altra strada: con la coda impiccata si
+      sarebbe messo in fila anche lui e non sarebbe mai tornato. Quindi era
+      il collegamento morto tenuto per buono, esattamente questo difetto.
+      LA RISPOSTA ALL'OSSERVAZIONE DI CHI L'HA VISTO — «invece di aspettare i
+      dieci secondi, meglio controllare il collegamento prima di ogni stampa
+      e rifarlo come il test». Giusto il PERCHE': se il collegamento muore tre
+      secondi prima della chiusura, il monitor non fa in tempo. «Controllare»
+      pero' non si puo': chiedere all'SDK se e' vivo e' cio' che non funziona.
+      Resta il rifarlo, e si fa quando serve invece che a ogni stampa: la
+      connessione e' tenuta viva apposta, e rifarla ogni volta faceva fallire
+      la prima stampa col cliente davanti.
+      E QUI LA PRIMA RISPOSTA ERA SBAGLIATA IN DUE PUNTI, corretti dopo che
+      la domanda e' stata rifatta. Primo: «la stampante regge poche
+      connessioni» vale per quelle CONTEMPORANEE, non per una dopo l'altra —
+      buttarla e rifarla resta una connessione alla volta, e come obiezione
+      era mal posta. Quello che e' vero e' che `scordaConnessione` ABBANDONA
+      il collegamento invece di chiuderlo, quindi rifarlo spesso lascerebbe
+      sessioni mezze aperte: adesso, quando si molla un collegamento che
+      probabilmente sta bene, si chiama `disconnect()` dentro un try.
+      Secondo, e piu' importante: interrogare la stampante SI PUO'. Non si
+      puo' chiedere all'SDK se il socket e' vivo, ma il monitor a ogni giro
+      scrive sulla testina lo stato che la STAMPANTE ha risposto, con dentro
+      `ASB_NO_RESPONSE` quando ha smesso. Leggerlo prima di stampare non
+      costa niente e non aspetta niente, ed e' diventato il controllo
+      principale; la finestra dei due minuti e' scesa a rete di riserva per
+      quando il monitor non c'e'. Vedi REQ-STAMPA-018.
+      Esiste anche l'interrogazione a richiesta: `getPrintJobStatus()` manda
+      un lavoro VUOTO — non esce carta — e la stampante risponde. E' un ping
+      vero, ma bisogna aspettare la risposta e su un collegamento morto non
+      arriva mai: si conclude solo per scadenza. Non serve finche' bastano i
+      due controlli qui sopra; se un giorno la chiusura di cassa mancasse
+      ancora, e' la mossa da accendere SOLO per lei, che e' l'unica stampa
+      che puo' permettersi un secondo di attesa.
     status: fixed
     in_produzione: false
     generate_issue: true

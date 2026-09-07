@@ -16,6 +16,16 @@
   stampante fuori linea si vedono allo stesso modo, senza aspettare che sia
   una stampa a scoprirlo.
 
+- **Prima di stampare si controlla il collegamento, e se non va si rifà.**
+  È il caso della chiusura di cassa: fra l'ultimo scontrino e la chiusura
+  passano ore, ed è nelle pause che il collegamento con la stampante muore
+  senza che nessuno lo sappia. Adesso, prima di ogni stampa, l'app guarda
+  cosa ha risposto la stampante all'ultimo controllo: se ha smesso di
+  rispondere — o se dall'ultima risposta sono passati più di due minuti — il
+  collegamento viene rifatto da zero prima di partire, la stessa cosa che fa
+  il tasto «Test stampa». Durante il servizio, con le comande una dietro
+  l'altra, non cambia niente.
+
 - **Il pallino della stampante adesso vuol dire qualcosa.** Prima era verde
   perché il collegamento era riuscito una volta, all'inizio della serata.
   Adesso è verde perché la stampante ha risposto, e diventa rosso col motivo

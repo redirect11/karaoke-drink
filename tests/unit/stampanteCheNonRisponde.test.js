@@ -33,10 +33,15 @@ let rispostaPer
 // Come si comporta `startMonitor` della testina: normalmente si accende,
 // ma un firmware vecchio lancia — e in quel caso si deve stampare uguale.
 let monitorRotto
+// I collegamenti chiusi per bene: `disconnect()` è la differenza fra
+// chiudere e abbandonare, e sulla stampante vera è la sessione che si
+// libera invece di restare mezza aperta.
+let chiusure
 
 function accendiLaStampante() {
   testine = []
   invii = []
+  chiusure = []
   monitorRotto = false
   window.epson = {
     ePOSDevice: class {
@@ -76,9 +81,18 @@ function accendiLaStampante() {
           },
           onreceive: null,
           ondisconnect: null,
+          // Come nell'SDK vero: la costante sta sull'oggetto, e `status` è
+          // quello che la STAMPANTE ha risposto all'ultimo giro del
+          // monitor. Accendendoci il segno «nessuna risposta» si finge
+          // esattamente la sera del 5 settembre.
+          ASB_NO_RESPONSE: 1,
+          status: 0,
         }
         testine.push(testina)
         cb(testina, 'OK')
+      }
+      disconnect() {
+        chiusure.push(this)
       }
       isConnected() {
         // IL PUNTO DI TUTTA LA FACCENDA: l'SDK dice sempre di sì. È quello
@@ -387,5 +401,161 @@ describe('e niente di tutto questo rompe quello che c’era', () => {
     expect(invii).toHaveLength(1)
     expect(finita).toBe(true)
     await stampa
+  })
+})
+
+// ── E LA STAMPA CHE CONTA PARTE SU UN COLLEGAMENTO PROVATO ───────────
+//
+// Il monitor scopre la morte del collegamento, ma col suo giro: se muore
+// tre secondi prima della chiusura di cassa, dieci secondi non fanno in
+// tempo. E la chiusura è proprio la stampa che arriva dopo il buco più
+// lungo — durante il servizio le comande si susseguono, fra l'ultimo
+// scontrino e la chiusura passano ore.
+//
+// Quindi prima di stampare, se il collegamento non è stato PROVATO di
+// recente, si fa quello che fa «Test stampa»: si butta e si rifà la stretta
+// di mano. Provato vuol dire una cosa sola: la stampante ha risposto.
+describe('dopo una pausa la stretta di mano si rifà, come fa «Test stampa»', () => {
+  it('due stampe di fila non ne rifanno nessuna', async () => {
+    const P = await import('../../src/lib/printer.js')
+    await P.printTest()
+    await respira()
+    await P.printTest()
+    await respira()
+
+    // Durante il servizio il collegamento resta caldo: rifarlo a ogni
+    // comanda era proprio quello che faceva fallire la prima stampa quando
+    // l'eccezione del certificato era scaduta.
+    expect(testine).toHaveLength(1)
+    expect(invii).toHaveLength(2)
+  })
+
+  it('dopo due minuti senza risposte, la stampa dopo riparte da zero', async () => {
+    const P = await import('../../src/lib/printer.js')
+    await P.printTest()
+    await respira()
+
+    // Il buco fra l'ultimo scontrino e la chiusura di cassa.
+    await vi.advanceTimersByTimeAsync(121000)
+    await P.printTest()
+    await respira()
+
+    expect(testine).toHaveLength(2)
+    // E il foglio è uscito dalla testina NUOVA: prima finiva in quella
+    // vecchia, cioè da nessuna parte.
+    expect(invii[1].testina).toBe(ultima())
+  })
+
+  it('ma prima del limite no', async () => {
+    const P = await import('../../src/lib/printer.js')
+    await P.printTest()
+    await respira()
+
+    await vi.advanceTimersByTimeAsync(60000)
+    await P.printTest()
+    await respira()
+
+    expect(testine).toHaveLength(1)
+  })
+
+  it('la stretta di mano appena fatta vale come prova', async () => {
+    // Senza questo, la prima stampa dopo una riconnessione troverebbe il
+    // collegamento già scaduto e ne farebbe un'altra, all'infinito.
+    const P = await import('../../src/lib/printer.js')
+    await P.printTest()
+    await respira()
+    await vi.advanceTimersByTimeAsync(121000)
+    await P.printTest()
+    await respira()
+    expect(testine).toHaveLength(2)
+
+    await P.printTest()
+    await respira()
+    expect(testine).toHaveLength(2)
+  })
+
+  it('un invio a cui nessuno risponde non è una prova', async () => {
+    // È il punto: prova vuol dire che la stampante ha PARLATO. Un foglio
+    // mandato e mai confermato è esattamente il silenzio da cui nasce
+    // BUG-102, e prenderlo per buono rimetterebbe in piedi il difetto.
+    rispostaPer = () => undefined
+    const P = await import('../../src/lib/printer.js')
+    await P.printTest()
+    await respira()
+
+    await vi.advanceTimersByTimeAsync(121000)
+    rispostaPer = () => OK
+    await P.printTest()
+    await respira()
+
+    expect(testine).toHaveLength(2)
+  })
+})
+
+// ── E PRIMA DI STAMPARE SI GUARDA COSA HA DETTO LEI ──────────────────
+//
+// La finestra dei due minuti da sola non basta, ed è l'osservazione di chi
+// l'ha vista in faccia: se il collegamento muore tre secondi prima della
+// chiusura di cassa, né i dieci secondi del monitor né i due minuti fanno
+// in tempo. Ma non serve indovinare — il monitor a ogni giro scrive sulla
+// testina lo stato che la stampante ha risposto, e leggerlo costa zero.
+describe('lo stato della stampante si legge prima di stampare', () => {
+  it('se ha detto di non rispondere, si riparte da zero senza aspettare', async () => {
+    const P = await import('../../src/lib/printer.js')
+    await P.printTest()
+    await respira()
+    const prima = ultima()
+
+    // Il monitor ha appena scoperto che non risponde: il segno resta
+    // scritto sulla testina. Non passa nemmeno un secondo.
+    prima.status = prima.ASB_NO_RESPONSE
+    await P.printTest()
+    await respira()
+
+    expect(testine).toHaveLength(2)
+    expect(invii[1].testina).toBe(ultima())
+  })
+
+  it('e quel collegamento si chiude, non si abbandona', async () => {
+    const P = await import('../../src/lib/printer.js')
+    await P.printTest()
+    await respira()
+    ultima().status = ultima().ASB_NO_RESPONSE
+
+    await P.printTest()
+    await respira()
+
+    // Abbandonarlo lascerebbe sulla stampante una sessione mezza aperta
+    // finché non scade da sé: una alla volta non è un problema, ripetuto a
+    // ogni pausa sì, perché di sessioni insieme ne regge poche.
+    expect(chiusure).toHaveLength(1)
+  })
+
+  it('se invece sta bene non si tocca niente', async () => {
+    const P = await import('../../src/lib/printer.js')
+    await P.printTest()
+    await respira()
+    await P.printTest()
+    await respira()
+
+    expect(testine).toHaveLength(1)
+    expect(chiusure).toHaveLength(0)
+  })
+
+  it('senza monitor lo stato non si aggiorna, e a rispondere resta la finestra', async () => {
+    // Firmware che non sostiene il monitor: `status` non lo aggiorna
+    // nessuno, quindi il controllo qui sopra tace per sempre. È
+    // esattamente il caso per cui la finestra è rimasta.
+    monitorRotto = true
+    const P = await import('../../src/lib/printer.js')
+    await P.printTest()
+    await respira()
+    expect(testine).toHaveLength(1)
+
+    await vi.advanceTimersByTimeAsync(121000)
+    await P.printTest()
+    await respira()
+
+    expect(testine).toHaveLength(2)
   })
 })

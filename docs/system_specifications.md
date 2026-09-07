@@ -5,7 +5,7 @@
 > `requirements/bugs.yaml` (i difetti), poi si rigenera con
 > `node scripts/requisiti.mjs --documento`.
 >
-> Generato il 6 settembre 2026.
+> Generato il 7 settembre 2026.
 
 Qui c'è scritto **cosa fa Tana Drink**, area per area: la cassa di «La Tana
 del Coniglio», quella che si usa al banco mentre il locale è pieno. Non è un
@@ -2010,6 +2010,16 @@ NON RISPONDE PIÙ = SI MOLLA IL COLLEGAMENTO, così la stampa dopo rifà la stre
 IL PALLINO DICE QUELLO CHE LA STAMPANTE HA RISPOSTO, non che in memoria esista un oggetto: `preparaStampante` riporta il guaio noto.
 
 LA RETE PER QUANDO IL MONITOR NON C'È (firmware vecchio, domanda lunga bloccata): tre invii di fila senza risposta valgono come «strada chiusa». Uno solo no — quello resta un «non lo sappiamo» (REQ-STAMPA-016). E NIENTE DI QUESTO PUÒ FERMARE UNA STAMPA: il monitor non passa dal collegamento delle stampe, quando fallisce non lo butta giù, non alza `onreceive` (quindi non sfasa il conto invii/risposte da cui dipende il registro), e nessun lavoro lo aspetta. Un firmware che non lo sostiene non impedisce di stampare.
+
+PRIMA DI STAMPARE SI GUARDA COM'È MESSO IL COLLEGAMENTO, e si guarda chiedendolo alla STAMPANTE. Il monitor da solo non basta per la stampa che conta: se il collegamento muore tre secondi prima della chiusura di cassa, dieci secondi non fanno in tempo — e la chiusura è proprio la stampa che arriva dopo il buco più lungo, perché durante il servizio le comande si susseguono e il collegamento resta caldo, mentre fra l'ultimo scontrino e la chiusura passano ore.
+
+IL SEGNALE COSTA ZERO. A ogni giro il monitor scrive sulla testina lo stato che la stampante ha risposto, e quando smette di rispondere ci accende dentro `ASB_NO_RESPONSE`. Leggerlo prima di stampare non aspetta niente e non aggiunge traffico, e non è un'opinione dell'SDK: è quello che ha detto lei, al massimo un giro fa. La costante si prende dall'oggetto, non scritta a mano.
+
+LA RETE DI RISERVA È IL TEMPO. Senza monitor (firmware che non lo sostiene, richiesta bloccata) quello stato non si aggiorna mai e il controllo tace: allora vale l'ultima volta che la stampante ha RISPOSTO, e oltre `FRESCHEZZA_COLLEGAMENTO` (due minuti) si riparte da zero comunque. Provato vuol dire una cosa sola — ha risposto a un invio — o una stretta di mano appena riuscita, che è di adesso. Un invio mandato e mai confermato NON è una prova: è il silenzio da cui nasce questo difetto.
+
+IN TUTTI E DUE I CASI SI FA QUELLO CHE FA «TEST STAMPA»: si butta il collegamento e se ne apre uno nuovo. È l'unico gesto che non chiede niente a nessuno. E LÌ SI CHIUDE, NON SI ABBANDONA. Di regola `scordaConnessione` non chiama `disconnect()` — ci si arriva quando il collegamento è appeso, e quella chiamata può appendersi a sua volta — ma qui il collegamento può benissimo essere sano, e abbandonarlo lascerebbe sulla stampante una sessione mezza aperta finché non scade da sé. Una alla volta non è un problema; ripetuta a ogni pausa sì, perché di sessioni CONTEMPORANEE l'apparecchio ne regge poche. Il numero di connessioni non è invece un argomento contro il rifarle una dopo l'altra: quelle restano una alla volta.
+
+PERCHÉ NON A OGNI STAMPA COMUNQUE: la connessione si tiene viva apposta — rifare la stretta di mano ogni volta faceva fallire la prima stampa quando l'eccezione del certificato era scaduta, cioè col cliente davanti — e ogni riconnessione azzera il conto degli invii senza risposta, che è la terza rete. Con lo stato letto e la finestra si riparte quando serve. La finestra è una costante da sola: a zero, si riparte da capo prima di ogni stampa.
 
 **Dove**: `src/lib/printer.js (ascoltaLaStampante, avviaBattito, preparaStampante, smettiDiAscoltare)` · **Lo dimostrano**: `tests/unit/stampanteCheNonRisponde.test.js`
 

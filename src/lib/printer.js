@@ -433,8 +433,28 @@ function sdkAvailable() {
 // chiamata può appendersi a sua volta, ed è proprio quello da cui si sta
 // scappando. Serve alla caduta vista dal battito, al ritorno in primo piano
 // e al lavoro di stampa che scade (BUG-086).
-function scordaConnessione() {
+function scordaConnessione({ chiudendo = false } = {}) {
   fermaIlMonitor(_printer)
+  // CHIUDERE O ABBANDONARE, e non è la stessa cosa.
+  //
+  // Di regola si ABBANDONA: qui ci si arriva quando il collegamento è
+  // appeso o muto, e `disconnect()` su un collegamento appeso può
+  // appendersi a sua volta — che è esattamente ciò da cui si sta
+  // scappando.
+  //
+  // Ma quando si molla un collegamento che PROBABILMENTE STA BENE — la
+  // stampa dopo una pausa, che riparte da zero per prudenza — abbandonarlo
+  // lascerebbe sulla stampante una sessione mezza aperta finché non scade
+  // da sé. Una alla volta non è un problema; ripetuto a ogni pausa, sì:
+  // l'apparecchio di sessioni contemporanee ne regge poche. Lì si chiude,
+  // dentro un try perché non deve poter fermare la stampa che segue.
+  if (chiudendo) {
+    try {
+      _device?.disconnect()
+    } catch {
+      /* già caduta, o SDK in uno stato strano: si abbandona e basta */
+    }
+  }
   _printer = null
   _device = null
   _connectPromise = null
@@ -677,7 +697,69 @@ export function guastoStampante() {
 // è appena uscita.
 function stampanteHaRisposto(andataBene) {
   _inviiMuti = 0
+  _provataAlle = Date.now()
   if (andataBene) _guasto = null
+}
+
+// ── LA STAMPA CHE CONTA PARTE SU UN COLLEGAMENTO PROVATO ─────────────
+//
+// Il monitor scopre che la stampante non risponde piu', ma ci mette il suo
+// giro: se il collegamento muore tre secondi prima della chiusura di cassa,
+// dieci secondi non fanno in tempo. E la chiusura e' proprio la stampa che
+// arriva dopo il buco piu' lungo — durante il servizio le comande si
+// susseguono e il collegamento resta caldo, fra l'ultimo scontrino e la
+// chiusura passano ore.
+//
+// Quindi prima di stampare, se il collegamento non e' stato PROVATO di
+// recente, si fa quello che fa il tasto «Test stampa»: si butta e si rifa'
+// la stretta di mano. E' l'unico gesto che non chiede niente a nessuno —
+// chiedere «sei vivo?» all'SDK e' esattamente cio' che non funziona.
+//
+// PROVATO vuol dire UNA COSA SOLA: la stampante ha risposto a un invio. Non
+// «l'SDK dice che il socket e' su» (mente, BUG-102) e nemmeno «il monitor
+// gira»: il monitor alza `onstatuschange` solo quando lo stato CAMBIA, per
+// cui una stampante sana e ferma non dice niente, e prenderlo per battito
+// sarebbe un altro modo di credere a un silenzio.
+//
+// PERCHE' NON PRIMA DI OGNI STAMPA, che era la proposta di partenza. La
+// connessione si tiene viva apposta: rifare la stretta di mano ogni volta
+// faceva fallire la prima stampa quando l'eccezione del certificato era
+// scaduta — cioe' in servizio, col cliente davanti — la stampante regge
+// poche connessioni, e ogni riconnessione azzera il conto degli invii senza
+// risposta, che e' la terza rete. Con la finestra si paga solo dove serve.
+//
+// LA FINESTRA E' UN NUMERO SOLO, e sta qui perche' si possa cambiare senza
+// andare a cercare: a zero, si rifa' la stretta di mano prima di ogni
+// singola stampa.
+const FRESCHEZZA_COLLEGAMENTO = 120000
+let _provataAlle = 0
+
+// SI CHIEDE ALLA STAMPANTE, NON ALL'SDK — ed è la differenza fra le due
+// domande che all'inizio avevamo confuso. «Il socket è vivo?» all'SDK non
+// si può chiedere: mente (BUG-102). Ma il monitor a ogni giro scrive sulla
+// testina lo stato che la STAMPANTE ha risposto, e quando smette di
+// rispondere ci accende dentro il segno «nessuna risposta». Leggerlo costa
+// zero: nessuna attesa, nessun traffico in più, e non è un'opinione — è
+// quello che ha detto lei, al massimo dieci secondi fa.
+//
+// La costante si prende dall'oggetto invece di scrivere il numero a mano:
+// è roba dell'SDK, e un giorno potrebbe non valere più uno.
+function stampanteHaDettoDiNonRispondere(prn) {
+  const segno = Number(prn?.ASB_NO_RESPONSE) || 0
+  if (!segno) return false
+  return ((Number(prn?.status) || 0) & segno) !== 0
+}
+
+function collegamentoDaRifare() {
+  if (!_printer) return false
+  // 1. QUELLO CHE HA DETTO LEI. Se il monitor gira, questo arriva entro un
+  //    giro: molto prima che la finestra scada.
+  if (stampanteHaDettoDiNonRispondere(_printer)) return true
+  // 2. LA RETE DI RISERVA, per quando il monitor non c'è — firmware che non
+  //    lo sostiene, richiesta bloccata. Senza monitor lo stato non si
+  //    aggiorna mai, quindi il controllo qui sopra tace e a rispondere
+  //    resta il tempo passato dall'ultima risposta vera.
+  return Date.now() - _provataAlle >= FRESCHEZZA_COLLEGAMENTO
 }
 
 // UN GUAIO DELLA STAMPANTE. `mollaIlCollegamento` solo quando la stampante
@@ -833,6 +915,7 @@ async function getPrinter() {
       // male → il pallino diventa rosso → parte l'avviso» si deve poter
       // provare senza avere l'apparecchio davanti.
       _guasto = null
+      _provataAlle = Date.now()
       ascoltaLaStampante(finta)
       _printer = finta
     }
@@ -906,6 +989,11 @@ async function getPrinter() {
           // (BUG-102). Il collegamento è nuovo, quindi il guaio di prima
           // non vale più: lo ridirà lei, se c'è ancora.
           _guasto = null
+          // La stretta di mano appena riuscita vale come prova: il
+          // collegamento e' di adesso. Senza questo, la prima stampa dopo
+          // una riconnessione lo troverebbe gia' scaduto e ne farebbe
+          // un'altra, all'infinito.
+          _provataAlle = Date.now()
           ascoltaLaStampante(devobj)
 
           resolve(_printer)
@@ -1077,6 +1165,12 @@ function lavoroDiStampa(componi, che = 'Stampa') {
       }, TEMPO_MASSIMO_LAVORO)
     })
     const lavoro = (async () => {
+      // PRIMA DI STAMPARE SI GUARDA COM'È MESSO IL COLLEGAMENTO: se la
+      // stampante ha detto di non rispondere, o se dall'ultima risposta è
+      // passato troppo, si riparte da zero come fa «Test stampa». Si chiude
+      // per bene, perché qui il collegamento può benissimo essere sano e
+      // lasciarlo mezzo aperto sulla stampante non serve a nessuno.
+      if (collegamentoDaRifare()) scordaConnessione({ chiudendo: true })
       const vera = await getPrinter()
       const prn = pennaDelLavoro(vera, () => !scaduto)
       // Si parte puliti: se chi c'era prima si è fermato a metà, i suoi pezzi
