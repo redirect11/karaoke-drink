@@ -63,6 +63,7 @@ import {
 } from '../lib/comande.js'
 import { paidAmount, dettaglioIncassi, scontoTotale } from '../lib/pagamento.js'
 import { aggiunteInComandaNuova, isPersonale, puoGestireComande, puoSegnare } from '../lib/ruoli.js'
+import { spegnibile } from '../lib/sensoriDnd.js'
 import {
   makeLineId,
   mergeLines,
@@ -187,7 +188,11 @@ function ricordaNumeroPrevisto(n) {
 // E come nella griglia si entra in «organizza»: fuori di lì le righe non si
 // muovono — toccarle apre la riga, che è quello che si fa mille volte a
 // sera — e dentro compare la maniglia, che è l'unica cosa che trascina.
-const SENSORI_SPENTI = []
+// I sensori restano montati anche fuori da «organizza»: a spegnerli è
+// l'opzione `attiva`. Svuotare la lista cambierebbe la lunghezza delle
+// dipendenze di un `useEffect` dentro dnd-kit, che è vietato — il perché
+// per esteso sta in `lib/sensoriDnd.js`.
+const PointerSensorSpegnibile = spegnibile(PointerSensor)
 
 function RigaOrdinabile({ id, attiva, bloccata, children }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
@@ -276,7 +281,10 @@ export default function OrderPosDetail({ order: orderProp = null, apriPagamento 
   const sensoriLista = useSensors(
     // Otto pixel prima di considerarlo un trascinamento: sotto quella soglia
     // è un tocco, e il tocco apre la riga.
-    useSensor(PointerSensor, { activationConstraint: { distance: 8 } })
+    useSensor(PointerSensorSpegnibile, {
+      attiva: organizzaLista,
+      activationConstraint: { distance: 8 },
+    })
   )
   // Menu delle azioni: esiste solo sul telefono, dove i tasti non ci stanno
   // tutti in pagina senza mangiarsi le righe del conto.
@@ -2269,7 +2277,11 @@ export default function OrderPosDetail({ order: orderProp = null, apriPagamento 
               <span className="muted" style={{ marginLeft: 'auto', fontSize: '1.4rem' }}>▲</span>
             </button>
           )}
-          <div style={{ padding: '8px 12px 0', flexShrink: 0 }}>
+          {/* Com'è messa la testata sta in `.posd-testa`, non su uno `style`
+              inline: da inline `flex-shrink: 0` vinceva sempre, e con poca
+              altezza (finestra bassa, zoom alto) restava una fascia rigida
+              che spingeva i tasti del piede fuori dallo schermo (BUG-077). */}
+          <div className="posd-testa">
             {/* Il nome del conto si prende tutta la riga: schiacciato fra i
                 tasti restava un filo di spazio e spariva nei puntini. */}
             <div className="row between" style={{ alignItems: 'center', gap: 8 }}>
@@ -2475,7 +2487,7 @@ export default function OrderPosDetail({ order: orderProp = null, apriPagamento 
 
 
             <DndContext
-              sensors={organizzaLista ? sensoriLista : SENSORI_SPENTI}
+              sensors={sensoriLista}
               collisionDetection={closestCenter}
               onDragEnd={({ active, over }) => {
                 if (!over || active.id === over.id) return
@@ -2617,6 +2629,10 @@ export default function OrderPosDetail({ order: orderProp = null, apriPagamento 
               Ridimensionabile dalla maniglia in cima: font e tasti scalano. */}
           <div className="posd-comanda-foot" style={{ '--foot-scale': footRz.width / 100 }}>
             <div className="posd-foot-handle" title="Trascina per ingrandire/rimpicciolire" {...footRz.handleProps} />
+            {/* QUELLO CHE SI LEGGE, separato da quello che si preme. Sono
+                numeri: quando l'altezza manca cedono loro e scorrono, mentre
+                i tasti qui sotto restano dove sono (BUG-077). */}
+            <div className="posd-foot-info">
             {/* IL BOLLO DELLO STATO SE N'È ANDATO IN TESTATA (vedi sopra);
                 qui resta il tasto, che è un'altra cosa: chiudere un conto
                 già pagato senza far avanzare gli stati uno per uno. Sta
@@ -2750,8 +2766,12 @@ export default function OrderPosDetail({ order: orderProp = null, apriPagamento 
                 </div>
               </div>
             )}
+            </div>
 
             <div className="posd-foot-azioni">
+            {/* LA RIGA CHE NON CEDE MAI. «Invia comanda» e «Pagamento» sono i
+                due gesti della serata: restano dove sono, alla stessa
+                altezza, qualunque sia la finestra e qualunque lo zoom. */}
             <div className="grid-2">
               <button className="btn ghost small" disabled={!conRighe} onClick={inviaComanda}>
                 <IconPrinter /> Invia comanda
@@ -2775,6 +2795,10 @@ export default function OrderPosDetail({ order: orderProp = null, apriPagamento 
               )}
             </div>
 
+            {/* I DUE SECONDARI. Servono, ma non cento volte a sera: se
+                l'altezza non basta per tutti sono loro a scorrere — mai a
+                sparire, che è quello che facevano prima (BUG-077). */}
+            <div className="posd-foot-secondarie">
             {workflowOn && (
               <button
                 className="btn ghost small block"
@@ -2792,6 +2816,7 @@ export default function OrderPosDetail({ order: orderProp = null, apriPagamento 
             >
               <IconX /> Annulla ordine
             </button>
+            </div>
             </div>
 
             {/* TELEFONO: un tasto solo, tutto il resto nel menu dal basso.

@@ -197,24 +197,7 @@ export function consumptionDiff(oldCons, newCons) {
 }
 
 // ── Scadenzario fornitori (FORNITORI REC) ─────────────────────────────
-
-// Totali documenti: da pagare complessivo e per fornitore.
-export function invoiceTotals(invoices) {
-  const bySupplier = new Map()
-  let unpaid = 0
-  let paid = 0
-  for (const inv of invoices || []) {
-    const amount = Number(inv.amount) || 0
-    if (inv.paid) {
-      paid += amount
-    } else {
-      unpaid += amount
-      const key = inv.supplier_id || 'sconosciuto'
-      const cur = bySupplier.get(key) || { supplier_id: key, supplier_name: inv.supplier_name || '', unpaid: 0, count: 0 }
-      cur.unpaid += amount
-      cur.count += 1
-      bySupplier.set(key, cur)
-    }
-  }
-  return { unpaid, paid, bySupplier: [...bySupplier.values()].sort((a, b) => b.unpaid - a.unpaid) }
-}
+//
+// `invoiceTotals` stava qui ed è passato in `fatture.js` con BUG-100: da
+// quando una nota di credito sottrae, i totali devono conoscere i tipi di
+// documento, e i tipi di documento vivono là.

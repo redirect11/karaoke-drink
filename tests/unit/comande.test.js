@@ -4,6 +4,7 @@
 
 import { describe, it, expect } from 'vitest'
 import {
+  numeroComanda,
   ORDER_OPEN,
   nextComandaStatus,
   statoComandaNuova,
@@ -788,5 +789,39 @@ describe('i passi di una comanda', () => {
     const tappe = tappeComanda({ status: 'ricevuto' })
     expect(tappe.every((t) => t.quando === null)).toBe(true)
     expect(tappeComanda(null).length).toBe(4)
+  })
+})
+
+// ── CHE NUMERO HA QUESTA COMANDA (BUG-089) ───────────────────────────
+//
+// Dal 25/08/2026 il numero finisce sulla fascia nera del ticket
+// («COMANDA 2 - ORDINE 28»), quindi sbagliarlo si vede al banco.
+describe('numeroComanda', () => {
+  const conto = {
+    daily_number: 28,
+    comande: [
+      { id: 'c1', seq: 1 },
+      { id: 'c2', seq: 2 },
+    ],
+  }
+
+  it('è il seq della comanda', () => {
+    expect(numeroComanda(conto, conto.comande[1])).toBe(2)
+  })
+
+  // I documenti vecchi il seq non ce l'hanno: vale la posizione
+  // nell'elenco, che è l'ordine in cui sono state battute.
+  it('senza seq vale il posto nell’elenco', () => {
+    const vecchio = { comande: [{ id: 'a' }, { id: 'b' }] }
+    expect(numeroComanda(vecchio, vecchio.comande[1])).toBe(2)
+  })
+
+  // IL TICKET UNITO non è nessuna comanda: le contiene tutte. Meglio
+  // niente numero che un numero inventato — chi stampa scrive solo il
+  // conto.
+  it('torna null per una comanda che nel conto non c’è', () => {
+    expect(numeroComanda(conto, { id: 'unita' })).toBe(null)
+    expect(numeroComanda(conto, null)).toBe(null)
+    expect(numeroComanda(null, { id: 'c1' })).toBe(null)
   })
 })

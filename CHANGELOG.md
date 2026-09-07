@@ -1,5 +1,597 @@
 # Cosa è cambiato
 
+## 1.5.7 — 7 settembre 2026
+
+### Per chi sta al banco
+
+- **Quando la stampante smette di rispondere, l'app se ne accorge e lo dice.**
+  Il 5 settembre la stampante ha smesso di stampare tutto — comande,
+  scontrini, perfino le ristampe di chiusure vecchie — e il pallino in alto è
+  rimasto verde tutta la sera. Il motivo: l'app chiedeva al programma della
+  stampante se il collegamento era vivo, e quello rispondeva di sì anche
+  mentre stava solo provando a riconnettersi. Adesso è la stampante a essere
+  interrogata direttamente, ogni dieci secondi: se smette di rispondere il
+  collegamento viene buttato — così la stampa dopo lo rifà da capo invece di
+  parlare a vuoto — e arriva un avviso. Carta finita, coperchio aperto e
+  stampante fuori linea si vedono allo stesso modo, senza aspettare che sia
+  una stampa a scoprirlo.
+
+- **Prima di stampare si controlla il collegamento, e se non va si rifà.**
+  È il caso della chiusura di cassa: fra l'ultimo scontrino e la chiusura
+  passano ore, ed è nelle pause che il collegamento con la stampante muore
+  senza che nessuno lo sappia. Adesso, prima di ogni stampa, l'app guarda
+  cosa ha risposto la stampante all'ultimo controllo: se ha smesso di
+  rispondere — o se dall'ultima risposta sono passati più di due minuti — il
+  collegamento viene rifatto da zero prima di partire, la stessa cosa che fa
+  il tasto «Test stampa». Durante il servizio, con le comande una dietro
+  l'altra, non cambia niente.
+
+- **Il pallino della stampante adesso vuol dire qualcosa.** Prima era verde
+  perché il collegamento era riuscito una volta, all'inizio della serata.
+  Adesso è verde perché la stampante ha risposto, e diventa rosso col motivo
+  quando c'è un guaio.
+
+- **Il magazzino va sotto zero, invece di fermarsi a zero.** Prima, quando un
+  prodotto arrivava a zero, quello che continuava a uscire non veniva più
+  scalato: la giacenza restava a zero come un prodotto finito per bene, e non
+  c'era modo di accorgersi che si stava versando da bottiglie mai caricate.
+  Adesso la giacenza scende in negativo e il meno si legge sulla card. Quel
+  numero dice quanto è uscito senza risultare, e da lì si va a cercare la
+  consegna che nessuno ha registrato o l'inventario da rifare. Caricando la
+  merce il conto riparte da zero: sei bottiglie consegnate restano sei, il
+  meno di prima non se ne mangia una.
+
+- **Togliendo un drink da una comanda già preparata, gli ingredienti tornano
+  in magazzino.** Prima il movimento diceva «carico» ma la giacenza non si
+  muoveva, e il magazzino restava indietro di un drink.
+
+- **Nella ricerca dei prodotti c'è il tasto per cancellare.** Si svuota il
+  campo con un tocco, senza tenere premuta la cancellazione, e la scrittura
+  resta pronta per cercare un altro prodotto.
+
+- **I prodotti fuori menù si riconoscono da lontano.** Prima la card cambiava
+  solo di trasparenza, e di sera in una griglia piena si distingueva a fatica:
+  adesso ha il fondo scuro e la scritta bianca. Vale nella gestione del menù,
+  dove serve capire a colpo d'occhio cosa c'è e cosa no.
+
+- **Nello scadenzario il «reso» si chiama nota di credito, e scala.**
+  È la dicitura giusta, e dice la cosa giusta: una nota di credito non vuol
+  dire che è tornata della merce — spesso è solo un prezzo sbagliato su una
+  fattura, magari già pagata. Adesso il suo importo **si sottrae** dai
+  totali invece di sommarsi: dal «Da pagare» in testa, dal totale di quel
+  fornitore e dal Riepilogo dei soldi che escono. Sulla riga si legge in
+  verde e col meno davanti — `− 120,00 €` — e il tasto dice «da scalare»
+  invece di «da pagare», perché una nota di credito non si paga: la si
+  scala da quello che si deve. I documenti registrati prima, quelli scritti
+  «Reso», continuano a valere e scalano allo stesso modo: non c'è niente da
+  ribattere.
+
+- **I documenti dello scadenzario si possono correggere.** Prima, per
+  cambiare una cifra sbagliata, bisognava cancellare il documento e
+  rifarlo — e con la cancellazione se ne andavano i prodotti, l'allegato e
+  l'ordine collegato. Adesso c'è la matita sulla riga: si correggono
+  fornitore, numero, data, tipo, importo e note, e tutto il resto resta
+  dov'è. Anche su un documento già pagato, che è il caso in cui serve di
+  più. Ogni correzione resta scritta sotto il documento — cosa è cambiato,
+  da quanto a quanto, e se era già pagato — così a fine mese si sa perché
+  una cifra non è più quella. Il fornitore di un documento collegato a un
+  ordine si cambia solo dopo averlo scollegato.
+
+- **Il conto appena incassato non si vede più sparire dalla coda.**
+  Chiudendo un conto si tornava alla coda ordini e per un attimo il conto era
+  ancora lì, poi spariva da solo: abbastanza per chiedersi se l'incasso
+  fosse andato. Adesso quando si torna alla coda il conto è già andato via,
+  anche senza rete. Vale allo stesso modo per l'annullo, per il ripristino di
+  un conto chiuso o annullato e per l'incasso di un tavolo intero, dove i
+  conti del gruppo escono dalla coda tutti insieme.
+
+- **Quando una stampa non esce, adesso lo dice.** Prima l'app dava per
+  fatto il foglio appena lo mandava alla stampante: se poi la carta non
+  usciva — rotolo finito, coperchio aperto, stampante fuori linea — non lo
+  sapeva nessuno. Adesso l'apparecchio risponde, e quella risposta diventa
+  un avviso che resta anche nella campanella: dice **cosa** non è uscito e
+  **perché**. Le stampe riuscite non dicono niente, e se lo stesso guasto si
+  ripete non arriva una raffica di avvisi uguali.
+
+- **Stampare resta immediato.** L'avviso arriva dopo, per conto suo:
+  chiudere cassa, mandare una comanda o battere uno scontrino non aspetta la
+  stampante nemmeno un istante, con o senza rete. E non parte nessun secondo
+  foglio da solo — a ristampare, quando serve, si va col tasto della
+  ristampa.
+
+- **C'è il registro delle stampe.** In **Impostazioni → Stampante** ci sono
+  le ultime stampe di questo dispositivo: cosa era, a che ora, se è uscita e,
+  quando non è uscita, **perché**. Ogni stampa compare subito come mandata e
+  la riga si aggiorna quando la stampante risponde; se quella non risponde
+  mai, la riga resta «in attesa di risposta» invece di inventarsi un esito.
+  Sotto c'è anche la coda — cosa sta uscendo adesso e quanto c'è in attesa.
+  Serve la mattina dopo, quando ci si chiede se la chiusura di ieri sera è
+  uscita davvero: prima l'unica traccia era un avviso che spariva dopo otto
+  secondi.
+
+## 1.5.6-beta
+
+### Per chi sta al banco
+
+- **La striscia colorata delle tile non si spegne più da sola.** Il bordo
+  sinistro della card di un prodotto — quello che dice colore, categoria o
+  scorte — poteva tornare grigio quando la griglia si ridisegnava, e restare
+  così finché non si cambiava categoria. Adesso il colore lo tiene.
+
+- **La maniglia per spostare le card prende sempre.** Entrando e uscendo da
+  «organizza» — sia nella griglia dei prodotti sia nella lista del conto — il
+  trascinamento poteva smettere di rispondere finché non si riapriva la
+  schermata.
+
+- **Il giro che si fa sempre si salva come modello.** Sopra la tabella del
+  nuovo ordine c'è la riga dei **modelli d'ordine**: mentre si compone si
+  tocca **«Salva le N righe come modello»**, gli si dà un nome, e da lì in poi
+  con **«Usa il modello»** si ritrovano gli stessi prodotti, dagli stessi
+  fornitori, con le stesse quantità. Un modello si può **rinominare** e
+  **eliminare**, e salvarne uno con un nome già usato aggiorna quello che
+  c'era.
+
+- **Il modello non si porta dietro i prezzi.** Conserva cosa ordinare, a chi e
+  quanto: il prezzo è sempre quello del **listino di quel fornitore**, com'è
+  in questo momento. Così un modello di due mesi fa non fa partire un ordine a
+  cifre vecchie.
+
+- **Modello e precompilazione lavorano insieme.** La precompilazione spunta
+  quello che **sta finendo adesso**; il modello aggiunge il **giro che si fa
+  sempre**. Applicandone uno non si perde niente di quello che era già
+  spuntato.
+
+- **E se qualcosa non c'è più, si legge.** Applicando un modello compare
+  l'elenco di **cosa non è stato ripreso e perché**: un prodotto tolto dal
+  magazzino non si riprende, uno uscito dal listino di quel fornitore si
+  riprende ma senza il suo prezzo, un fornitore cancellato lascia la riga da
+  riassegnare.
+
+- **Un ordine già fatto si può conservare com'è.** Nella Lista ordini, aprendo
+  un ordine, in fondo c'è **«Salva come modello»**: riprende prodotti,
+  fornitore e quantità ordinate.
+
+- **Gli ordini adesso sono due schermate: «Nuovo ordine» e «Lista ordini».**
+  La prima è quella di sempre, dove si compone. La seconda è **lo storico di
+  tutti gli ordini fatti**, con in alto i **filtri per stato** — bozze,
+  richiesti, consegnati, da pagare, pagati, chiusi — e il numero su ogni
+  filtro. Prima lo storico stava in fondo alla schermata di composizione: per
+  guardare un ordine di ieri bisognava scorrere sotto tutto il catalogo.
+
+- **Un ordine si può salvare in bozza.** Nel riepilogo, accanto a «Crea
+  l'ordine», c'è **«Salva in bozza»**: l'ordine resta lì, si riprende dalla
+  Lista ordini e **non tocca niente** — i prodotti non passano in
+  assortimento e la cifra non entra nei soldi che escono del mese. Serve
+  perché comporre venti righe è un lavoro che si interrompe, e prima le
+  alternative erano ricominciare da capo o confermare un ordine solo per non
+  perderlo. Quando serve, dalla Lista ordini si tocca **«Manda l'ordine»** e
+  da lì in poi vale come tutti gli altri.
+
+- **Quando la merce arriva si scrive quanto è arrivato davvero.** Nella
+  finestra della consegna, accanto al prezzo, c'è il campo dei **pezzi
+  ricevuti**: parte con quelli che erano stati chiesti, e **in magazzino
+  entra quello che si scrive lì**. Se di sei casse ne arrivano quattro, si
+  caricano quattro — e **l'ordine continua a ricordare che ne erano state
+  chieste sei**, che è quello che serve per non pagarne sei in fattura.
+
+- **Ordinato, ricevuto e fatturato, uno accanto all'altro.** Aprendo un
+  ordine si vede una tabella con le **tre colonne** e la **differenza di
+  prezzo** fra quanto costava quando l'ordine è partito e quanto costa sul
+  documento, col segno. Sotto ogni riga che non torna c'è scritto **cosa non
+  torna**: arrivato meno del richiesto, non è sul documento, prezzo diverso.
+
+- **E il prezzo del documento si porta sul listino in un gesto.** Dove c'è
+  uno scarto compare **«Allinea il listino al documento»**: da lì in poi
+  quello è il prezzo di quel fornitore, e la variazione resta nello **storico
+  dei prezzi**. Senza, lo stesso scarto ricomparirebbe al prossimo ordine.
+
+- **Il documento di un ordine: si associa, si genera, oppure non c'è.**
+  Dentro l'ordine si può **collegare un documento** già scritto nello
+  Scadenzario, oppure **generarlo dall'ordine** coi prezzi dell'ordine — e in
+  quel caso porta il segno **«Generata dall'ordine»**, così non si confonde
+  con la fattura vera del fornitore, che si allega quando arriva. Quando non
+  c'è nessuna carta — il contante al piccolo fornitore, il contrassegno alla
+  consegna — c'è **«Pagato senza documento»**: crea comunque la riga nello
+  Scadenzario, tipo **«Nessun documento»**, e la segna pagata. Così quei
+  soldi compaiono nel totale del mese come tutti gli altri.
+
+- **«Pagato» si scrive sul documento, non sull'ordine.** Il tasto «Pagato»
+  che stava sull'ordine non c'è più: sulla riga dell'ordine si vede il chip
+  **«da pagare» / «pagato»** del suo documento, e toccarlo scrive lì — nello
+  stesso posto da cui lo Scadenzario fa il totale «Da pagare». Prima erano
+  due segni diversi per la stessa cosa, e a fine mese potevano non tornare.
+  Un ordine consegnato senza documento lo dice a chiare lettere.
+
+- **«Chiudi» c'è, ma solo quando i conti tornano.** Un ordine si può chiudere
+  quando **ordinato, ricevuto e fatturato tornano**: finché non tornano il
+  tasto è spento e dice perché. Chiuso **non vuol dire pagato** — si può aver
+  pagato in anticipo, e si può aver ricevuto tutto senza aver ancora pagato.
+
+- **Ogni ordine tiene il suo diario.** In fondo al dettaglio c'è **«Cosa è
+  successo»**: quando è stato creato e mandato, cosa è stato tolto, quali
+  quantità e quali prezzi sono cambiati all'arrivo, quando è stato collegato
+  un documento. Un ordine che cambia dopo essere partito, senza diario,
+  diventa un foglio che non corrisponde più a niente.
+
+- **Chi vende a cartoni adesso si ordina a cartoni.** Sul listino di un
+  fornitore c'è **«Pezzi per collo»**: si compila solo dove quel fornitore
+  vende a casse o a cartoni — le Bjorne da FONT vanno a 24 — e da lì in poi il
+  prezzo che si scrive è quello del **collo intero**, cioè la cifra che
+  compare sulla sua fattura. Il **prezzo del singolo pezzo si calcola da sé**
+  e si legge accanto: è l'unico modo di confrontare due fornitori che vendono
+  in confezioni diverse, e dice per esempio che la Bjorne a cassa costa meno
+  che a bottiglia. Nel nuovo ordine la riga chiede **colli** invece di pezzi e
+  mostra quante bottiglie ne arrivano; in magazzino entrano sempre **pezzi**.
+  Prima l'app moltiplicava i pezzi voluti per il prezzo del cartone: otto
+  Bjorne risultavano **200 euro** invece di **8,35**. Per i prodotti che si
+  comprano a pezzo — quasi tutti — **non cambia niente**: stessa riga, stesso
+  prezzo, e la parola «collo» non compare.
+
+- **E si può scrivere il listino come lo scrive il fornitore.** Accanto al
+  prezzo c'è **«Prezzo espresso per»**: il **collo** (la cifra che fattura, ed
+  è il caso normale), il **pezzo** quando vende a cartoni ma quota la
+  bottiglia, oppure **litri, centilitri, chili o grammi** quando prezza il
+  contenuto — un vino a 9 €/litro in bottiglie da 75 cl fa 6,75 a bottiglia, e
+  il cartone da 6 costa 40,50. **Il prezzo della bottiglia si vede sempre
+  accanto**, mentre si scrive: è il numero che si riconosce a colpo d'occhio,
+  e un gin che risulta costare 0,80 € si nota subito. Se il prodotto non dice
+  quanto contiene, l'app **non inventa un prezzo**: scrive che cosa manca
+  nella sua scheda.
+
+- **Nel nuovo ordine basta toccare la riga.** Toccando una riga della tabella
+  il prodotto **entra** nell'ordine; toccandola di nuovo **esce**. Vale tutta
+  la riga, non solo la casella: componendo un ordine si passano in rassegna
+  decine di prodotti, e centrare un quadratino ogni volta è una fatica
+  inutile. I campi che si scrivono — pezzi, totale, tendina del fornitore — e
+  il tasto che apre la scheda restano esclusi, così scriverci dentro non
+  toglie quello che si è appena aggiunto. Le righe già nell'ordine si
+  riconoscono dal fondo colorato.
+
+- **L'ordine si conferma un fornitore per volta, e ognuno diventa un ordine
+  suo.** Finita la composizione, **«Rivedi e conferma»** porta a una schermata
+  di **riepilogo**: una riga per ogni fornitore da cui si sta ordinando, e
+  toccando il nome si apre **la tabella dei suoi prodotti** — pezzi, prezzo
+  del pezzo e totale — da rivedere prima di mandare. Da lì si può ancora
+  **togliere** quello che non serve più. Ogni fornitore ha il suo tasto
+  **«Crea l'ordine»**: confermato, sulla sua riga compare **«Ordinato»** e le
+  sue righe escono dalla composizione, così non si ordina due volte. Gli altri
+  fornitori restano lì, da confermare quando si vuole. Il gesto **non aspetta
+  la rete**: l'ordine compare subito anche con la cassa offline.
+
+- **«In assortimento» adesso vuol dire «ordinato, in attesa che arrivi».**
+  Confermato un ordine, i suoi prodotti passano **in assortimento** in
+  magazzino: è il modo per vedere a colpo d'occhio cosa sta arrivando. Il
+  prodotto **si ricorda com'era prima** — in linea o premium — e ci torna
+  quando la merce arriva, anche se le scorte sono ancora basse: che siano
+  basse lo dice già la scorta. **Il carico a mano non lo cambia**: se una
+  bottiglia si compra di corsa al supermercato mentre l'ordine è in ritardo,
+  le scorte salgono ma il prodotto resta in assortimento, perché dal fornitore
+  ne sta arrivando dell'altra. Ci passano solo i prodotti **in linea o
+  premium**: un fuori linea no.
+
+- **Un prodotto si può togliere da un ordine già mandato.** Nello storico ogni
+  riga dell'ordine ha adesso il suo **✕**: si toglie quello che non arriverà
+  o non serve più, e il prodotto **torna allo stato che aveva prima**. Quello
+  che è già stato consegnato non si tocca — la merce è in magazzino, e si
+  corregge da lì.
+
+- **Cambiando a mano lo stato di un prodotto che sta in un ordine aperto, l'app
+  lo dice.** Compare una domanda che avvisa: cambiando lo stato, il prodotto
+  **viene tolto da quell'ordine**. È per non ritrovarsi merce ordinata di cui
+  nessuno sa più niente. Il resto del magazzino non cambia: stessi comandi,
+  stesse colonne, stessi filtri.
+
+- **«Nuovo ordine» è una tabella sola, e l'ordine si compone di fianco.** In
+  **Fornitori → Ordini** i prodotti stanno in un elenco unico: su ogni riga il
+  nome, **com'è messa la scorta** (in scorta, in esaurimento, esaurito), il
+  **fornitore** in una tendina, il **prezzo di un pezzo** preso dal suo listino,
+  i **pezzi** e il **totale**, che si può correggere lì dove si scrive — se il
+  fornitore ha fatto un altro prezzo per quel lotto, comanda la cifra scritta a
+  mano. Accanto alla tabella, e non più in fondo alla pagina, c'è **l'ordine che
+  si sta componendo, già diviso per fornitore**: si vede mentre si sceglie cosa
+  ordinare, senza scorrere avanti e indietro. **All'apertura è già spuntato
+  quello che manca** — esaurito o sotto la soglia di riordino — così il giro del
+  magazzino è già fatto; **quello che è fuori linea non si propone da solo**, ma
+  resta in elenco e si può ordinare a mano, che è il modo in cui rientra.
+  Scrivere una quantità **seleziona la riga**: non serve anche la spunta. Le
+  **intestazioni ordinano** l'elenco per nome, disponibilità, prezzo di listino
+  e fornitore, e **restano in alto** mentre si scorre; le righe **si caricano
+  scorrendo**, a blocchi, perché il magazzino è di quasi quattrocento prodotti e
+  lo stesso prodotto compare **una volta per fornitore** che lo vende — il
+  doppione non è un errore, serve a confrontare due prezzi. Toccando **▸** la
+  riga **si apre** e dice com'è messo quel prodotto — in linea, premium, in
+  assortimento, fuori linea — quante scorte restano, su quanti listini sta, chi
+  è stato l'ultimo fornitore e chi fa il prezzo più basso, con gli stessi campi
+  da compilare.
+
+- **Il listino di un fornitore si compila dalla sua scheda.** In **Fornitori →
+  Gestione fornitori** ogni fornitore ha il tasto **«📋 Listino»**: si cerca un
+  prodotto del magazzino, lo si associa a quel fornitore e gli si scrive il
+  **prezzo di un pezzo**. È il prezzo che comparirà quando si compila un
+  ordine. Un fornitore appena creato apre il suo listino da solo, che è il
+  lavoro che viene subito dopo. **Se il prodotto in magazzino non c'è, si crea
+  da lì**: entra col nome e il prezzo, come quelli che arrivano con una
+  consegna, e resta segnato come **scheda da completare** — categoria,
+  contenuto di un pezzo e soglia di riordino si mettono dal magazzino. Sulla
+  riga si scrivono anche il **codice del fornitore** e la **confezione**, che
+  servono a chi riceve l'ordine dall'altra parte. **Il magazzino non cambia**:
+  la scheda del prodotto resta com'era, tendina del fornitore compresa.
+
+- **I prezzi che cambiano restano scritti.** Il listino teneva un prezzo solo,
+  e ogni aggiornamento cancellava quello di prima. Adesso ogni variazione
+  resta registrata con la sua data e con **da dove viene** — compilato a mano,
+  corretto alla consegna, allineato da una fattura — e si legge aprendo la
+  riga del prodotto nel listino. Serve a rispondere a «quanto è aumentato il
+  Campari da gennaio»: un prezzo battuto a mano e uno preso da una fattura non
+  pesano uguale, e restano distinti.
+
+- **Le spese che non sono merce hanno un posto: Fornitori → «Altre spese».**
+  Tavoli, sgabelli, una tenda, i bicchieri di plastica: quello che esce dal
+  conto e non entra in magazzino si scrive lì, con le colonne che si usano già
+  sul foglio — articolo, quantità, prezzo, dove si compra e note. **Ogni voce
+  dice se è già stata comprata**: quelle comprate pesano sul mese, le altre
+  restano un promemoria, così una cosa che si vorrebbe comprare non fa
+  scendere l'utile. Una voce si riapre e si corregge — spesso il prezzo si sa
+  solo il giorno che si compra — e se è segnata comprata senza prezzo porta
+  scritto **«senza prezzo»**, col filtro in testa che tiene solo quelle.
+
+- **Il «Riepilogo» dice quanto è uscito, mese per mese.** Quarta voce di
+  Fornitori: per ogni mese la **merce** (dalle fatture dei fornitori), le
+  **altre spese** e il totale. Sotto, quello che resta aperto: quanto di quel
+  mese è **ancora da pagare** e quanta merce è arrivata **senza fattura**.
+  Queste due righe non entrano nel totale, e c'è scritto perché: il da pagare
+  è già contato nella merce, e la merce senza documento entrerà nel mese
+  quando la fattura arriva. **Il totale è più basso di quello del foglio
+  mensile** — lì la riga «spese» comprende anche la merce, qui la merce si
+  conta una volta sola — e anche questo sta scritto in schermata, per non
+  doverselo chiedere al primo confronto.
+
+- **La fattura si porta dietro il documento vero.** Nello **Scadenzario**,
+  sotto ogni documento, c'è **«Allega foto o PDF»**: si fotografa la fattura
+  col telefono, o si sceglie il PDF scaricato dal fornitore, e resta lì. Da
+  quella riga si **apre**, si **sostituisce** e si **toglie**. Le foto
+  vengono **ridotte prima di partire** — una fattura si deve leggere, non
+  stampare — così il caricamento regge anche con la connessione del
+  magazzino. Vanno bene JPG, PNG, WebP e PDF **fino a 8 MB**, e il limite sta
+  scritto sul tasto: se un file non va, l'app lo dice subito e spiega cosa
+  fare, senza toccare il documento. **Quali fatture hanno la carta e quali no
+  si vede senza cercarlo**: chi non ce l'ha porta scritto «senza allegato», e
+  il filtro **«Senza allegato»** in testa alla pagina tiene solo quelli, come
+  già fa «Senza ordine». Eliminando una fattura se ne va anche il suo file.
+
+- **Un prodotto che arriva e in magazzino non c'era adesso viene creato.**
+  Prima quella riga passava a «consegnato» e basta: la merce non entrava in
+  magazzino e non risultava da nessuna parte, mentre la consegna sembrava
+  andata a buon fine. Adesso il prodotto **nasce con la merce dentro**, col
+  nome e il prezzo dell'ordine, e resta segnato come **scheda da
+  completare**: nella lista porta una matita accanto al nome, e aperto dice
+  cosa manca — la categoria, quanto contiene un pezzo, la soglia di
+  riordino. L'elenco di questi prodotti sta in **Magazzino →
+  Macro-categorie**, accanto alle categorie senza macro: finché manca la
+  categoria, quello che si spende per quel prodotto resta fuori dai conti
+  degli acquisti. Il segno sparisce quando gli si dà una categoria.
+
+- **La consegna si può caricare in parte, o tutta in un colpo.** Nella
+  finestra «Merce arrivata» ogni riga ha la sua spunta: si toglie a quello
+  che il fornitore non ha portato, e quella riga resta in attesa fino alla
+  prossima consegna. Si parte con **tutto spuntato**, e il tasto dice sempre
+  quante righe sta per caricare — **«Carica tutti»** oppure «Carica i
+  selezionati». Le righe già consegnate non tornano più in quella finestra.
+
+- **L'assortimento si può preparare mentre la merce viaggia.** Quando si
+  compone l'ordine, sui prodotti che non sono in assortimento c'è la casella
+  **«In assortimento quando arriva»**: il cambio si applica al carico, cioè
+  quando la merce è davvero arrivata.
+
+- **Ogni fornitore ha la sua fattura, dentro lo stesso ordine.** Un ordine
+  può contenere più fornitori, e ognuno rilascia il suo documento: adesso la
+  fattura si collega **alla parte dell'ordine di quel fornitore**, non
+  all'ordine intero. Si fa dai due lati — negli **Ordini**, sulla riga del
+  fornitore, e nello **Scadenzario**, sotto il documento — e da tutti e due
+  si vede a cosa è collegata l'altra. Si può collegare **solo un documento
+  dello stesso fornitore**, e gli altri non compaiono nemmeno in elenco.
+  Una parte d'ordine ha al massimo una fattura, e una fattura sta su una
+  parte d'ordine sola: per cambiarla si stacca prima.
+  **Le due cose che a fine mese fanno tornare i conti si vedono senza
+  cercarle**: negli Ordini una consegna arrivata senza documento porta
+  scritto «manca la fattura», e in testa allo storico c'è quante sono; nello
+  Scadenzario un documento senza ordine porta «senza ordine», e il filtro
+  **«Senza ordine»** tiene solo quelli.
+  Riprendere le righe da un ordine, nello Scadenzario, adesso **collega
+  anche il documento**: è lo stesso gesto.
+
+- **Dalla fattura al magazzino: «Aggiungi prodotti».** Nello **Scadenzario**,
+  sotto ogni documento, c'è un tasto che apre l'elenco dei prodotti: si cerca
+  per nome, si scrive quanti pezzi e a che prezzo, e le righe restano sulla
+  fattura. **Il carico a magazzino è una scelta a parte**, che si può anche
+  non fare — la merce può essere già stata caricata in altro modo — e il
+  tasto dice sempre quale delle due si sta facendo. Dove il prezzo scritto è
+  **diverso da quello in archivio** compare la domanda, col vecchio e il
+  nuovo affiancati: se non si risponde **non cambia niente**. Il prezzo di
+  vendita del menù non si tocca mai. Se di quel fornitore c'è un ordine già
+  consegnato, le sue righe si possono **riprendere** invece di ribatterle, e
+  in quel caso il carico parte spento: quella merce è già entrata.
+
+- **Lo stesso prodotto si può comprare da più fornitori.** Negli **Ordini**
+  c'è un **campo di ricerca**: si cerca il prodotto e lo si aggiunge senza
+  dover scegliere prima il fornitore. Nell'elenco ogni prodotto compare una
+  volta per fornitore che lo vende, con **il prezzo di quel fornitore**, una
+  **striscia del suo colore** e le scritte «ultimo acquisto» e «più
+  economico» per confrontare a colpo d'occhio. Scegliendo un fornitore in
+  alto si vede solo il suo catalogo. **Il magazzino non cambia**: il Campari
+  resta un prodotto solo, con una giacenza sola.
+
+- **Un ordine può contenere prodotti di più fornitori.** Il fornitore si
+  sceglie sulla riga dell'ordine, e quello già usato per lo stesso prodotto
+  non si può riscegliere. Nello **storico**, l'ordine si legge diviso per
+  fornitore: email, stampa e copia riguardano **solo le righe di quel
+  fornitore**.
+
+- **Richiesto, consegnato, pagato.** Ogni fornitore dell'ordine ha il suo
+  passo. **La merce entra in magazzino quando si segna «Consegnato»**, non
+  prima: alla consegna si controllano i prezzi come sono sul documento, e
+  quello che si scrive lì diventa il prezzo di quel fornitore e il costo del
+  prodotto. Il fornitore invece non si cambia più: da lui la merce è stata
+  comprata. «Pagato» si può mettere solo su una consegna già arrivata.
+
+- **Ogni fornitore ha un colore.** Si sceglie quando lo si crea — ne viene
+  proposto uno — e si cambia dall'anagrafica toccando il pallino accanto al
+  nome. È il colore che distingue i doppioni nella lista degli ordini.
+
+- **Il fornitore si scrive dalla scheda del prodotto, come prima**, ma
+  adesso finisce nel listino di quel fornitore col prezzo indicato: gli
+  altri fornitori dello stesso prodotto restano dove sono. **Niente si
+  perde**: i prodotti che avevano già un fornitore continuano a mostrarlo.
+
+- **Via il collegamento col registratore di cassa SumUp Cassa Pro.** Doveva
+  ricopiare ogni vendita dentro il registratore di SumUp, ma non è mai stato
+  acceso: nessuno l'ha mai visto funzionare e al banco non cambia niente.
+  **Il POS SumUp con cui si incassa non c'entra ed è rimasto dov'era.**
+  Sparisce anche il riquadro «Sync catalogo» dal gestionale, che serviva solo
+  a quello. In questa stessa versione, mai pubblicata, c'erano due voci che
+  irrobustivano quel collegamento: sono state tolte da qui perché parlavano di
+  codice che adesso non esiste più.
+
+- **Un conto non può più nascere firmato da qualcun altro.** Chi apre un
+  conto dal telefono senza essere entrato nel gestionale adesso può scrivere
+  soltanto quello che serve a ordinare: niente firma col nome di chi sta al
+  banco, niente conto che nasce già pagato, già scontato o già servito.
+  Ordinare dal menù funziona esattamente come prima.
+  **Ha effetto quando le regole Firestore vengono pubblicate**, cioè col
+  rilascio.
+
+- **E non si scarica più l'elenco dei conti dal di fuori.** Un conto si legge
+  solo conoscendone l'id — che è quello che fa il link del proprio ordine —
+  mentre a chiederne tanti insieme sono soltanto il gestionale, il cliente
+  registrato sui conti del suo account e il tabellone del menù. Prima quella
+  richiesta era aperta a chiunque, e da lì passavano nomi, note e importi dei
+  clienti. **Al banco non cambia niente**: coda, storico, statistiche e cassa
+  leggono come prima, e anche «I miei ordini» sul telefono del cliente
+  continua a mostrare gli stessi conti.
+  **Ha effetto quando le regole Firestore vengono pubblicate**, cioè col
+  rilascio.
+
+- **I numeri dei conti sono chiusi a chiave.** Il contatore da cui esce il
+  «#» di ogni conto adesso può solo salire, di uno per volta, e a spostarlo
+  o correggerlo è soltanto chi ha fatto il login al gestionale. Al banco non
+  cambia niente: il numero compare nell'istante in cui si tocca «Conferma»,
+  come prima, e anche l'ordine che arriva dal telefono del cliente continua
+  a prendere il suo. Serviva perché un contatore che qualcuno può riportare
+  indietro vuol dire due conti con lo stesso numero nella stessa serata —
+  uno stampato e in mano al cliente, l'altro a schermo.
+  **Ha effetto quando le regole Firestore vengono pubblicate**, cioè col
+  rilascio: le pubblica la pipeline insieme all'app, non serve nessun passo
+  a mano.
+
+- **Le fatture ai clienti diventano una funzione premium.** La sezione
+  **«📄 Fatture»** non è più nel menu, e nella schermata di pagamento non
+  c'è più il tasto **«📧 Invia fattura»**: la fattura di cortesia non fa
+  parte di questa installazione. Restano al loro posto «🎟 Codice Lotteria»
+  e «🖨 Preconto». **Le fatture già emesse non si perdono**: il numero resta
+  scritto sul conto e il documento resta salvato — tornano a vedersi se la
+  funzione viene attivata.
+
+- **I fornitori hanno una sezione loro.** Nel menu compare **«🏭
+  Fornitori»**, e dentro ci sono le tre cose che prima stavano sparse nel
+  magazzino: **Gestione fornitori** (l'anagrafica), **Ordini** e
+  **Scadenzario**. Il magazzino resta con quello che dice cosa c'è sullo
+  scaffale — Prodotti, Categorie, Macro-categorie e Movimenti. La sezione
+  nuova **la vede l'admin**: ordini e fatture ai fornitori sono i soldi che
+  escono dal locale. Chi lavora al banco continua ad aggiungere un fornitore
+  nuovo dalla scheda del prodotto, come ha sempre fatto.
+
+- **La conta di magazzino e le fatture ai fornitori diventano funzioni
+  premium.** Nelle impostazioni compare un gruppo nuovo, **«🔒 Funzioni
+  premium»**, che dice cosa fa parte di questa installazione e cosa no.
+  · Le **fatture ai fornitori** («Scadenzario» nel magazzino) sono
+    **incluse**: funzionano come sempre, e adesso c'è un interruttore per
+    spegnerle e riaccenderle quando serve.
+  · La **conta di magazzino** non è inclusa: la sua sezione non compare più
+    nel magazzino, e l'interruttore resta spento. Toccandolo, l'app dice
+    perché invece di non fare niente.
+  **Niente è andato perso**: le conte già fatte restano dove sono e
+  ricompaiono se la funzione viene attivata.
+
+- **Nel conto i tasti in fondo non spariscono più.** Con lo zoom dell'app
+  alto, o su una finestra bassa, la pila di tasti sotto il totale usciva dal
+  riquadro: se ne andava prima «Annulla ordine», poi «Stato servizio», poi
+  anche «Invia comanda» e «Pagamento» — e non c'era niente da scorrere per
+  andarli a prendere. Adesso **«Invia comanda» e «Pagamento» restano sempre
+  lì**, alla stessa altezza, con qualunque finestra e qualunque zoom; quello
+  che sta sopra — la testata della colonna, i totali, gli altri due tasti —
+  si stringe fino a una riga comoda per il dito e da lì in poi **scorre**,
+  invece di sparire. Sul telefono e sul tablet stretto il pannello del conto
+  è alto davvero quanto dice la maniglia anche a zoom alto, e i tre tasti in
+  fondo restano interi.
+
+- **Le finestrelle di conferma non escono più dallo schermo.** Con lo zoom
+  dell'app alto, o su una finestra bassa, una finestrella come quella dello
+  sconto veniva tagliata sopra e sotto: sparivano il titolo e il tasto che
+  conferma, e non c'era modo di arrivarci. Adesso la finestrella **non è mai
+  più alta dello schermo** e, quando serve, scorre dentro di sé. Vale per
+  tutte le finestrelle dell'app — sconto, buono, ripristino conto, apertura
+  e chiusura cassa, prodotto libero.
+
+- **La comanda dice quale comanda è.** La fascia nera in cima diceva
+  **«DIRETTO»** su ogni ticket — anche sul secondo e sul terzo invio dello
+  stesso tavolo, che «diretto» non erano affatto: era una parola presa dal
+  registratore di cassa da cui questa stampa è stata copiata, dove indica
+  la prima infornata di un ordine mandato in cucina a portate. Adesso c'è
+  scritto **«COMANDA 2 - ORDINE 28»**: quale comanda è e di quale conto,
+  con gli stessi numeri che si leggono a schermo. L'ora è scesa sotto, nel
+  nero, perché accanto non ci stava. La fascia si può ancora spegnere; la
+  casella per scriverci dentro non serve più, e chi ci aveva messo una sua
+  parola non trova niente di rotto.
+
+- **Lo scontrino dice chi lo stampa, e non ripete il numero.** Sotto al
+  numero uscivano tre righe che non dicevano il vero: **«Utente A»** —
+  scritto a mano, uguale su ogni scontrino di ogni terminale — il numero
+  del conto ripetuto come **«Vendita - Comanda #28»** (28 è il numero del
+  conto: le sue comande sono la 1 e la 2), e **«2 clientei»** quando i
+  coperti erano più di uno. Adesso la prima riga porta il **nome di chi sta
+  stampando**, cioè di chi è collegato a quel terminale — se lo scontrino
+  si ristampa, porta il nome di chi lo ristampa — e se non si sa chi è, la
+  riga non esce affatto. La seconda dice **il tavolo, o il nome del
+  cliente**, e quando non c'è né l'uno né l'altro sparisce: il numero è già
+  in cima. E i coperti sono **«2 clienti»**. Vale anche per la ricevuta
+  d'acconto. Le tre righe si accendono e si spengono come prima, in
+  Impostazioni → Stampante.
+
+- **L'app si apre più in fretta, e la stampa non aspetta più il logo.** Il
+  logo pesava mezzo megabyte ed era la prima cosa che ogni scontrino doveva
+  caricare prima di uscire; adesso ne pesa otto, con la stessa resa sulla
+  carta e a schermo. Tolto anche un secondo file da tre quarti di megabyte
+  che non usava nessuno: in tutto un megabyte e un quarto in meno da
+  scaricare sui tablet del locale.
+
+- **Una stampa che si blocca non si tiene più il conto.** La sera del 24
+  agosto, sulla versione di allora, riscuotendo non usciva lo scontrino e
+  «buona parte delle stampe non sono uscite»: la stampa restava in attesa
+  del logo, non finiva mai, e da lì in poi **quel conto non stampava più**
+  — nemmeno riaprendolo, nemmeno dalla coda — senza che comparisse un
+  errore. Dietro a quella stampa ferma restavano in fila anche le comande.
+  La causa era già stata chiusa con la 1.5.5. Adesso c'è anche la
+  protezione generale: **se una stampa non si conclude entro quindici
+  secondi si ferma da sola**, a schermo compare che lo scontrino non è
+  uscito, e il conto **torna stampabile** — dal tasto del conto, dalla coda
+  o riscuotendo di nuovo. La stampante ricomincia a lavorare subito, e se
+  la stampa lenta arriva in ritardo **non esce una seconda copia**.
+
+- **Il logo non si aspetta più dalla rete.** Era l'unica immagine che l'app
+  andava a riprendere ogni volta, ed è quella che sta in cima a scontrino e
+  preconto, negli avvisi e nelle notifiche: adesso **è tenuta da parte come
+  il resto dell'app**, quindi la stampa non dipende più da come va la
+  connessione in quel momento. Il logo cambiato dalle impostazioni continua
+  a cambiare come prima.
+
+- **Una riga con i dati incompleti non blocca più il ticket.** Se su un
+  conto vecchio o su una riga arrivata a metà manca il nome del prodotto,
+  la comanda esce lo stesso, con scritto **«(SENZA NOME)»** al posto del
+  prodotto; se manca il prezzo, sullo scontrino si legge **0.00€**. Prima
+  quel ticket non usciva affatto e l'app continuava a riprovarci in
+  silenzio — al banco era un giro di lavoro che non arrivava mai. Sullo
+  scontrino del cliente non compaiono più le scritte «undefined» e «NaN€».
+
 ## 1.5.5 — 25 agosto 2026
 
 In produzione questa versione porta tutto quello che è passato dalle prove

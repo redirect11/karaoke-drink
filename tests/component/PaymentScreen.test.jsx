@@ -113,6 +113,9 @@ const conComandaDaServire = () =>
 
 const noReader = { payments_reader_enabled: false, sumup_reader_id: null, sale_vat: 10 }
 const withReader = { payments_reader_enabled: true, sumup_reader_id: 'reader1' }
+// LA FATTURA AL CLIENTE È UNA FUNZIONE PREMIUM (REQ-LIC-001) e per questa
+// installazione non è inclusa: il tasto c'è solo dove la licenza la dà.
+const conFatture = { ...noReader, licenza: { moduli: { fatture: true } } }
 
 function mount(order, settings = noReader) {
   return render(
@@ -472,7 +475,7 @@ describe('codice lotteria e fattura', () => {
 
   it('Invia fattura: form dati cliente → emissione → invio/stampa', async () => {
     const user = userEvent.setup()
-    mount(baseOrder())
+    mount(baseOrder(), conFatture)
     await user.click(screen.getByRole('button', { name: /Invia fattura/ }))
     const modal = within(screen.getByRole('dialog', { name: 'Invia fattura' }))
     await user.type(modal.getByLabelText(/Ragione sociale/), 'ACME srl')
@@ -1679,5 +1682,43 @@ describe('le tre colonne del pagamento si trascinano', () => {
     cleanup()
     mount(baseOrder())
     expect(larghezza('--pay-items-w')).toBe('400px')
+  })
+})
+
+// ── LA FATTURA AL CLIENTE È PREMIUM (REQ-LIC-001) ────────────────────
+// Chiesto dall'utente il 26/08/2026: col modulo spento sparisce la voce
+// «Fatture» dal gestionale e il tasto «Invia fattura» da qui. Il tasto è
+// l'UNICA porta della modale, quindi toglierlo chiude tutto il flusso.
+describe('il tasto «Invia fattura» è una funzione premium', () => {
+  it('col modulo non incluso il tasto non c’è, e gli altri due restano', () => {
+    mount(baseOrder())
+    expect(screen.queryByRole('button', { name: /Invia fattura/ })).toBeNull()
+    // Gli altri due della riga non si toccano.
+    expect(screen.getByRole('button', { name: /Codice Lotteria/ })).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: /Preconto/ })).toBeInTheDocument()
+  })
+
+  it('col modulo incluso il tasto c’è e apre la modale', async () => {
+    const user = userEvent.setup()
+    mount(baseOrder(), conFatture)
+    await user.click(screen.getByRole('button', { name: /Invia fattura/ }))
+    expect(screen.getByRole('dialog', { name: 'Invia fattura' })).toBeInTheDocument()
+  })
+
+  it('un conto che una fattura ce l’ha già non la perde: il numero resta sul conto', async () => {
+    // Spegnere NASCONDE, non cancella. Col modulo spento il numero non si
+    // vede — non c'è nessuna schermata che lo mostri — ma è ancora scritto
+    // sull'ordine, e torna a vedersi appena il modulo si riaccende.
+    const user = userEvent.setup()
+    const conto = { ...baseOrder(), invoice_number: 7 }
+    const spento = mount(conto)
+    expect(screen.queryByRole('button', { name: /Invia fattura/ })).toBeNull()
+    spento.unmount()
+
+    mount(conto, conFatture)
+    const tasto = screen.getByRole('button', { name: /Invia fattura/ })
+    expect(tasto).toHaveTextContent('✓')
+    await user.click(tasto)
+    expect(screen.getByText(/risulta già emessa la fattura n\./)).toBeInTheDocument()
   })
 })

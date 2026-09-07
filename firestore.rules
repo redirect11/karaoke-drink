@@ -58,12 +58,87 @@ service cloud.firestore {
                 'sumup_pending_amount', 'sumup_pending_items',
                 'invoice_id', 'invoice_number'];
       }
-      allow read: if true;
-      // Alla creazione il pagamento può solo essere assente, non
-      // richiesto o in attesa (mai già "pagato").
-      allow create: if isStaffMember()
-        || !('payment_status' in request.resource.data)
-        || request.resource.data.payment_status in ['non_richiesto', 'in_attesa'];
+      // CHI NON È DEL PERSONALE NON FIRMA COL NOME DEL PERSONALE, e non
+      // apre un conto che è già successo qualcosa. Prima la creazione era
+      // un rubinetto aperto: bastava l'apiKey del bundle per far comparire
+      // in coda un conto intestato all'email dell'admin, o già pagato, o
+      // già fatturato. Il personale continua a fare quello che vuole:
+      // questi vincoli valgono solo per chi non è autenticato col ruolo.
+      //
+      // Quello che il cliente scrive davvero passando dal menù sta in
+      // src/lib/api.js (creaOrdine): un conto `aperto`, con UNA comanda,
+      // `placed_by` nullo, nessun campo di pagamento già valorizzato.
+      // Questi vincoli sono la stessa cosa, detta dal lato del server.
+      function conteNuovoDaCliente() {
+        let d = request.resource.data;
+        return
+          // Mai già pagato (era l'unico controllo che c'era).
+          (!('payment_status' in d)
+            || d.payment_status in ['non_richiesto', 'in_attesa'])
+          // Mai firmato da qualcuno del personale.
+          && d.get('placed_by', null) == null
+          // Mai già incassato, scontato, fatturato o venduto a SumUp.
+          && !d.keys().hasAny(['paid_at', 'payment_id', 'payments',
+                               'discount', 'discount_amount',
+                               'invoice_id', 'invoice_number',
+                               'sumup_sale_id', 'sumup_checkout_id',
+                               'sumup_transaction_id',
+                               'closed_in_session'])
+          // Mai intestato all'account di un ALTRO cliente: quello
+          // finirebbe nei «miei ordini» e nel gruppo di chi non c'entra.
+          && (d.get('customer_uid', null) == null
+              || (isSignedIn() && d.customer_uid == request.auth.uid))
+          // Un conto nasce aperto, con una comanda sola e un totale che è
+          // un numero non negativo.
+          && d.get('status', '') == 'aperto'
+          && d.get('comande', []).size() == 1
+          && d.get('total', 0) is number
+          && d.get('total', 0) >= 0;
+      }
+      // GET E LIST SONO DUE COSE DIVERSE, e per questo stanno su due righe.
+      // Chi un domani vorrà «semplificare» rimettendo un `allow read` unico
+      // riapre BUG-093: `read` è la somma delle due, e quella che fa male è
+      // la seconda.
+      //
+      //   · GET è leggere UN documento di cui si conosce l'id. È il modello
+      //     voluto — l'id fa da lasciapassare, è casuale a 20 caratteri, e
+      //     chi ha il link del proprio conto lo vede senza registrarsi.
+      //     Resta aperto: chiuderlo vuol dire spegnere il menù del cliente.
+      //   · LIST è scaricarne tanti insieme, ed era concesso per errore: la
+      //     lettura non era ristretta, e con la sola chiave pubblica del
+      //     bundle si arrivava ai dati dei clienti — mesi di nomi, note,
+      //     importi, email di chi ha battuto i conti.
+      //
+      // Adesso una lista passa solo se la DOMANDA dimostra da sé di restare
+      // dentro un recinto: le regole non filtrano i risultati, misurano la
+      // query prima di eseguirla, e una lista senza filtri viene respinta
+      // anche quando i documenti che tornerebbero sarebbero tutti leciti.
+      //
+      // I recinti sono i tre modi legittimi di chiedere una lista:
+      //   · il PERSONALE, che per mestiere legge tutto (coda, storico,
+      //     statistiche, cassa, gruppi);
+      //   · il CLIENTE REGISTRATO sui conti intestati al suo account, che è
+      //     come «i miei ordini» lo ritrova da un altro telefono;
+      //   · il TABELLONE del menù: le due liste che dicono a chi aspetta
+      //     quanta coda c'è e cosa è pronto al ritiro.
+      //
+      // Il cliente NON registrato non ha un recinto e non gli serve: «i miei
+      // ordini» tiene gli id nel telefono e li chiede uno per uno, con dei
+      // get (fetchOrdersByIds in src/lib/api.js). Era una query su
+      // `documentId() in [...]`, che nessuna regola sa riconoscere; la strada
+      // è cambiata nel client invece di allargare il permesso qui.
+      //
+      // RESTA FUORI, ed è il terzo passo di BUG-093: il tabellone e la coda
+      // del banco tornano i documenti INTERI, e lì dentro ci sono ancora
+      // push_token, customer_uid e placed_by. Le regole non sanno proiettare
+      // campi: per non mostrarli vanno spostati, e quello tocca cinque punti
+      // dell'app.
+      allow get: if true;
+      allow list: if isStaffMember()
+        || (isSignedIn() && resource.data.customer_uid == request.auth.uid)
+        || resource.data.comande_statuses.hasAny(['ricevuto', 'in_preparazione'])
+        || resource.data.comande_statuses.hasAny(['pronto']);
+      allow create: if isStaffMember() || conteNuovoDaCliente();
       // Modello conto/comande: il flusso di lavorazione vive sulle comande
       // (array nel doc), quindi le transizioni fini sono validate in app.
       // Il banco aggiorna qualunque cosa; il cliente anonimo solo finché il
@@ -98,10 +173,43 @@ service cloud.firestore {
       allow delete: if false;
     }
 
-    // COUNTERS — scritti dalla transazione di creazione ordine (lato client, non autenticato).
+    // COUNTERS — i numeri dei conti, e il puntatore alla cassa aperta.
+    //
+    // Erano `write: if true`: chiunque avesse letto apiKey e projectId dal
+    // bundle (sono pubblici per disegno) poteva scrivere `last: 0` e far
+    // ripartire la numerazione da capo. La sera dopo, due conti #15 — uno
+    // stampato e in mano al cliente, l'altro a schermo. È lo stesso guaio
+    // che progressivi.js racconta di aver già vissuto per sbaglio, stavolta
+    // fatto apposta.
+    //
+    // Chiudere agli anonimi non si poteva: il cliente che ordina dal menù
+    // NON è autenticato, e il suo conto prende il numero dallo stesso
+    // contatore del banco, senza aspettare il server (lib/progressivi.js).
+    // Una regola che pretendesse il login gli spegnerebbe l'incremento —
+    // il conto uscirebbe lo stesso, ma il contatore non salirebbe, e il
+    // cliente dopo prenderebbe lo stesso numero. Il doppione, di nuovo.
+    //
+    // Quindi non si chiede CHI scrive, si chiede COSA scrive: a chi non è
+    // del personale si concede esattamente il gesto che fa progressivi.js —
+    // un `increment(1)` sul solo campo `last` — e nient'altro. Il numero
+    // può solo salire, di uno per volta: azzerarlo, spararlo a 999999 o
+    // infilare altri campi non passa più. Le regole vedono il valore DOPO
+    // l'incremento, quindi il vincolo si può scrivere così com'è.
+    //
+    // Resta il gocciolamento: mille chiamate spingono il contatore avanti di
+    // mille. Sono numeri alti, brutti da vedere, ma mai due conti con lo
+    // stesso numero — che è il danno vero. A fermare anche quello è App
+    // Check imposto (BUG-092), che è una decisione a parte.
     match /counters/{dateKey} {
       allow read: if true;
-      allow write: if true;
+      // Il personale fa tutto: apre la cassa (_active_cash), numera le
+      // fatture (fatture-AAAA), corregge, importa.
+      allow write: if isStaffMember();
+      allow create: if request.resource.data.keys().hasOnly(['last'])
+        && request.resource.data.last == 1;
+      allow update: if request.resource.data.diff(resource.data)
+                         .affectedKeys().hasOnly(['last'])
+        && request.resource.data.last == resource.data.last + 1;
     }
 
     // SERVIZIO PERPETUO — niente più "serate". Statistiche tempi (ETA):
@@ -148,6 +256,20 @@ service cloud.firestore {
       allow read, write: if isBartender();
     }
 
+    // LISTINO FORNITORI — il prezzo di un prodotto PRESSO un fornitore
+    // (REQ-MAG-029). Sta con i fornitori: un prodotto, più listini.
+    match /supplier_prices/{rigaId} {
+      allow read, write: if isBartender();
+    }
+
+    // STORICO DEI PREZZI — una riga per ogni variazione di un prezzo di
+    // listino, con la data e da dove viene (REQ-MAG-035). Stessa mano del
+    // listino: chi può cambiare un prezzo può scriverne la variazione, e
+    // chi legge il listino deve poter leggere com'è arrivato a quel numero.
+    match /supplier_price_history/{variazioneId} {
+      allow read, write: if isBartender();
+    }
+
     // STOCK MOVEMENTS — registro carico/scarico, solo bartender.
     match /stock_movements/{movementId} {
       allow read, write: if isBartender();
@@ -163,8 +285,25 @@ service cloud.firestore {
       allow read, write: if isBartender();
     }
 
+    // MODELLI D'ORDINE — il giro che si rifà uguale (REQ-MAG-039): prodotti,
+    // fornitore scelto e quantità, senza prezzi. Stessa mano degli ordini:
+    // chi compone un ordine è chi salva e riusa un modello.
+    match /purchase_order_templates/{modelloId} {
+      allow read, write: if isBartender();
+    }
+
     // SCADENZARIO FORNITORI — documenti/proforma, pagato, note.
     match /supplier_invoices/{invoiceId} {
+      allow read, write: if isBartender();
+    }
+
+    // ALTRE SPESE — quello che esce dal conto e non entra in magazzino
+    // (REQ-MAG-034): arredi, attrezzature, materiale di consumo. Stessa mano
+    // delle altre collezioni dei fornitori: nell'app la sezione è del solo
+    // admin (sezioni.js, ruoli.js), ma qui vale il permesso di chi registra i
+    // soldi che escono — un documento contabile non può essere più aperto
+    // della fattura che gli sta accanto.
+    match /altre_spese/{spesaId} {
       allow read, write: if isBartender();
     }
 

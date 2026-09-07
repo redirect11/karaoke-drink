@@ -89,8 +89,15 @@ const CONTO = {
   ],
 }
 
-const stampa = async (quale, order = CONTO) => {
+// CHI STA STAMPANDO, che dal 25/08 è il nome sulla riga dell'operatore
+// (BUG-088): al banco lo mette l'ascolto di Firebase Auth in App.jsx, qui
+// lo si dice a mano. Senza, la riga non uscirebbe affatto — ed è il caso
+// che si prova più sotto, di proposito.
+const CHI_STAMPA = { name: 'Marco', email: 'marco@tana.local' }
+
+const stampa = async (quale, order = CONTO, chiStampa = CHI_STAMPA) => {
   const printer = await import('../../src/lib/printer.js')
+  printer.impostaUtenteStampante(chiStampa ? 'u-marco' : null, chiStampa)
   if (quale === 'comanda') await printer.printComanda(order)
   else await printer.printScontrino(order)
   return carta()
@@ -102,12 +109,26 @@ const stampa = async (quale, order = CONTO) => {
 // potessero scegliere, riga per riga. Se un giorno cambia, o è cambiato
 // il formato di proposito — e allora si aggiorna spiegando perché — o
 // qualcosa si è spento da solo in un locale che non ha scelto niente.
+//
+// AGGIORNATO IL 25/08/2026, DUE RIGHE (BUG-088). Erano le uniche due che
+// non dicevano il vero, ed è l'utente ad averle viste su uno scontrino
+// appena uscito:
+//   · «Utente A» → «Marco», il nome di chi sta stampando. Era una
+//     costante scritta a mano, uguale per chiunque e per sempre, mentre
+//     l'impostazione prometteva una persona;
+//   · «2 clientei» → «2 clienti»: la «i» del plurale era attaccata a
+//     «cliente».
+// La terza riga della segnalazione — «Vendita - Comanda #12» — qui non
+// si vede cambiare perché il conto di prova ha il tavolo, e col tavolo
+// quella riga era già giusta. Senza tavolo adesso non esce affatto: c'è
+// la sua prova più sotto.
+// TUTTO IL RESTO È IDENTICO, carattere per carattere.
 const SCONTRINO_DI_SEMPRE = `    L a   T a n a   d e l   C o n i g l i o
            Corso Tommaso Vitale 87/89
                80035 Nola - Italy
 SCONTRINO - 12                20/08/26, 23:00:00
-Utente A
-2 clientei
+Marco
+2 clienti
 Vendita - Tavolo 4
 ------------------------------------------------
 QTA  Prodotto                    PU       Prezzo
@@ -132,7 +153,16 @@ Codice Lotteria                         ABCD1234
                  EFFEVI - SRLS
 ────────────────────────────────────────────────`
 
-const COMANDA_DI_SEMPRE = `          D I R E T T O     2 3 : 3 0
+// AGGIORNATO IL 25/08/2026, LA FASCIA (BUG-089). Diceva «DIRETTO» su
+// ogni ticket — l'etichetta di SumUp POS Pro che là vuol dire «la prima
+// infornata», mentre noi la stampavamo anche sulla seconda e sulla terza
+// comanda dello stesso tavolo. Adesso dice QUALE ticket è, e l'ora scende
+// sotto: «COMANDA 2 - ORDINE 28» a corpo doppio occupa 21 dei 24
+// caratteri che ci stanno sulla carta, e accanto l'ora non ci sta più.
+// Le due righe si pareggiano in larghezza, se no il nero uscirebbe a
+// scaletta. Dal conteggio in giù è tutto identico.
+const COMANDA_DI_SEMPRE = `   C O M A N D A   1   -   O R D I N E   1 2
+                   2 3 : 3 0
 CONTATORIE                                 CL: 3
 BAR                                      Vendeur
                     A n n a
@@ -208,7 +238,7 @@ describe('spegnere i campi dello scontrino', () => {
       },
     })
     const uscito = await stampa('scontrino')
-    expect(uscito).not.toContain('Utente A')
+    expect(uscito).not.toContain('Marco')
     expect(uscito).not.toContain('2 clienti')
     expect(uscito).not.toContain('ordine-di-prova')
     expect(uscito).not.toContain('ABCD1234')
@@ -256,19 +286,156 @@ describe('spegnere i campi dello scontrino', () => {
   })
 })
 
+// ── LE TRE RIGHE SOTTO AL NUMERO (BUG-088) ───────────────────────────
+//
+// «"Utente A" che sarebbe? E poi scrivi "scontrino 28" e poi "comanda n
+// 28". Non ha molto senso» (l'utente, 25/08/2026). Tre righe, tre difetti
+// diversi, tutti e tre residui del modello da cui il ticket è nato.
+describe('lo scontrino dice chi stampa, di chi è il conto, e quante persone', () => {
+  // La riga dell'operatore non è un dato del CONTO: è chi è collegato a
+  // questo terminale adesso. Una ristampa porta quindi il nome di chi
+  // ristampa — è lui che quel foglio lo consegna.
+  it('porta il nome di chi sta stampando', async () => {
+    expect(await stampa('scontrino')).toContain('Marco')
+  })
+
+  it('una ristampa da un altro terminale porta l’altro nome', async () => {
+    expect(await stampa('scontrino', CONTO, { name: 'Giulia' })).toContain('Giulia')
+  })
+
+  // Lo stesso ripiego della coda e del dettaglio conto: senza nome
+  // impostato si legge la parte davanti alla chiocciola. Non una formula
+  // nuova — la stessa persona si deve chiamare allo stesso modo ovunque.
+  it('senza nome impostato resta la parte davanti alla chiocciola', async () => {
+    const uscito = await stampa('scontrino', CONTO, { email: 'giulia@tana.local' })
+    expect(uscito).toContain('giulia')
+    expect(uscito).not.toContain('giulia@tana.local')
+  })
+
+  // NESSUNO COLLEGATO: la riga non esce. Stampare «Utente A» — o una riga
+  // vuota — vuol dire promettere un dato che non c'è, ed è il difetto che
+  // l'utente ha visto.
+  it('se non si sa chi stampa, la riga non c’è', async () => {
+    const uscito = nudo(await stampa('scontrino', CONTO, null))
+    expect(uscito).not.toContain('Utente A')
+    expect(uscito).not.toContain('Marco')
+    // Sotto al numero c'è subito il resto: niente riga vuota al suo posto.
+    const righe = uscito.split('\n')
+    expect(righe[righe.findIndex((r) => r.includes('SCONTRINO - 12')) + 1]).toBe('2 clienti')
+  })
+
+  // ── DI CHI È IL CONTO, e non il numero un'altra volta ──────────────
+  it('col tavolo dice il tavolo, come ha sempre fatto', async () => {
+    expect(await stampa('scontrino')).toContain('Vendita - Tavolo 4')
+  })
+
+  it('senza tavolo dice il nome del cliente', async () => {
+    const uscito = await stampa('scontrino', { ...CONTO, table_label: null })
+    expect(uscito).toContain('Vendita - Anna')
+    // E NON il numero del conto chiamato comanda: 12 è il numero del
+    // CONTO, e le sue comande sono la 1 e la 2.
+    expect(uscito).not.toContain('Comanda #12')
+  })
+
+  it('senza tavolo e senza nome quella riga non esce', async () => {
+    const uscito = await stampa('scontrino', {
+      ...CONTO,
+      table_label: null,
+      customer_name: null,
+    })
+    expect(uscito).not.toContain('Vendita')
+    // Il numero resta dov'era: in cima, una volta sola.
+    expect(uscito).toContain('SCONTRINO - 12')
+  })
+
+  // ── UN CLIENTE, DUE CLIENTI ────────────────────────────────────────
+  it('due coperti sono «2 clienti», non «2 clientei»', async () => {
+    const uscito = await stampa('scontrino')
+    expect(uscito).toContain('2 clienti')
+    expect(uscito).not.toContain('clientei')
+  })
+
+  it('un coperto solo resta «1 cliente»', async () => {
+    expect(await stampa('scontrino', { ...CONTO, coperto_persons: 1 })).toContain('1 cliente')
+  })
+
+  // Senza coperto il conto è di una persona: com'è sempre stato, e non
+  // «0 clienti».
+  it('senza coperto è «1 cliente»', async () => {
+    const uscito = await stampa('scontrino', { ...CONTO, coperto_persons: 0, coperto_amount: 0 })
+    expect(uscito).toContain('1 cliente')
+    expect(uscito).not.toContain('0 clienti')
+  })
+})
+
 describe('i campi della comanda', () => {
-  it('le parole della fascia si cambiano', async () => {
+  // LA FASCIA DICE QUALE TICKET È (BUG-089), e non si scrive più: il
+  // testo salvato ieri da chi aveva messo la sua parola non viene più
+  // letto, e la carta esce piena lo stesso.
+  it('la fascia porta il numero della comanda e quello del conto', async () => {
     impostazioni({ stampa_comanda: { testi: { fascia: 'CUCINA' } } })
     const uscito = await stampa('comanda')
-    expect(compatto(uscito)).toContain('CUCINA23:30')
+    expect(compatto(uscito)).toContain('COMANDA1-ORDINE12')
+    expect(compatto(uscito)).not.toContain('CUCINA')
     expect(compatto(uscito)).not.toContain('DIRETTO')
+  })
+
+  // La seconda comanda di quel tavolo dice che è la seconda: era proprio
+  // questo che «DIRETTO» su ogni ticket non diceva.
+  it('la seconda comanda dello stesso conto si vede che è la seconda', async () => {
+    const conDue = {
+      ...CONTO,
+      comande: [
+        { id: 'c1', seq: 1, status: 'ritirato', items: [{ qty: 1, name: 'Spritz', unit_price: 7 }] },
+        { id: 'c2', seq: 2, status: 'ricevuto', items: [{ qty: 2, name: 'Negroni', unit_price: 8 }] },
+      ],
+    }
+    expect(compatto(await stampa('comanda', conDue))).toContain('COMANDA2-ORDINE12')
   })
 
   it('l’ora si può togliere dalla fascia', async () => {
     impostazioni({ stampa_comanda: { campi: { ora: false } } })
     const uscito = await stampa('comanda')
-    expect(compatto(uscito)).toContain('DIRETTO')
+    expect(compatto(uscito)).toContain('COMANDA1-ORDINE12')
     expect(compatto(uscito)).not.toContain('23:30')
+  })
+
+  // NIENTE «undefined» SULLA CARTA. Un conto appena nato non ha ancora il
+  // suo numero del giorno, e il ticket unito non è nessuna comanda in
+  // particolare: quello che non si sa non si scrive.
+  it('senza il numero del conto la fascia dice solo la comanda', async () => {
+    const uscito = await stampa('comanda', { ...CONTO, daily_number: null })
+    expect(compatto(uscito)).toContain('COMANDA1')
+    expect(uscito).not.toContain('ORDINE')
+    expect(uscito).not.toContain('undefined')
+  })
+
+  // LA FASCIA STA IN UNA RIGA. A corpo doppio sulla carta da 80 mm ci
+  // stanno 24 caratteri: se il respiro ai lati la facesse sfondare, la
+  // stampante andrebbe a capo da sola e il rettangolo nero si
+  // spezzerebbe in due.
+  it('la fascia non sfonda la carta, nemmeno coi numeri lunghi', async () => {
+    const printer = await import('../../src/lib/printer.js')
+    const { configStampa } = await import('../../src/lib/campiStampa.js')
+    const cfg = configStampa({}, 'comanda')
+    const larghe = [
+      [{ daily_number: 12, comande: [] }, { seq: 1 }],
+      [{ daily_number: 1234, comande: [] }, { seq: 12 }],
+    ]
+    for (const [ordine, comanda] of larghe) {
+      for (const riga of printer.strisciaComanda(cfg, '23:30', ordine, comanda)) {
+        expect(riga.length).toBeLessThanOrEqual(printer.LARGHEZZA_FASCIA)
+      }
+    }
+  })
+
+  it('sul ticket unito la fascia dice solo il conto', async () => {
+    const printer = await import('../../src/lib/printer.js')
+    await printer.printComandaUnita(CONTO)
+    const uscito = compatto(carta())
+    expect(uscito).toContain('ORDINE12')
+    expect(uscito).not.toContain('COMANDA')
+    expect(uscito).not.toContain('undefined')
   })
 
   // Fascia spenta E ora spenta vorrebbero dire una striscia nera vuota in
@@ -276,7 +443,7 @@ describe('i campi della comanda', () => {
   it('spegnendo la fascia il ticket comincia dal conteggio', async () => {
     impostazioni({ stampa_comanda: { campi: { fascia: false } } })
     const uscito = await stampa('comanda')
-    expect(uscito).not.toContain('DIRETTO')
+    expect(compatto(uscito)).not.toContain('COMANDA1-ORDINE12')
     expect(uscito).not.toContain('23:30')
     expect(nudo(uscito).split('\n')[0]).toContain('CONTATORIE')
   })

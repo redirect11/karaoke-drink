@@ -8,7 +8,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter, Routes, Route } from 'react-router-dom'
+import { Routes, Route } from 'react-router-dom'
+import { MemoryRouter } from '../helpers/router.jsx'
 import '@testing-library/jest-dom/vitest'
 
 // ── Mock dei moduli con dipendenze Firebase/hardware ──
@@ -53,9 +54,14 @@ vi.mock('../../src/lib/firebaseClient.js', () => ({ auth: {} }))
 // il caso di quasi tutti i test qui sotto; la sala ha una schermata più
 // stretta (REQ-STAFF-014) e ha il suo blocco in fondo.
 let ruoloCorrente = 'bartender'
+// IL RUOLO ARRIVA IN RITARDO, anche qui. `onAuthStateChanged` chiama subito
+// il suo callback, ma dentro c'e' un `await` sul token: la schermata nasce
+// senza sapere chi la guarda e lo scopre un attimo dopo. Questa e' quella
+// promessa, e serve ai test per aspettare la cosa giusta (vedi `mount`).
+let consegnaRuolo = null
 vi.mock('firebase/auth', () => ({
   onAuthStateChanged: vi.fn((a, cb) => {
-    cb({
+    consegnaRuolo = cb({
       uid: 'u1',
       email: 'chi@tana.local',
       displayName: 'Chi lavora',
@@ -149,13 +155,28 @@ const baseOrder = (over = {}) => ({
   ...over,
 })
 
-function mount(order) {
-  return render(
+// APRIRE UN CONTO NON FINISCE COL PRIMO DISEGNO: la schermata parte, e poi
+// arrivano chi la guarda (il ruolo, dal token) e gli ultimi prodotti
+// battuti. Sono due letture asincrone, e finche' non atterrano il conto e'
+// a meta' — per la schermata chi guarda non e' nessuno, quindi i passi
+// della preparazione non ci sono ancora. Aspettarle qui e' aspettare
+// quello che vede davvero chi apre il conto; senza, ogni test asseriva su
+// mezza schermata e l'aggiornamento arrivava a test finito, che e' quello
+// che React segnala con l'avviso «act».
+async function mount(order) {
+  const utils = render(
     <MemoryRouter>
       <OrderPosDetail order={order} />
     </MemoryRouter>
   )
+  await avvioDelConto()
+  return utils
 }
+
+// `consegnaRuolo` c'e' quando il token e' stato chiesto (vedi il mock di
+// firebase/auth): waitFor lo aspetta DENTRO il test, e con lui atterra
+// anche l'altra lettura d'avvio.
+const avvioDelConto = () => waitFor(() => expect(consegnaRuolo).not.toBeNull())
 
 // I tasti in fondo al conto. Serve cercarli QUI dentro: la finestra del
 // ripristino ha un tasto che si chiama come quello che l'ha aperta, e
@@ -170,8 +191,8 @@ beforeEach(() => {
 })
 
 describe('vista aggregata: ordine a destra, comande nascoste', () => {
-  it("mostra i prodotti dell'ORDINE aggregato, non le singole comande", () => {
-    mount(baseOrder())
+  it("mostra i prodotti dell'ORDINE aggregato, non le singole comande", async () => {
+    await mount(baseOrder())
     // testata colonna ordine: numero + nome del conto (spostati a destra)
     expect(screen.getAllByText(/#4/).length).toBeGreaterThan(0)
     expect(screen.getByText(/· iole/)).toBeInTheDocument()
@@ -184,8 +205,8 @@ describe('vista aggregata: ordine a destra, comande nascoste', () => {
     expect(screen.getByText('Gin Tonic')).toBeInTheDocument()
   })
 
-  it('conto vuoto: griglia + ordine vuoto', () => {
-    mount(baseOrder({ comande: [], order_items: [], workflow_status: 'ricevuto' }))
+  it('conto vuoto: griglia + ordine vuoto', async () => {
+    await mount(baseOrder({ comande: [], order_items: [], workflow_status: 'ricevuto' }))
     expect(screen.getByText(/Tocca i prodotti per aggiungerli/)).toBeInTheDocument()
     expect(screen.getByText('Gin Tonic')).toBeInTheDocument()
   })
@@ -194,7 +215,7 @@ describe('vista aggregata: ordine a destra, comande nascoste', () => {
 describe('aggiunte: la nuova comanda è gestita internamente', () => {
   it('tap sulla griglia → gli item si CONFERMANO da soli, confluiscono nella comanda in prep.', async () => {
     const user = userEvent.setup()
-    mount(baseOrder())
+    await mount(baseOrder())
     await user.click(screen.getAllByText('Gin Tonic')[0])
     await user.click(screen.getAllByText('Gin Tonic')[0])
     // l'aggiunta è confermata da sola (senza cliccare Conferma)
@@ -211,7 +232,7 @@ describe('aggiunte: la nuova comanda è gestita internamente', () => {
 
   it('ordine già SERVITO: l\'aggiunta crea una NUOVA comanda (addComanda)', async () => {
     const user = userEvent.setup()
-    mount(
+    await mount(
       baseOrder({
         comande: [
           { id: 'c1', seq: 1, status: 'ritirato', status_times: {}, items: [{ drink_id: 'mojito', name: 'Mojito', unit_price: 7, qty: 2 }] },
@@ -229,7 +250,7 @@ describe('aggiunte: la nuova comanda è gestita internamente', () => {
 
   it('la modifica per-item PRECARICA gli ingredienti del drink (si sostituiscono, non solo si aggiungono)', async () => {
     const user = userEvent.setup()
-    mount(baseOrder())
+    await mount(baseOrder())
     await user.click(screen.getByText('Gin Tonic'))
     // l'item nel conto è cliccabile per modificarlo (niente tasto matita)
     await user.click(screen.getAllByTitle(/Modifica Gin Tonic/).at(-1))
@@ -240,7 +261,7 @@ describe('aggiunte: la nuova comanda è gestita internamente', () => {
 
   it('drink SENZA ingredienti: avvisa il bartender', async () => {
     const user = userEvent.setup()
-    mount(baseOrder())
+    await mount(baseOrder())
     // Il Mojito non ha recipe_items nel menù mock. L'item è cliccabile per
     // modificarlo; ce n'è più d'uno (comanda + bozza): modifico l'ultima aggiunta.
     await user.click(screen.getAllByText('Mojito')[0])
@@ -250,7 +271,7 @@ describe('aggiunte: la nuova comanda è gestita internamente', () => {
 
   it('GRIGLIA vs + sulla riga: la griglia duplica, il + aumenta la quantità', async () => {
     const user = userEvent.setup()
-    mount(baseOrder())
+    await mount(baseOrder())
     // due tocchi sulla stessa tile → DUE righe separate di Gin Tonic
     await user.click(screen.getAllByText('Gin Tonic')[0])
     await user.click(screen.getAllByText('Gin Tonic')[0])
@@ -272,7 +293,7 @@ describe('aggiunte: la nuova comanda è gestita internamente', () => {
 
   it('Unisci accorpa righe uguali con quantità diverse (4 + 1 = 5)', async () => {
     const user = userEvent.setup()
-    mount(
+    await mount(
       baseOrder({
         comande: [
           {
@@ -303,7 +324,7 @@ describe('aggiunte: la nuova comanda è gestita internamente', () => {
     // Erano due tasti fissi, ma dei due ne serve uno alla volta: il tasto
     // unico mostra l'azione possibile (vince Unisci), l'altra resta nel ⋯.
     const user = userEvent.setup()
-    mount(
+    await mount(
       baseOrder({
         comande: [
           {
@@ -339,7 +360,7 @@ describe('aggiunte: la nuova comanda è gestita internamente', () => {
 
   it("il + su un item del conto è un'aggiunta che si conferma da sola", async () => {
     const user = userEvent.setup()
-    mount(baseOrder())
+    await mount(baseOrder())
     await user.click(screen.getByRole('button', { name: 'Aumenta Mojito' }))
     // ordine in preparazione → l'aggiunta confluisce da sola nella comanda c1
     await waitFor(() => expect(bartenderUpdateComanda).toHaveBeenCalled())
@@ -350,7 +371,7 @@ describe('aggiunte: la nuova comanda è gestita internamente', () => {
 describe('diminuzioni: solo dalle comande ancora modificabili', () => {
   it('avanza lo stato della comanda ATTIVA dal popup Servizio', async () => {
     const user = userEvent.setup()
-    mount(baseOrder())
+    await mount(baseOrder())
     await user.click(screen.getByRole('button', { name: /Stato servizio/ }))
     // Il conto di prova nasce «da fare», quindi il passo dopo è il banco.
     await user.click(screen.getByRole('button', { name: /Segna “In preparazione”/ }))
@@ -359,7 +380,7 @@ describe('diminuzioni: solo dalle comande ancora modificabili', () => {
 
   it('il − scala la comanda modificabile con sync in background (debounce)', async () => {
     const user = userEvent.setup()
-    mount(baseOrder())
+    await mount(baseOrder())
     await user.click(screen.getByRole('button', { name: 'Riduci Mojito' }))
     expect(screen.getAllByText('1').length).toBeGreaterThan(0)
     await waitFor(() => expect(bartenderUpdateComanda).toHaveBeenCalledTimes(1), { timeout: 2000 })
@@ -368,8 +389,8 @@ describe('diminuzioni: solo dalle comande ancora modificabili', () => {
     expect(payload.items[0]).toMatchObject({ drink_id: 'mojito', qty: 1 })
   })
 
-  it('comanda servita: il − è disabilitato (quantità bloccate), il + resta', () => {
-    mount(
+  it('comanda servita: il − è disabilitato (quantità bloccate), il + resta', async () => {
+    await mount(
       baseOrder({
         workflow_status: 'ritirato',
         comande: [
@@ -407,7 +428,7 @@ describe('modale comande: consultazione, avanzamento e stampa', () => {
         },
       ],
     })
-    mount(order)
+    await mount(order)
     await user.click(screen.getByRole('button', { name: /Comande \(1\)/ }))
     expect(screen.getByText(/COMANDA 1/)).toBeInTheDocument()
     // La stampa della comanda resta: e' la carta che serve al banco.
@@ -430,7 +451,7 @@ describe('modale comande: consultazione, avanzamento e stampa', () => {
         },
       ],
     })
-    mount(order)
+    await mount(order)
     // le comande NON sono in vista finché non apro la modale
     expect(screen.queryByText(/COMANDA 1/)).not.toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: /Comande \(2\)/ }))
@@ -448,7 +469,7 @@ describe('modale comande: consultazione, avanzamento e stampa', () => {
   // ticket, e rifarli uno per uno col conto in mano è tempo perso al banco.
   it('con più di una comanda si stampano tutte in un colpo', async () => {
     const user = userEvent.setup()
-    mount(
+    await mount(
       baseOrder({
         comande: [
           {
@@ -480,7 +501,7 @@ describe('modale comande: consultazione, avanzamento e stampa', () => {
   // gesti diversi e servono tutti e due: il gemello dell'altro tasto.
   it('e con lo stesso conto si può stampare tutto su un foglio solo', async () => {
     const user = userEvent.setup()
-    mount(
+    await mount(
       baseOrder({
         comande: [
           {
@@ -506,7 +527,7 @@ describe('modale comande: consultazione, avanzamento e stampa', () => {
 
   it('con una comanda sola i due tasti non ci sono: niente da mettere insieme', async () => {
     const user = userEvent.setup()
-    mount(baseOrder())
+    await mount(baseOrder())
     await user.click(screen.getByRole('button', { name: /Comande/ }))
     expect(screen.queryByRole('button', { name: /Una per comanda/ })).toBeNull()
     expect(screen.queryByRole('button', { name: /Tutto su una/ })).toBeNull()
@@ -517,7 +538,7 @@ describe('modifiche ottimistiche (UX istantanea)', () => {
   it('aggiunta ISTANTANEA: parte in background senza attendere il server', async () => {
     const user = userEvent.setup()
     bartenderUpdateComanda.mockImplementationOnce(() => new Promise(() => {})) // server lento
-    mount(baseOrder())
+    await mount(baseOrder())
     await user.click(screen.getAllByText('Gin Tonic')[0])
     // parte da sola (ottimistico), senza aspettare la risoluzione del server
     await waitFor(() => expect(bartenderUpdateComanda).toHaveBeenCalled())
@@ -527,7 +548,7 @@ describe('modifiche ottimistiche (UX istantanea)', () => {
   it('avanzamento ISTANTANEO: lo stato cambia subito, il server segue', async () => {
     const user = userEvent.setup()
     advanceComanda.mockImplementationOnce(() => new Promise(() => {})) // in volo
-    mount(baseOrder())
+    await mount(baseOrder())
     await user.click(screen.getByRole('button', { name: /Stato servizio/ }))
     await user.click(screen.getByRole('button', { name: /Segna “In preparazione”/ }))
     // lo stato passa subito al passo dopo senza attendere la transazione
@@ -539,7 +560,7 @@ describe('modifiche ottimistiche (UX istantanea)', () => {
 
   it('tap rapidi sulla griglia: le aggiunte confluiscono nella comanda in prep., senza tasto Conferma', async () => {
     const user = userEvent.setup()
-    mount(baseOrder())
+    await mount(baseOrder())
     const tile = () => screen.getAllByText('Mojito')[0] // la tile della griglia
     await user.click(tile())
     await user.click(tile())
@@ -555,7 +576,7 @@ describe('modifiche ottimistiche (UX istantanea)', () => {
 describe('schermata Pagamento', () => {
   it('"Pagamento" apre la schermata POS con dovuto e avviso; Riscuotere incassa tutto', async () => {
     const user = userEvent.setup()
-    mount(baseOrder())
+    await mount(baseOrder())
     await user.click(screen.getByRole('button', { name: /Pagamento/ }))
     // schermata: articoli a sinistra, importo al centro. L'avviso «comande
     // non ancora servite» NON c'è più a schermo dal 21/08/2026 — occupava
@@ -578,7 +599,7 @@ describe('schermata Pagamento', () => {
 
   it('con tutto servito la schermata non mostra avvisi né spiegazioni', async () => {
     const user = userEvent.setup()
-    mount(
+    await mount(
       baseOrder({
         workflow_status: 'ritirato',
         comande: [
@@ -613,7 +634,7 @@ describe('schermata Pagamento', () => {
     mockSettings.payments_reader_enabled = true
     mockSettings.sumup_reader_id = 'reader1'
     try {
-      mount(baseOrder())
+      await mount(baseOrder())
       await user.click(screen.getByRole('button', { name: /Pagamento/ }))
       await user.click(screen.getByRole('button', { name: /SumUp/ }))
       await user.click(screen.getByRole('button', { name: /Riscuotere/ }))
@@ -627,14 +648,14 @@ describe('schermata Pagamento', () => {
 
   it('lettore NON configurato: il metodo SumUp è in lista ma spento', async () => {
     const user = userEvent.setup()
-    mount(baseOrder())
+    await mount(baseOrder())
     await user.click(screen.getByRole('button', { name: /Pagamento/ }))
     // Spento a vedersi, ma toccabile: al tocco dice dove si configura.
     expect(screen.getByRole('button', { name: /SumUp/ })).toHaveAttribute('aria-disabled', 'true')
   })
 
-  it('conto chiuso (pagato): griglia e modifiche disabilitate', () => {
-    mount(
+  it('conto chiuso (pagato): griglia e modifiche disabilitate', async () => {
+    await mount(
       baseOrder({
         status: 'pagato',
         workflow_status: 'pagato',
@@ -663,7 +684,7 @@ describe('schermata Pagamento', () => {
 describe('ricerca prodotti', () => {
   it('digitando nella barra la griglia filtra su tutto il catalogo', async () => {
     const user = userEvent.setup()
-    mount(baseOrder())
+    await mount(baseOrder())
     expect(screen.getByText('Gin Tonic')).toBeInTheDocument()
     await user.type(screen.getByLabelText('Cerca prodotto'), 'moj')
     expect(screen.queryByText('Gin Tonic')).not.toBeInTheDocument()
@@ -688,7 +709,7 @@ describe('servizio o ritiro, conto per conto', () => {
 
   it('lo staff cambia il modo del conto che ha in mano', async () => {
     const user = userEvent.setup()
-    mount(baseOrder({ service_mode: 'tavolo' }))
+    await mount(baseOrder({ service_mode: 'tavolo' }))
     await apri(user)
     await user.click(screen.getByRole('button', { name: /Ritiro/ }))
     expect(setOrderServiceMode).toHaveBeenCalledWith('ord1', 'banco')
@@ -696,7 +717,7 @@ describe('servizio o ritiro, conto per conto', () => {
 
   it('quello di adesso si vede acceso, e non si riscrive toccandolo', async () => {
     const user = userEvent.setup()
-    mount(baseOrder({ service_mode: 'banco' }))
+    await mount(baseOrder({ service_mode: 'banco' }))
     await apri(user)
     expect(screen.getByRole('button', { name: /Ritiro/ })).toHaveAttribute(
       'aria-pressed',
@@ -710,7 +731,7 @@ describe('servizio o ritiro, conto per conto', () => {
     const user = userEvent.setup()
     mockSettings.coperto_enabled = true
     try {
-      mount(baseOrder({ service_mode: 'tavolo' }))
+      await mount(baseOrder({ service_mode: 'tavolo' }))
       await apri(user)
       expect(screen.getByText(/coperto e servizio si azzerano/i)).toBeInTheDocument()
     } finally {
@@ -720,7 +741,7 @@ describe('servizio o ritiro, conto per conto', () => {
 
   it('con un acconto si cambia il modo, ma i soldi restano quelli', async () => {
     const user = userEvent.setup()
-    mount(
+    await mount(
       baseOrder({
         service_mode: 'tavolo',
         payment_status: 'parziale',
@@ -737,7 +758,7 @@ describe('servizio o ritiro, conto per conto', () => {
 
   it('su un conto chiuso non si tocca: la strada è «Riapri conto»', async () => {
     const user = userEvent.setup()
-    mount(baseOrder({ status: 'pagato', payment_status: 'pagato' }))
+    await mount(baseOrder({ status: 'pagato', payment_status: 'pagato' }))
     await apri(user)
     expect(screen.getByRole('button', { name: /Ritiro/ })).toBeDisabled()
     expect(screen.getByText(/riaprilo prima/i)).toBeInTheDocument()
@@ -756,7 +777,7 @@ describe('dati conto: il nome si salva comunque si chiuda', () => {
 
   it('col tasto Salva', async () => {
     const user = userEvent.setup()
-    mount(baseOrder())
+    await mount(baseOrder())
     await user.type(await apriPopup(user), 'Marco')
     await user.click(screen.getByRole('button', { name: /Salva dati conto/ }))
     expect(updateOrderInfo).toHaveBeenCalledWith(
@@ -767,7 +788,7 @@ describe('dati conto: il nome si salva comunque si chiuda', () => {
 
   it('chiudendo con la ✕', async () => {
     const user = userEvent.setup()
-    mount(baseOrder())
+    await mount(baseOrder())
     await user.type(await apriPopup(user), 'Marco')
     await user.click(screen.getByRole('button', { name: '✕' }))
     expect(updateOrderInfo).toHaveBeenCalledWith(
@@ -778,7 +799,7 @@ describe('dati conto: il nome si salva comunque si chiuda', () => {
 
   it('premendo Invio', async () => {
     const user = userEvent.setup()
-    mount(baseOrder())
+    await mount(baseOrder())
     const campo = await apriPopup(user)
     await user.type(campo, 'Marco{Enter}')
     expect(updateOrderInfo).toHaveBeenCalledWith(
@@ -789,7 +810,7 @@ describe('dati conto: il nome si salva comunque si chiuda', () => {
 
   it('senza modifiche non scrive niente', async () => {
     const user = userEvent.setup()
-    mount(baseOrder())
+    await mount(baseOrder())
     await user.click(screen.getByRole('button', { name: /Dati conto/ }))
     await user.click(screen.getByRole('button', { name: '✕' }))
     expect(updateOrderInfo).not.toHaveBeenCalled()
@@ -802,19 +823,19 @@ describe('dati conto: il nome si salva comunque si chiuda', () => {
 // premere non era più dov'era. I tasti ci sono sempre: spenti quando l'azione
 // non è possibile, mai rimossi.
 describe('tasti sempre presenti, spenti se non servono', () => {
-  it('il tasto Unisci/Separa c’è anche quando non c’è niente da fare', () => {
-    mount(baseOrder({ comande: [{ id: 'c1', seq: 1, status: 'in_preparazione', items: [] }] }))
+  it('il tasto Unisci/Separa c’è anche quando non c’è niente da fare', async () => {
+    await mount(baseOrder({ comande: [{ id: 'c1', seq: 1, status: 'in_preparazione', items: [] }] }))
     // Tasto unico: spento, non sparito.
     expect(screen.getByRole('button', { name: /Separa|Unisci/ })).toBeDisabled()
   })
 
-  it('e si accende quando l’azione diventa possibile', () => {
-    mount(baseOrder()) // 2 Mojito su una riga → si possono separare
+  it('e si accende quando l’azione diventa possibile', async () => {
+    await mount(baseOrder()) // 2 Mojito su una riga → si possono separare
     expect(screen.getByRole('button', { name: /⑃ Separa/ })).toBeEnabled()
   })
 
-  it('Comande c’è sempre: sul conto aperto è attivo', () => {
-    mount(baseOrder())
+  it('Comande c’è sempre: sul conto aperto è attivo', async () => {
+    await mount(baseOrder())
     expect(screen.getByRole('button', { name: /Comande/ })).toBeEnabled()
   })
 })
@@ -826,7 +847,7 @@ describe('tasti sempre presenti, spenti se non servono', () => {
 describe('conto rimasto senza righe', () => {
   it('si annulla da solo e si torna alla lista', async () => {
     const user = userEvent.setup()
-    mount(
+    await mount(
       baseOrder({
         comande: [
           {
@@ -848,7 +869,7 @@ describe('conto rimasto senza righe', () => {
 
   it('ma non se qualcosa è già stato incassato', async () => {
     const user = userEvent.setup()
-    mount(
+    await mount(
       baseOrder({
         payments: [{ id: 'p1', amount: 7, method: 'banco', at: '2026-07-11T22:00:00.000Z' }],
         comande: [
@@ -895,7 +916,7 @@ describe('menu azioni del telefono', () => {
 
   it('nel menu c’è quello che si usa ogni tanto', async () => {
     const user = userEvent.setup()
-    mount(baseOrder())
+    await mount(baseOrder())
     const menu = await apriMenu(user)
     for (const voce of [/Comande \(1\)/, /Prodotto libero/, /Dati conto/]) {
       expect(menu.getByRole('button', { name: voce })).toBeInTheDocument()
@@ -914,7 +935,7 @@ describe('menu azioni del telefono', () => {
   // da nessuna parte.
   it('«Mostra al cliente» c’è: è la via al QR', async () => {
     const user = userEvent.setup()
-    mount(baseOrder())
+    await mount(baseOrder())
     const menu = await apriMenu(user)
     expect(menu.getByRole('button', { name: /Mostra al cliente/ })).toBeInTheDocument()
   })
@@ -925,7 +946,7 @@ describe('menu azioni del telefono', () => {
     mockSettings.workflow_enabled = false
     try {
       const user = userEvent.setup()
-      mount(baseOrder())
+      await mount(baseOrder())
       const menu = await apriMenu(user)
       expect(menu.queryByRole('button', { name: /Mostra al cliente/ })).toBeNull()
     } finally {
@@ -935,7 +956,7 @@ describe('menu azioni del telefono', () => {
 
   it('quello che si usa sempre NON è nel menu: sta in fondo, su una riga', async () => {
     const user = userEvent.setup()
-    mount(baseOrder())
+    await mount(baseOrder())
     // In fondo al pannello, i tre gesti della serata.
     for (const nome of [/Invia$/, /Paga$/, /Annulla$/]) {
       expect(screen.getByRole('button', { name: nome })).toBeInTheDocument()
@@ -949,7 +970,7 @@ describe('menu azioni del telefono', () => {
 
   it('“Annulla” chiede conferma, non annulla di colpo', async () => {
     const user = userEvent.setup()
-    mount(baseOrder())
+    await mount(baseOrder())
     await user.click(screen.getByRole('button', { name: /Annulla$/ }))
     await waitFor(() => expect(document.querySelector('.confirm-box')).toBeTruthy())
     expect(cancelOrder).not.toHaveBeenCalled()
@@ -957,7 +978,7 @@ describe('menu azioni del telefono', () => {
 
   it('scegliendo una voce il menu si chiude: mai due pannelli sovrapposti', async () => {
     const user = userEvent.setup()
-    mount(baseOrder())
+    await mount(baseOrder())
     const menu = await apriMenu(user)
     await user.click(menu.getByRole('button', { name: /Dati conto/ }))
     await waitFor(() =>
@@ -969,12 +990,8 @@ describe('menu azioni del telefono', () => {
   // conto nuovo è la VIA D'USCITA di chi l'ha aperto per sbaglio o ha
   // cambiato idea. Spento restava solo la freccia in alto, che nessuno
   // cerca. Vedi BUG-011.
-  it('su un ordine NUOVO «Invia» è spento, «Annulla» no', () => {
-    render(
-      <MemoryRouter>
-        <OrderPosDetail order={null} />
-      </MemoryRouter>
-    )
+  it('su un ordine NUOVO «Invia» è spento, «Annulla» no', async () => {
+    await mount(null)
     expect(screen.getByRole('button', { name: /Invia$/ })).toBeDisabled()
     expect(screen.getByRole('button', { name: /Annulla$/ })).not.toBeDisabled()
   })
@@ -989,13 +1006,13 @@ describe('totale sul tasto Pagamento', () => {
   const tastoPagamento = () =>
     screen.getAllByRole('button', { name: /Pagamento/ })[0]
 
-  it('su un conto aperto mostra il totale da incassare', () => {
-    mount(baseOrder()) // 2 Mojito × 7 €
+  it('su un conto aperto mostra il totale da incassare', async () => {
+    await mount(baseOrder()) // 2 Mojito × 7 €
     expect(tastoPagamento()).toHaveTextContent('14,00 €')
   })
 
-  it('con un acconto già preso mostra solo quello che manca', () => {
-    mount(
+  it('con un acconto già preso mostra solo quello che manca', async () => {
+    await mount(
       baseOrder({
         payments: [{ id: 'p1', amount: 10, method: 'banco', at: '2026-07-11T22:00:00.000Z' }],
       })
@@ -1003,13 +1020,13 @@ describe('totale sul tasto Pagamento', () => {
     expect(tastoPagamento()).toHaveTextContent('4,00 €')
   })
 
-  it('con lo sconto la cifra è quella scontata', () => {
-    mount(baseOrder({ discount_amount: 4 }))
+  it('con lo sconto la cifra è quella scontata', async () => {
+    await mount(baseOrder({ discount_amount: 4 }))
     expect(tastoPagamento()).toHaveTextContent('10,00 €')
   })
 
-  it('conto già saldato: nessuna cifra da mostrare', () => {
-    mount(
+  it('conto già saldato: nessuna cifra da mostrare', async () => {
+    await mount(
       baseOrder({
         payments: [{ id: 'p1', amount: 14, method: 'banco', at: '2026-07-11T22:00:00.000Z' }],
       })
@@ -1053,7 +1070,7 @@ describe('dove finiscono le righe aggiunte a un conto', () => {
 
   it('IL DIFETTO: con una comanda al banco, le righe nuove nascono «da fare»', async () => {
     const user = userEvent.setup()
-    mount(conUnaComandaAlBanco())
+    await mount(conUnaComandaAlBanco())
     await user.click(screen.getAllByText('Gin Tonic')[0])
     await user.click(screen.getAllByText('Gin Tonic')[0])
 
@@ -1077,7 +1094,7 @@ describe('dove finiscono le righe aggiunte a un conto', () => {
     const user = userEvent.setup()
     mockSettings.comande_in_preparazione = true
     try {
-      mount(conUnaComandaAlBanco())
+      await mount(conUnaComandaAlBanco())
       await user.click(screen.getAllByText('Gin Tonic')[0])
       await waitFor(() => expect(addComanda).toHaveBeenCalled(), { timeout: 3000 })
       expect(bartenderUpdateComanda).not.toHaveBeenCalled()
@@ -1122,7 +1139,7 @@ describe('il passo in cui nasce una comanda lo dice il locale', () => {
       // aggiunta a un conto già servito: nasce una comanda nuova, e la
       // provvisoria che si vede deve dire lo stesso passo di quella vera —
       // se no la card cambia colonna da sola un istante dopo.
-      mount(
+      await mount(
         baseOrder({
           comande: [
             {
@@ -1392,7 +1409,7 @@ describe('la ricerca prodotti segue l’impostazione del bar', () => {
 
   it('«filtra»: cercando resta solo il prodotto che risponde', async () => {
     const user = userEvent.setup()
-    mount(baseOrder())
+    await mount(baseOrder())
     await user.type(cerca(), 'mojito')
     expect(card('Mojito')).toBeTruthy()
     expect(card('Gin Tonic')).toBeFalsy()
@@ -1401,7 +1418,7 @@ describe('la ricerca prodotti segue l’impostazione del bar', () => {
   it('«accendi e porta lì»: la griglia resta intera e la card si accende', async () => {
     mockSettings.pos_search = 'evidenzia'
     const user = userEvent.setup()
-    mount(baseOrder())
+    await mount(baseOrder())
     await user.type(cerca(), 'mojito')
     // Niente sparisce da sotto le dita…
     expect(card('Gin Tonic')).toBeTruthy()
@@ -1481,7 +1498,7 @@ describe('Pagamento premuto mentre l’ordine sta ancora nascendo', () => {
 describe('i tasti del conto si riducono', () => {
   it('il tasto li nasconde, restano nel ⋯, e la scelta si ricorda', async () => {
     const user = userEvent.setup()
-    const vista = mount(baseOrder())
+    const vista = await mount(baseOrder())
     expect(screen.getByRole('button', { name: /Dati conto/ })).toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: 'Nascondi i tasti del conto' }))
@@ -1496,7 +1513,7 @@ describe('i tasti del conto si riducono', () => {
     expect(screen.getByRole('button', { name: /Prodotto libero/ })).toBeInTheDocument()
 
     vista.unmount()
-    mount(baseOrder())
+    await mount(baseOrder())
     expect(screen.queryByRole('button', { name: /Dati conto/ })).not.toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'Mostra i tasti del conto' }))
     expect(screen.getByRole('button', { name: /Dati conto/ })).toBeInTheDocument()
@@ -1518,7 +1535,7 @@ describe('rimettere in corso un conto', () => {
   // si premono di corsa, per una cosa che si guarda una volta a serata.
   it('la storia del conto racconta apertura e chiusura', async () => {
     const user = userEvent.setup()
-    mount(chiuso())
+    await mount(chiuso())
     await user.click(screen.getByRole('button', { name: 'Azioni del conto' }))
     await user.click(screen.getByRole('button', { name: /Storia del conto/ }))
     const box = within(screen.getByRole('dialog', { name: 'Storia del conto' }))
@@ -1528,7 +1545,7 @@ describe('rimettere in corso un conto', () => {
 
   it('si chiede una motivazione (facoltativa) e si conferma', async () => {
     const user = userEvent.setup()
-    mount(chiuso())
+    await mount(chiuso())
     await user.click(azioni().getByRole('button', { name: /Riapri conto/ }))
     const box = within(screen.getByRole('dialog', { name: 'Ripristina il conto' }))
     await user.type(box.getByLabelText(/Perché lo riapri/), 'tavolo sbagliato')
@@ -1538,23 +1555,23 @@ describe('rimettere in corso un conto', () => {
 
   it('senza motivazione si ripristina lo stesso: al banco i secondi non ci sono', async () => {
     const user = userEvent.setup()
-    mount(chiuso())
+    await mount(chiuso())
     await user.click(azioni().getByRole('button', { name: /Riapri conto/ }))
     const box = within(screen.getByRole('dialog', { name: 'Ripristina il conto' }))
     await user.click(box.getByRole('button', { name: /Riapri/ }))
     expect(restoreOrder).toHaveBeenCalledWith('ord1', expect.objectContaining({ motivo: null }))
   })
 
-  it('su un conto già in corso il tasto resta quello del pagamento', () => {
-    mount(baseOrder())
+  it('su un conto già in corso il tasto resta quello del pagamento', async () => {
+    await mount(baseOrder())
     expect(azioni().queryByRole('button', { name: /Riapri conto/ })).toBeNull()
     expect(azioni().getByRole('button', { name: /Pagamento/ })).toBeInTheDocument()
   })
 
   // Un conto riaperto, guardato mezz'ora dopo, è identico a uno normale: se
   // dentro c'è un incasso diventa un mistero. Il motivo si legge nel conto.
-  it('nel conto riaperto si legge perché lo è', () => {
-    mount(
+  it('nel conto riaperto si legge perché lo è', async () => {
+    await mount(
       baseOrder({
         riaperture: [
           { at: '2026-08-12T22:00:00.000Z', motivo: 'chiuso sul tavolo sbagliato', chi: 'Anna' },
@@ -1591,14 +1608,14 @@ describe('conto riaperto: le righe di prima si toccano', () => {
 
   const meno = () => screen.getAllByRole('button', { name: /Riduci Mojito/ })
 
-  it('senza riapertura una comanda servita resta bloccata', () => {
-    mount(servito())
+  it('senza riapertura una comanda servita resta bloccata', async () => {
+    await mount(servito())
     expect(meno().every((b) => b.disabled)).toBe(true)
   })
 
   it('dopo una riapertura la riga si può scalare', async () => {
     const user = userEvent.setup()
-    mount(servito({ riaperture: [{ at: '2026-08-15T21:00:00.000Z', motivo: 'tavolo sbagliato' }] }))
+    await mount(servito({ riaperture: [{ at: '2026-08-15T21:00:00.000Z', motivo: 'tavolo sbagliato' }] }))
     const tasti = meno().filter((b) => !b.disabled)
     expect(tasti.length).toBeGreaterThan(0)
     await user.click(tasti[0])
@@ -1634,26 +1651,26 @@ describe('subtotale di riga', () => {
       ],
     })
 
-  it('la riga dice quanto fa; il calcolo di suo non appare', () => {
-    mount(ordineTriplo())
+  it('la riga dice quanto fa; il calcolo di suo non appare', async () => {
+    await mount(ordineTriplo())
     // Quanto fa la riga…
     expect(screen.getAllByText('21,00 €').length).toBeGreaterThan(0)
     // …senza il calcolo esplicito accanto al nome.
     expect(screen.queryByText(/3 × 7,00/)).toBeNull()
   })
 
-  it('col calcolo acceso (scelta ricordata sul dispositivo) appare sotto la riga', () => {
+  it('col calcolo acceso (scelta ricordata sul dispositivo) appare sotto la riga', async () => {
     localStorage.setItem('tana:pos:calcoli', '1')
-    mount(ordineTriplo())
+    await mount(ordineTriplo())
     expect(screen.getByText(/↳ 3 × 7,00/)).toBeInTheDocument()
     expect(screen.getAllByText('21,00 €').length).toBeGreaterThan(0)
     localStorage.removeItem('tana:pos:calcoli')
   })
 
-  it('i supplementi attivi si vedono uno per riga, sotto il Subtotale', () => {
+  it('i supplementi attivi si vedono uno per riga, sotto il Subtotale', async () => {
     // Prima una riga cumulativa («Coperto/servizio/mancia · 5,50 €») non
     // diceva né cosa fosse attivo né quanto pesasse ognuno (REQ-POS-016).
-    mount(
+    await mount(
       baseOrder({
         total: 18.5,
         coperto_amount: 2,
@@ -1669,9 +1686,9 @@ describe('subtotale di riga', () => {
     expect(screen.queryByText('Servizio')).toBeNull()
   })
 
-  it('con un pezzo solo il subtotale c’è comunque, il calcolo mai', () => {
+  it('con un pezzo solo il subtotale c’è comunque, il calcolo mai', async () => {
     localStorage.setItem('tana:pos:calcoli', '1')
-    mount(
+    await mount(
       baseOrder({
         total: 7,
         comande: [
@@ -1716,27 +1733,27 @@ describe('il conto annullato mostra cosa c’era dentro', () => {
       order_items: [{ id: 'i1', drink_id: 'mojito', name: 'Mojito', unit_price: 7, qty: 2 }],
     })
 
-  it('le righe ci sono', () => {
-    mount(annullato())
+  it('le righe ci sono', async () => {
+    await mount(annullato())
     expect(screen.getAllByText(/Mojito/).length).toBeGreaterThan(0)
   })
 
-  it('si vede che non contano più: barrate', () => {
-    mount(annullato())
+  it('si vede che non contano più: barrate', async () => {
+    await mount(annullato())
     expect(document.querySelector('.draft-line.riga-annullata')).toBeTruthy()
   })
 
-  it('ma non fanno somma: quel conto non lo paga nessuno', () => {
-    mount(annullato())
+  it('ma non fanno somma: quel conto non lo paga nessuno', async () => {
+    await mount(annullato())
     // Il totale resta a zero: un numero diverso lo farebbe sembrare ancora
     // da incassare.
     expect(screen.getAllByText('0,00 €').length).toBeGreaterThan(0)
   })
 
-  it('dentro un conto APERTO una comanda annullata resta fuori', () => {
+  it('dentro un conto APERTO una comanda annullata resta fuori', async () => {
     // Lì quella roba non si fa e non si paga: mostrarla vorrebbe dire
     // rimetterla nel conto.
-    mount(
+    await mount(
       baseOrder({
         total: 7,
         comande: [
@@ -1880,7 +1897,7 @@ describe('aprire il pagamento subito dopo aver battuto', () => {
     const user = userEvent.setup()
     // Conto da 2 Mojito (14 €). Se ne battono altri due Gin Tonic (16 €) e
     // si apre il pagamento nello stesso respiro.
-    mount(baseOrder())
+    await mount(baseOrder())
     await user.click(screen.getAllByText('Gin Tonic')[0])
     await user.click(screen.getAllByRole('button', { name: /Pagamento/ })[0])
 
@@ -1898,7 +1915,7 @@ describe('aprire il pagamento subito dopo aver battuto', () => {
 describe('uscendo, quello che si è battuto parte lo stesso', () => {
   it('tre tap veloci e via: al server arrivano tutti e tre', async () => {
     const user = userEvent.setup()
-    const { unmount } = mount(baseOrder())
+    const { unmount } = await mount(baseOrder())
     const gin = screen.getAllByText('Gin Tonic')[0]
     await user.click(gin)
     await user.click(gin)
@@ -1924,7 +1941,7 @@ describe('uscendo, quello che si è battuto parte lo stesso', () => {
 describe('la riga modificata a mano resta modificata', () => {
   it('cambio prezzo e via: al server arriva quello nuovo', async () => {
     const user = userEvent.setup()
-    const { unmount } = mount(baseOrder())
+    const { unmount } = await mount(baseOrder())
     // La riga del conto (comanda in preparazione): toccarla la apre.
     await user.click(screen.getAllByText('Mojito')[1] ?? screen.getAllByText('Mojito')[0])
     const prezzo = await screen.findByLabelText(/Prezzo/)
@@ -1973,7 +1990,7 @@ describe('preparazione parziale di una comanda', () => {
 
   it('cinque da fare, se ne preparano due: due al banco e tre ancora da fare', async () => {
     const user = userEvent.setup()
-    mount(daFare())
+    await mount(daFare())
     await apriComande(user)
 
     await user.click(screen.getByRole('button', { name: /Preparazione parziale/ }))
@@ -2006,7 +2023,7 @@ describe('preparazione parziale di una comanda', () => {
 
   it('prese tutte le unità non si divide niente: la comanda avanza e basta', async () => {
     const user = userEvent.setup()
-    mount(daFare())
+    await mount(daFare())
     await apriComande(user)
 
     await user.click(screen.getByRole('button', { name: /Preparazione parziale/ }))
@@ -2025,7 +2042,7 @@ describe('preparazione parziale di una comanda', () => {
 
   it('senza scegliere niente non si può confermare', async () => {
     const user = userEvent.setup()
-    mount(daFare())
+    await mount(daFare())
     await apriComande(user)
     await user.click(screen.getByRole('button', { name: /Preparazione parziale/ }))
     expect(screen.getByRole('button', { name: 'Preparo questi' })).toBeDisabled()
@@ -2038,7 +2055,7 @@ describe('preparazione parziale di una comanda', () => {
     // È il caso vero: sto preparando cinque gin tonic, ne faccio uscire
     // tre adesso e due dopo. Nessuna delle due parti torna indietro.
     const user = userEvent.setup()
-    mount(daFare({ comande: [
+    await mount(daFare({ comande: [
       {
         id: 'c1', seq: 1, status: 'in_preparazione', status_times: {},
         items: [{ drink_id: 'gin', name: 'Gin Tonic', unit_price: 8, qty: 5 }],
@@ -2068,7 +2085,7 @@ describe('preparazione parziale di una comanda', () => {
 
   it('non si propone su quello che è già sul vassoio, né su un drink solo', async () => {
     const user = userEvent.setup()
-    const { unmount } = mount(daFare({ comande: [
+    const { unmount } = await mount(daFare({ comande: [
       {
         id: 'c1', seq: 1, status: 'pronto', status_times: {},
         items: [{ drink_id: 'gin', name: 'Gin Tonic', unit_price: 8, qty: 5 }],
@@ -2078,7 +2095,7 @@ describe('preparazione parziale di una comanda', () => {
     expect(screen.queryByRole('button', { name: /Preparazione parziale/ })).not.toBeInTheDocument()
     unmount()
 
-    mount(daFare({ comande: [
+    await mount(daFare({ comande: [
       {
         id: 'c1', seq: 1, status: 'ricevuto', status_times: {},
         items: [{ drink_id: 'gin', name: 'Gin Tonic', unit_price: 8, qty: 1 }],
@@ -2100,8 +2117,8 @@ describe('le righe del conto dicono a che punto sono', () => {
   const titoli = () =>
     [...document.querySelectorAll('.posd-gruppo')].map((n) => n.textContent)
 
-  it('con una comanda sola non c’è nessun titolo: sarebbe un titolo per dire una cosa sola', () => {
-    mount(baseOrder())
+  it('con una comanda sola non c’è nessun titolo: sarebbe un titolo per dire una cosa sola', async () => {
+    await mount(baseOrder())
     expect(titoli()).toEqual([])
   })
 
@@ -2110,10 +2127,10 @@ describe('le righe del conto dicono a che punto sono', () => {
   // vederselo comparire in mezzo alle righe di un conto è una parola che
   // parla di una cosa che lì non si fa (BUG-033). Resta la divisione dei
   // pagati, che c'era da prima e riguarda i soldi, non il lavoro.
-  it('col servizio spento i passi non si vedono, i pagati sì', () => {
+  it('col servizio spento i passi non si vedono, i pagati sì', async () => {
     mockSettings.workflow_enabled = false
     try {
-      mount(
+      await mount(
         baseOrder({
           comande: [
             {
@@ -2145,7 +2162,7 @@ describe('le righe del conto dicono a che punto sono', () => {
     mockSettings.workflow_enabled = false
     try {
       const user = userEvent.setup()
-      mount(baseOrder())
+      await mount(baseOrder())
       await user.click(screen.getByRole('button', { name: /Comande/ }))
       const box = document.querySelector('.confirm-box')
       expect(box).toBeTruthy()
@@ -2155,10 +2172,10 @@ describe('le righe del conto dicono a che punto sono', () => {
     }
   })
 
-  it('col servizio spento i pagati restano separati, e in fondo', () => {
+  it('col servizio spento i pagati restano separati, e in fondo', async () => {
     mockSettings.workflow_enabled = false
     try {
-      mount(
+      await mount(
         baseOrder({
           payment_status: 'parziale',
           payments: [
@@ -2191,8 +2208,8 @@ describe('le righe del conto dicono a che punto sono', () => {
     }
   })
 
-  it('divisa la comanda, le righe si raggruppano per passo', () => {
-    mount(
+  it('divisa la comanda, le righe si raggruppano per passo', async () => {
+    await mount(
       baseOrder({
         comande: [
           {
@@ -2217,12 +2234,12 @@ describe('le righe del conto dicono a che punto sono', () => {
     expect(righe[3]).toContain('Gin Tonic')
   })
 
-  it('PAGATO IN CASSA E IN PREPARAZIONE AL BANCO: si dicono tutte e due', () => {
+  it('PAGATO IN CASSA E IN PREPARAZIONE AL BANCO: si dicono tutte e due', async () => {
     // Un conto si incassa in qualunque stato di servizio: dalla cassa è
     // chiuso, dal banco magari no. Se il gruppo «Pagati» scacciasse quello
     // del servizio, aprendo il conto si leggerebbe che è tutto sistemato
     // mentre un drink è ancora da fare.
-    mount(
+    await mount(
       baseOrder({
         payment_status: 'parziale',
         payments: [{ items: [{ drink_id: 'gin', qty: 1 }] }],
@@ -2251,14 +2268,14 @@ describe('le righe del conto dicono a che punto sono', () => {
 // che qualcuno sta già preparando vuol dire cambiargli il lavoro sotto le
 // mani.
 describe('la sala e il conto', () => {
-  const inSala = (order = baseOrder()) => {
+  const inSala = async (order = baseOrder()) => {
     ruoloCorrente = 'staff'
-    return mount(order)
+    return await mount(order)
   }
 
   it('quello che aggiunge fa una comanda NUOVA, non entra in quella del banco', async () => {
     const user = userEvent.setup()
-    inSala()
+    await inSala()
     await user.click(screen.getAllByText('Gin Tonic')[0])
     await waitFor(() => expect(addComanda).toHaveBeenCalled())
     // La comanda c1 del conto di prova è ancora «da fare»: al banco le righe
@@ -2271,7 +2288,7 @@ describe('la sala e il conto', () => {
 
   it('anche il «+» su una riga già mandata: un drink in più, in un ticket nuovo', async () => {
     const user = userEvent.setup()
-    inSala()
+    await inSala()
     await user.click(screen.getByRole('button', { name: 'Aumenta Mojito' }))
     await waitFor(() => expect(addComanda).toHaveBeenCalled())
     expect(bartenderUpdateComanda).not.toHaveBeenCalled()
@@ -2280,7 +2297,7 @@ describe('la sala e il conto', () => {
   // Il ruolo arriva dal token, cioè un battito dopo il primo disegno: fino a
   // lì la schermata resta quella del banco, apposta (vedi ruoli.js).
   it('le righe già mandate al banco non le toglie', async () => {
-    inSala()
+    await inSala()
     await waitFor(() =>
       expect(screen.getByRole('button', { name: 'Riduci Mojito' })).toBeDisabled()
     )
@@ -2288,14 +2305,14 @@ describe('la sala e il conto', () => {
 
   it('non prende in carico: «Segna “In preparazione”» non c’è', async () => {
     const user = userEvent.setup()
-    inSala()
+    await inSala()
     await user.click(screen.getByRole('button', { name: /Stato servizio/ }))
     expect(screen.queryByRole('button', { name: /Segna “In preparazione”/ })).toBeNull()
   })
 
   it('ma quello che porta al tavolo lo segna servito', async () => {
     const user = userEvent.setup()
-    inSala(
+    await inSala(
       baseOrder({
         workflow_status: 'pronto',
         comande: [
@@ -2316,7 +2333,7 @@ describe('la sala e il conto', () => {
 
   it('non divide e non torna indietro', async () => {
     const user = userEvent.setup()
-    inSala(
+    await inSala(
       baseOrder({
         comande: [
           {
@@ -2335,7 +2352,7 @@ describe('la sala e il conto', () => {
   })
 
   it('e non butta il conto: annullare è di chi versa', async () => {
-    inSala()
+    await inSala()
     await waitFor(() =>
       expect(screen.getByRole('button', { name: /Annulla ordine/ })).toBeDisabled()
     )
@@ -2343,7 +2360,7 @@ describe('la sala e il conto', () => {
 
   it('al banco invece non cambia niente', async () => {
     const user = userEvent.setup()
-    mount(baseOrder())
+    await mount(baseOrder())
     await user.click(screen.getAllByText('Gin Tonic')[0])
     await waitFor(() => expect(bartenderUpdateComanda).toHaveBeenCalled())
     expect(addComanda).not.toHaveBeenCalled()
@@ -2377,8 +2394,8 @@ describe('lo stato della lavorazione sta nella barra in alto', () => {
     })
   })
 
-  it('sta nella barra in alto, e non più nella testata della colonna', () => {
-    mount(baseOrder())
+  it('sta nella barra in alto, e non più nella testata della colonna', async () => {
+    await mount(baseOrder())
     expect(pastiglia()).toBeTruthy()
     expect(pastiglia().textContent).toMatch(/Da fare/)
     // Una sola in tutta la schermata: se restasse anche di là sarebbero due
@@ -2391,8 +2408,8 @@ describe('lo stato della lavorazione sta nella barra in alto', () => {
   // I SOLDI DA UNA PARTE, IL LAVORO DALL'ALTRA. Nella barra si legge da
   // sinistra: numero, ora e stato del CONTO stanno insieme, lo stato del
   // LAVORO va in fondo — dove punta la freccia dell'utente.
-  it('è l’ultima della barra, dopo lo stato del conto', () => {
-    mount(baseOrder())
+  it('è l’ultima della barra, dopo lo stato del conto', async () => {
+    await mount(baseOrder())
     const figli = [...barra().children]
     const conto = barra().querySelector('.posd-conto-stato')
     expect(figli.indexOf(conto)).toBeGreaterThan(-1)
@@ -2403,8 +2420,8 @@ describe('lo stato della lavorazione sta nella barra in alto', () => {
   // DUE PASTIGLIE VICINE NON DEVONO SEMBRARE LA STESSA COSA: «🟢 Conto
   // aperto» e «🔔 Pronto» sono pure dello stesso verde. Ognuna dice di cosa
   // parla a chi ci si ferma sopra.
-  it('si distingue da quella del conto: ognuna dice di cosa parla', () => {
-    mount(baseOrder())
+  it('si distingue da quella del conto: ognuna dice di cosa parla', async () => {
+    await mount(baseOrder())
     expect(barra().querySelector('.posd-conto-stato').getAttribute('title')).toMatch(
       /^Stato del conto/
     )
@@ -2414,8 +2431,8 @@ describe('lo stato della lavorazione sta nella barra in alto', () => {
   // IL PASSO PIÙ INDIETRO, non il più avanti: chi apre un conto vuole sapere
   // quanto MANCA. È la stessa regola con cui la coda decide lo stato di un
   // conto, e le due schermate non possono discordare.
-  it('con più comande dice il passo PIÙ INDIETRO', () => {
-    mount(
+  it('con più comande dice il passo PIÙ INDIETRO', async () => {
+    await mount(
       baseOrder({
         comande: [
           {
@@ -2437,12 +2454,12 @@ describe('lo stato della lavorazione sta nella barra in alto', () => {
   // spazio manca — misurando la barra e non la finestra, che con lo zoom
   // dell'app mente (`zoom` su #root: al 120% un tablet da 768px di barra ne
   // ha 640 veri).
-  it('la barra si marca «con-lavoro» solo quando la pastiglia c’è', () => {
-    mount(baseOrder())
+  it('la barra si marca «con-lavoro» solo quando la pastiglia c’è', async () => {
+    await mount(baseOrder())
     expect(barra().classList.contains('con-lavoro')).toBe(true)
     mockSettings.workflow_enabled = false
     try {
-      mount(baseOrder())
+      await mount(baseOrder())
       expect([...document.querySelectorAll('.posd-topbar')].at(-1).classList.contains('con-lavoro')).toBe(
         false
       )
@@ -2451,27 +2468,23 @@ describe('lo stato della lavorazione sta nella barra in alto', () => {
     }
   })
 
-  it('col servizio spento non c’è: quel passo lì non esiste per nessuno', () => {
+  it('col servizio spento non c’è: quel passo lì non esiste per nessuno', async () => {
     mockSettings.workflow_enabled = false
     try {
-      mount(baseOrder())
+      await mount(baseOrder())
       expect(document.querySelector('.posd-stato')).toBeNull()
     } finally {
       delete mockSettings.workflow_enabled
     }
   })
 
-  it('a conto chiuso non c’è: non è più una cosa da fare', () => {
-    mount(baseOrder({ status: 'pagato', payment_status: 'pagato' }))
+  it('a conto chiuso non c’è: non è più una cosa da fare', async () => {
+    await mount(baseOrder({ status: 'pagato', payment_status: 'pagato' }))
     expect(document.querySelector('.posd-stato')).toBeNull()
   })
 
-  it('in creazione non c’è: non c’è ancora nessuna comanda', () => {
-    render(
-      <MemoryRouter>
-        <OrderPosDetail order={null} />
-      </MemoryRouter>
-    )
+  it('in creazione non c’è: non c’è ancora nessuna comanda', async () => {
+    await mount(null)
     expect(document.querySelector('.posd-stato')).toBeNull()
   })
 
@@ -2491,8 +2504,8 @@ describe('lo stato della lavorazione sta nella barra in alto', () => {
       })
     })
 
-    it('la pastiglia del lavoro resta per esteso, e cedono ora e parola del conto', () => {
-      mount(baseOrder({ created_at: '2026-08-21T21:00:00.000Z' }))
+    it('la pastiglia del lavoro resta per esteso, e cedono ora e parola del conto', async () => {
+      await mount(baseOrder({ created_at: '2026-08-21T21:00:00.000Z' }))
       expect(pastiglia().textContent).toMatch(/Da fare/)
       expect(document.querySelector('.posd-aperto')).toBeNull()
       const conto = barra().querySelector('.posd-conto-stato')
@@ -2500,15 +2513,65 @@ describe('lo stato della lavorazione sta nella barra in alto', () => {
       expect(conto.getAttribute('title')).toBe('Stato del conto: Conto aperto')
     })
 
-    it('senza lo stato del lavoro la barra resta quella di prima', () => {
+    it('senza lo stato del lavoro la barra resta quella di prima', async () => {
       mockSettings.workflow_enabled = false
       try {
-        mount(baseOrder({ created_at: '2026-08-21T21:00:00.000Z' }))
+        await mount(baseOrder({ created_at: '2026-08-21T21:00:00.000Z' }))
         expect(document.querySelector('.posd-aperto')).toBeTruthy()
         expect(barra().querySelector('.posd-conto-stato').textContent).toMatch(/Conto aperto/)
       } finally {
         delete mockSettings.workflow_enabled
       }
     })
+  })
+})
+
+// ── LE FASCE CHE POSSONO CEDERE (BUG-077) ────────────────────────────
+//
+// Con lo zoom alto l'altezza disponibile cala di un terzo, le misure fisse
+// no, e i tasti in fondo finivano FUORI dal riquadro — `overflow: hidden`
+// sopra, niente da scorrere: irraggiungibili, non scomodi (40 combinazioni
+// su 77, misurate in Chrome). Le regole che li tengono dentro stanno nel
+// foglio e sono sorvegliate da tests/unit/css.test.js, ma si appoggiano a
+// una STRUTTURA: quello che si legge separato da quello che si preme, e i
+// due gesti della serata in un contenitore che non cede. Se qualcuno
+// togliesse questi involucri dal componente, il foglio resterebbe giusto e
+// inerte — e il difetto tornerebbe senza che niente si accorga.
+describe('il piede del conto: cosa cede e cosa resta', () => {
+  it('i numeri stanno in `.posd-foot-info`, separati dai tasti', async () => {
+    await mount(baseOrder({ coperto_amount: 2, service_charge_amount: 1.5 }))
+    const info = document.querySelector('.posd-comanda-foot .posd-foot-info')
+    expect(info, 'i numeri del piede non hanno più il loro involucro').toBeTruthy()
+    expect(within(info).getByText('Totale')).toBeInTheDocument()
+    // E NON contiene i tasti: se li inglobasse, cedendo si porterebbe via
+    // anche quelli — che è esattamente il difetto.
+    expect(info.querySelector('.posd-foot-azioni')).toBeNull()
+  })
+
+  it('«Invia comanda» e «Pagamento» stanno nella riga che non cede', async () => {
+    await mount(baseOrder())
+    const riga = document.querySelector('.posd-foot-azioni .grid-2')
+    expect(riga, 'la riga dei due gesti non c’è più').toBeTruthy()
+    expect(within(riga).getByRole('button', { name: /Invia comanda/ })).toBeInTheDocument()
+    expect(within(riga).getByRole('button', { name: /Pagamento/ })).toBeInTheDocument()
+  })
+
+  it('«Stato servizio» e «Annulla ordine» stanno in `.posd-foot-secondarie`', async () => {
+    // Sono loro a scorrere quando l'altezza non basta per tutti: mai a
+    // sparire, che è quello che facevano prima.
+    await mount(baseOrder())
+    const secondarie = document.querySelector('.posd-foot-azioni .posd-foot-secondarie')
+    expect(secondarie, 'i due secondari non hanno più il loro involucro').toBeTruthy()
+    expect(within(secondarie).getByRole('button', { name: /Annulla ordine/ })).toBeInTheDocument()
+    expect(within(secondarie).getByRole('button', { name: /Stato servizio/ })).toBeInTheDocument()
+  })
+
+  it('la testata della colonna è `.posd-testa`, non uno `style` inline', async () => {
+    // Da inline `flex-shrink: 0` vinceva sempre, e la testata restava una
+    // fascia rigida che spingeva fuori i tasti del piede.
+    await mount(baseOrder())
+    const testa = document.querySelector('.posd-comanda .posd-testa')
+    expect(testa, 'la testata della colonna non ha più la sua classe').toBeTruthy()
+    expect(testa.getAttribute('style')).toBeNull()
   })
 })

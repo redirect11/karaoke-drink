@@ -206,6 +206,15 @@ Regole:
   ed è così che ci si rientra. Il colore non è l'unico segno — accanto
   resta scritto «0/2», perché una cosa che conta non si affida al colore
   (guardrail 1).
+- **Un comando spento che ha un motivo si tocca lo stesso** e al tocco
+  dice perché: `aria-disabled` e la classe `.spento` (opacità 0,4), **mai**
+  l'attributo `disabled` — che non fa nemmeno partire l'evento, e chi preme
+  resta a premere un tasto morto senza sapere cosa ha sbagliato. La
+  spiegazione arriva come toast, in una frase piana. Vale per i tasti (i
+  metodi di pagamento non disponibili, «Acconto» quando l'incasso
+  salderebbe il conto) e per gli interruttori (`ToggleRow`, prop `motivo`:
+  le funzioni premium nelle impostazioni). `disabled` resta solo dove non
+  c'è niente da spiegare, perché il motivo è già in pagina.
 - **I comandi di una lista stanno sopra la lista, in una riga sola**
   (`.payscreen-comandi`, nel pagamento): come si guardano le righe
   («Separa/Unisci uguali») e come si porta la selezione ai due estremi
@@ -260,6 +269,13 @@ Regole:
   sola, e un elenco serve anche a confrontare le sue righe fra loro. E il
   colore non è l'unico segno: sopra l'elenco una frase dice cosa è stato
   trovato, o che per quella data non c'è nessuna chiusura.
+  **La striscia dice una cosa sola per elenco, e cambia da elenco a
+  elenco.** Nel magazzino dice l'assortimento (`.inv-row.ass-*`); negli
+  **ordini fornitore** dice DI CHI È la riga — il colore del fornitore,
+  scritto in linea perché è un dato e non un tema (`coloreFornitore` in
+  `lib/listini.js`, tavolozza `CATEGORY_PALETTE`). Lì lo stesso prodotto
+  compare una volta per fornitore, e senza il colore due righe con lo
+  stesso nome si leggono soltanto arrivando in fondo alla riga.
 
 - **La tavolozza del conto sta in una modale, non nel menu.** Dal «⋯
   Azioni» di una card — del conto e della comanda — il colore si dà da un
@@ -410,8 +426,8 @@ I colori "strutturali" — la linea che separa, il velo di una superficie,
 il fondo di una tessera — non si scrivono a mano: sono gettoni dichiarati
 una volta sola, con la variante chiara accanto, e `applyTheme` la accende
 scrivendo `data-luma` sul documento. Oggi sono `--line`, `--tile-bg`,
-`--velo-superficie`, `--strip-spenta` e i due inchiostri d'allarme
-`--testo-rosso` e `--testo-ambra`. Un `rgba(255, 255, 255, …)` usato
+`--velo-superficie`, `--strip-spenta` e i tre inchiostri di stato
+`--testo-rosso`, `--testo-ambra` e `--testo-verde`. Un `rgba(255, 255, 255, …)` usato
 come fondo o come bordo nasce per il tema scuro e sul chiaro sparisce: è
 sempre lo stesso difetto, e `tests/unit/css.test.js` lo boccia sulle
 superfici delle sezioni.
@@ -434,10 +450,13 @@ più in su: lì era la superficie, qui è quello che ci si scrive sopra.
 Le due vie ammesse:
 
 - **un gettone** — `--text`, `--muted`, `--btn-ink`, e i due nati qui:
-  **`--testo-rosso`** (un numero in perdita, una scorta finita) e
-  **`--testo-ambra`** (una scorta agli sgoccioli, un conto pagato). La
-  tinta non cambia col tema — è memoria del banco, guardrail 5 — cambia
-  la forza, con la variante `[data-luma='light']` accanto;
+  **`--testo-rosso`** (un numero in perdita, una scorta finita),
+  **`--testo-ambra`** (una scorta agli sgoccioli, un conto pagato) e
+  **`--testo-verde`** (soldi che tornano indietro: l'importo di una nota
+  di credito nello scadenzario). La tinta non cambia col tema — è memoria
+  del banco, guardrail 5 — cambia la forza, con la variante
+  `[data-luma='light']` accanto. E il colore non porta mai da solo il
+  significato: la nota di credito ha anche il meno davanti alla cifra;
 - **la regola gemella `:root[data-luma='light'] …`**, che è come il foglio
   tratta le pill degli stati da sempre. Se il selettore è un elenco, di
   sotto vanno elencati **tutti**: è accodandone uno a un elenco già

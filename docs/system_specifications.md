@@ -5,7 +5,7 @@
 > `requirements/bugs.yaml` (i difetti), poi si rigenera con
 > `node scripts/requisiti.mjs --documento`.
 >
-> Generato il 22 agosto 2026.
+> Generato il 7 settembre 2026.
 
 Qui c'è scritto **cosa fa Tana Drink**, area per area: la cassa di «La Tana
 del Coniglio», quella che si usa al banco mentre il locale è pieno. Non è un
@@ -22,15 +22,15 @@ fallire la suite, e un requisito che cita un test inesistente pure.
 
 | | Quante | Cosa vuol dire |
 |---|---|---|
-| ✅ | 176 | fatto e coperto dai test |
-| ⚠️  | 14 | fatto ma nessun test lo verifica |
-| ⬜ | 21 | da fare |
-| 🗑 | 1 | non più valido |
+| ✅ | 192 | fatto e coperto dai test |
+| ⚠️  | 15 | fatto ma nessun test lo verifica |
+| ⬜ | 20 | da fare |
+| 🗑 | 7 | non più valido |
 
-**212 voci** in tutto. **190** descrivono il sistema com'è oggi e
-stanno in «[Cosa fa il sistema](#cosa-fa-il-sistema)»; **21** sono lavori
+**234 voci** in tutto. **207** descrivono il sistema com'è oggi e
+stanno in «[Cosa fa il sistema](#cosa-fa-il-sistema)»; **20** sono lavori
 previsti e stanno in un capitolo a parte, perché un impegno preso non è una
-cosa che l'app fa; **8** difetti noti sono ancora aperti.
+cosa che l'app fa; **10** difetti noti sono ancora aperti.
 
 Le voci ⚠️ sono la parte scomoda: funzionano, ma **nessun test le tiene**.
 Sono quelle che si rompono senza che nessuno se ne accorga, e vanno lette
@@ -41,27 +41,27 @@ come «vero oggi», non come «garantito».
 | Area | Fatto | Previsto | Di cosa parla |
 |---|---|---|---|
 | [Ordini e comande](#ordini-e-comande) | 18 | 1 | Il conto e le sue comande: come nascono, come cambiano stato, come arrivano al banco. |
-| [Cassa e POS](#cassa-e-pos) | 17 | 2 | La schermata più usata della serata: si compone un conto, si corregge, si chiude. |
+| [Cassa e POS](#cassa-e-pos) | 18 | 2 | La schermata più usata della serata: si compone un conto, si corregge, si chiude. |
 | [Pagamenti](#pagamenti) | 13 | 1 | Come si incassa: contanti, carta, SumUp, pagamenti parziali e separati. |
 | [La coda del banco](#la-coda-del-banco) | 9 | — | Quello che il banco vede mentre lavora: cosa c’è da fare adesso, e in che ordine. |
 | [Gruppi di conti](#gruppi-di-conti) | 4 | — | Più conti che vanno insieme — un tavolo, una comitiva — senza fonderli in uno. |
 | [Tavoli](#tavoli) | — | 2 | L’anagrafica dei tavoli e il modo in cui un ordine ci si aggancia. |
-| [Menù e catalogo](#menù-e-catalogo) | 9 | — | Il listino: drink, categorie, disponibilità, prezzi. |
-| [Magazzino](#magazzino) | 20 | 7 | Prodotti, ricette, scorte e consumi. Le quantità sono sempre in unità base. |
+| [Menù e catalogo](#menù-e-catalogo) | 10 | — | Il listino: drink, categorie, disponibilità, prezzi. |
+| [Magazzino](#magazzino) | 35 | 6 | Prodotti, ricette, scorte e consumi. Le quantità sono sempre in unità base. |
 | [Cassa di serata e statistiche](#cassa-di-serata-e-statistiche) | 12 | 2 | La serata vista dai numeri: incassi, chiusura, statistiche, conti del locale. |
-| [Stampa](#stampa) | 14 | 1 | La stampante termica al banco: comande, scontrini, chiusure di cassa. |
+| [Stampa](#stampa) | 17 | 1 | La stampante termica al banco: comande, scontrini, chiusure di cassa. |
 | [Vista cliente](#vista-cliente) | 6 | — | Quello che vede il cliente: vetrina, menù, stato del suo ordine. |
 | [Notifiche](#notifiche) | 4 | — | Le notifiche push: a chi arrivano, quando, e quando invece non devono arrivare. |
 | [Avvisi a schermo](#avvisi-a-schermo) | 2 | — | I messaggi a schermo dentro l’app — quelli che si leggono col vassoio in mano. |
 | [Persone: ruoli, utenze, ore](#persone-ruoli-utenze-ore) | 10 | 1 | Chi può fare cosa, chi è al banco, quante ore ha fatto e quanto prende. |
 | [Sicurezza](#sicurezza) | 2 | 1 | Regole di accesso, App Check, e cosa protegge cosa. |
-| [Si lavora anche senza rete](#si-lavora-anche-senza-rete) | 5 | — | Cosa continua a funzionare quando la rete non c’è, e come lo si vede. |
+| [Si lavora anche senza rete](#si-lavora-anche-senza-rete) | 6 | — | Cosa continua a funzionare quando la rete non c’è, e come lo si vede. |
 | [Dati e ambienti](#dati-e-ambienti) | 2 | — | Il modello dei dati, gli ambienti (test e produzione) e il modo di travasarli. |
-| [Integrazione SumUp](#integrazione-sumup) | 6 | — | Il dialogo con il terminale SumUp, dalle Cloud Functions. |
 | [Intelligenza artificiale](#intelligenza-artificiale) | — | 1 | Dove l’intelligenza artificiale entra nel lavoro del locale. |
 | [Interfaccia](#interfaccia) | 23 | 1 | Le regole dell’interfaccia: tema, navigazione, spazi, cosa si vede e cosa si toglie. |
-| [Come si lavora al progetto](#come-si-lavora-al-progetto) | 13 | 1 | Non è comportamento dell’app: è il metodo con cui la si costruisce. |
+| [Come si lavora al progetto](#come-si-lavora-al-progetto) | 14 | 1 | Non è comportamento dell’app: è il metodo con cui la si costruisce. |
 | [STAT](#stat) | 1 | — |  |
+| [LIC](#lic) | 1 | — |  |
 
 ## Cosa fa il sistema
 
@@ -344,6 +344,12 @@ Nel riepilogo del conto prima c'era una riga cumulativa («Coperto/servizio/manc
 SUBTOTALE in evidenza (il conto nudo, in grassetto, appena più grande delle voci), sotto le voci attive una per riga in piccolo — Coperto, Servizio, Mancia, solo quelle maggiori di zero — e in fondo il TOTALE grande che somma tutto. Le righe sono strette: il blocco non deve crescere in altezza. Sul telefono il dettaglio parte chiuso e si apre toccando il Subtotale.
 
 **Dove**: `src/components/OrderPosDetail.jsx` · **Lo dimostrano**: `tests/component/OrderPosDetail.test.jsx`
+
+#### REQ-POS-020 — La ricerca dei prodotti si cancella con un tocco
+
+Chiesto da Flavio il 03/09/2026, con la foto del campo cerchiato: «nella selezione degli items di menu aggiungere qui il tastino di cancellazione scrittura». La ✕ che i browser mettono da soli nei campi di ricerca non c'è su tutte le piattaforme, e dov'è è un bersaglio da mouse: qui si batte col dito, di sera, con una mano occupata a reggere qualcosa. Per ripulire la ricerca bisognava tenere premuto il tasto di cancellazione finché il campo non si svuotava. Il tastino compare SOLO con del testo dentro — un campo vuoto con una ✕ accanto è un bersaglio che non fa niente — e lasciando il fuoco nel campo, perché il gesto dopo è quasi sempre riscrivere.
+
+**Dove**: `src/components/PosProductPicker.jsx, src/index.css` · **Lo dimostrano**: `tests/component/PosProductPicker.test.jsx`
 
 ### Pagamenti
 
@@ -769,6 +775,12 @@ NEL CALCOLO: `aliquotaDiVendita` (macroStats.js) sceglie per riga quella della V
 
 **Dove**: `src/components/MenuManager.jsx, src/lib/api.js, src/lib/macroStats.js, src/components/SettingsTab.jsx` · **Lo dimostrano**: `tests/unit/macroStats.test.js`, `tests/unit/ricetteUnita.test.js`, `tests/component/MenuManager.test.jsx`
 
+#### REQ-MENU-014 — Un prodotto fuori menù si vede che è spento
+
+Chiesto da Flavio il 03/09/2026, con la foto: «l'unica cosa che cambia è che la scritta da nera diventa grigia, e nei non disponibili si vede poco. Per farla più impattante metterei la scritta bianca e il fondo della card in grigio scuro». Aveva ragione: la differenza fra una card accesa e una spenta era la sola trasparenza al 55%, che di sera e con centinaia di card in griglia non si legge. Un drink spento scambiato per acceso è un drink promesso a un cliente e mai fatto. Adesso la card fuori menù ha il FONDO scuro e la scritta bianca: la differenza si vede da lontano e senza andare a leggere. La striscia colorata resta, e sul fondo scuro si distingue meglio di prima. Vale SOLO per la gestione del menù, dove la domanda è «cosa c'è e cosa no»: le altre schede amministrative continuano a sbiadire, che lì basta e il colpo d'occhio non serve.
+
+**Dove**: `src/index.css` · ⚠️ **Nessun test lo verifica.**
+
 ### Magazzino
 
 Prodotti, ricette, scorte e consumi. Le quantità sono sempre in unità base.
@@ -801,13 +813,23 @@ TORNARE INDIETRO NON RISTORNA, ED È UNA SCELTA — decisa il 19/08 spostando lo
 
 3) IL GESTO GIUSTO ESISTE GIÀ. Per un drink che davvero non è stato fatto si annulla la comanda, che reintegra dallo snapshot di consumo (REQ-MAG-005). Lo stato intanto resta COERENTE: quegli ingredienti stanno nella giacenza scalata e fuori dall'impegnato, contati una volta e una sola, e «quello che ti ritrovi a fine serata» non si muove. Se un domani si decidesse di ristornare davvero, la strada è riusare il riallineo per DIFFERENZA che c'è già (`riallineaInSottofondo` / `consumptionDiff`, REQ-MAG-004), non scrivere un percorso nuovo. Il magazzino che non risponde non blocca la comanda: resta segnata come non scaricata e si recupera alla riscossione (`unappliedEntries`), che resta la rete di sicurezza anche con gli stati accesi.
 
-SOTTO ZERO NON SI SCENDE: si toglie al massimo quello che risulta in giacenza, e un carico su una giacenza negativa riparte da zero. La vendita passa comunque (il conto è già scritto) e il magazzino si ferma a zero: altrimenti il buco resta, il carico dopo conta meno di una bottiglia e il valore in euro va in negativo.
+SOTTO ZERO CI SI SCENDE, ED È VOLUTO (BUG-101, chiesto da Flavio il 03/09/2026). Quello che esce si toglie tutto, anche quando la giacenza non basta: un prodotto che continua a uscire dopo essere finito non è finito davvero — è arrivato senza che nessuno lo caricasse, o l'ultimo inventario era vecchio — e fermarsi a zero cancellava proprio il numero che lo dice. Il meno arriva fino alla card, perché un magazzino che sa di essere sotto zero e lo tiene per sé è il silenzio da cui il difetto è nato.
 
-**Dove**: `src/lib/inventory.js computeConsumption, src/lib/comande.js, src/lib/api.js` · **Lo dimostrano**: `tests/unit/inventory.test.js`, `tests/unit/incassoOffline.test.js`, `tests/unit/comande.test.js`, `tests/unit/scritturaComande.test.js`, `tests/unit/impegnato.test.js`, `tests/unit/salaEMagazzino.test.js`
+IL MENO NON È MERCE CHE MANCA: da uno scaffale vuoto non si versa. È la misura di quanto se n'è versato senza che risultasse, e per questo si chiude da sé al primo CARICO, che riparte da zero (`giacenzaPerCarico`): le sei bottiglie appena consegnate sullo scaffale ci sono tutte e sei, e il magazzino deve contarle tutte e sei — non cinque, come farebbe trattando il buco da debito.
+
+DUE COSE RESTANO DA ZERO IN SU, e non è una svista. I SOLDI: un magazzino che vale meno di niente non vuol dire niente (`unitsInStock`, `stockValue`).
+
+LE BOTTIGLIE DA TOCCARE: sono oggetti su uno scaffale, e «−1 piena più 750 ml nell'aperta» non è una cosa che si può andare a guardare (`bottleBreakdown`). Il meno lo porta `pezziInGiacenza`, che conta una quantità e non degli oggetti.
+
+LO SCARICO A MANO INVECE SI FERMA A ZERO (`scaricoPossibile`): lì c'è una persona che dichiara quanto ha tolto dallo scaffale, e da uno scaffale vuoto non si toglie niente.
+
+**Dove**: `src/lib/inventory.js computeConsumption, src/lib/comande.js, src/lib/api.js` · **Lo dimostrano**: `tests/unit/inventory.test.js`, `tests/unit/incassoOffline.test.js`, `tests/unit/comande.test.js`, `tests/unit/scritturaComande.test.js`, `tests/unit/impegnato.test.js`, `tests/unit/salaEMagazzino.test.js`, `tests/unit/magazzinoSottoZero.test.js`
 
 #### REQ-MAG-004 — Modificare un ordine già scalato riallinea le scorte alla differenza
 
 Cambiando le righe di una comanda già scaricata si scala o si restituisce solo la differenza, non l'intero consumo: altrimenti ogni correzione falserebbe il magazzino.
+
+NEI DUE VERSI DAVVERO (BUG-101). La differenza si applica com'è: in più si scala, in meno TORNA in giacenza. Il freno che teneva il magazzino sopra lo zero stava anche qui, e non toglieva soltanto il meno — un drink tolto da una comanda già scalata porta una differenza negativa, cioè merce che torna sullo scaffale, e veniva azzerata insieme al resto: il movimento diceva «carico», la giacenza non si muoveva di un millilitro, e il magazzino restava indietro di un drink per sempre. A mangiarsela era `qtyInStockUnit`, che davanti a un numero negativo rispondeva zero: adesso converte conservando il segno. Qui NON si riparte da zero come fa un carico merce: questo non è un rifornimento, è la stessa uscita annullata, e deve rimettere il meno dov'era.
 
 **Dove**: `src/lib/warehouse.js consumptionDiff` · **Lo dimostrano**: `tests/unit/warehouse.test.js`
 
@@ -825,13 +847,17 @@ Dal sottoscorta si genera una proposta d'ordine per fornitore, in confezioni int
 
 #### REQ-MAG-007 — Assortimento: quattro stati per capire cosa si tiene
 
-Ogni articolo è assortimento, linea, premium o fuori servizio. Serve a distinguere quello che si tiene sempre da quello che si compra su richiesta, e a filtrare l'inventario di conseguenza.
+Ogni articolo è assortimento, linea, premium o fuori servizio. Serve a distinguere quello che si tiene sempre da quello che si compra su richiesta, e a filtrare l'inventario di conseguenza. ⚠️ AGGIORNAMENTO 27/08/2026 (REQ-MAG-037): i quattro valori restano quattro in schermata e nei filtri, ma NON SONO PIU' ALLA PARI. I veri stati commerciali sono TRE — in linea, premium, fuori linea — e «in assortimento» e' diventato uno stato SUPERIORE e TEMPORANEO: lo prende chi sta dentro un ordine aperto, al posto del suo, e alla fine restituisce quello di prima (il prodotto se lo ricorda). Quindi in magazzino comparira' un gruppo di prodotti in quello stato che prima non c'era mai, e chi cerca «i premium» in quel momento non ci trovera' quelli in arrivo. La regola «fuori assortimento non si ricompra» e' gia' stata ammorbidita da REQ-MAG-036: un `out` sta in tabella e si puo' ordinare a mano — e' cosi' che rientra — ma non si propone da solo, e in assortimento non ci passa.
 
 **Dove**: `src/lib/inventory.js ASSORTIMENTI` · **Lo dimostrano**: `tests/unit/inventory.test.js`
 
 #### REQ-MAG-010 — Il magazzino sta in una schermata, con le sezioni a lato
 
-Prodotti, Conta, Ordini, Scadenzario, Categorie, Macro-categorie, Fornitori e Movimenti si scelgono dalla BARRA IN ALTO: il titolo della pagina è il comando. In pagina costavano spazio fisso tutto il giorno — due file di tasti più tre pannelli a scomparsa, poi una barra a sinistra (che rubava la colonna ai prodotti), poi una riga di schede — per una scelta che si fa ogni tanto. Sul telefono, dove nella barra non ci sta un elenco, si apre il foglio dal basso: lo stesso gesto di «⋯ Azioni», che al banco si conosce già. La ricerca sta sopra; sotto, una riga sola con due TENDINE (filtri di scorta e assortimento, fornitore), il valore di magazzino, card/lista come due icone e il tasto per un prodotto nuovo. Il tasto di una tendina dice cosa è scelto senza doverla aprire. I filtri (tutti, in scorta, in esaurimento, esauriti, e i quattro di assortimento) stanno su UNA RIGA sola, con scritto che sono filtri: sembravano un riepilogo, si leggevano i numeri senza capire che toccandoli la lista si restringeva. Il valore di magazzino è lì accanto ma non si tocca: è un numero da leggere, non un filtro. «IN SCORTA» È LA DOMANDA CHE MANCAVA (segnalato al banco il 18/08, coi 388 articoli veri sotto gli occhi: «al filtro manca quelli in magazzino»). Si poteva chiedere solo cosa sta finendo e cosa è finito; per vedere cosa c'è davvero sullo scaffale bisognava guardare «Tutti» e saltare a occhio due terzi di righe esaurite — 232 su 388. Sta per prima delle tre, che è l'ordine in cui ci si fa le domande, e ha il suo conteggio come le altre. GLI «IN ESAURIMENTO»
+Prodotti, Conta, Categorie, Macro-categorie e Movimenti si scelgono dalla BARRA IN ALTO: il titolo della pagina è il comando.
+
+TRE SEZIONI SONO USCITE DI QUI il 26/08/2026 — Ordini, Scadenzario e Fornitori sono passate alla sezione «Fornitori» del gestionale (REQ-MAG-028): il magazzino risponde a «cosa ho sullo scaffale», loro a «con chi lavoro e quanto gli devo».
+
+LA CONTA È UNA FUNZIONE PREMIUM (REQ-LIC-001) e per la Tana non è inclusa: di partenza il magazzino ha QUATTRO sezioni. Restano nello stesso elenco (`INV_VIEWS`), che si filtra: l'ordine delle sezioni è uno solo, e un secondo elenco prima o poi direbbe un'altra cosa. La vista aperta si ricava dall'elenco filtrato, così se il modulo si spegne mentre la sua sezione è aperta si torna ai Prodotti. In pagina costavano spazio fisso tutto il giorno — due file di tasti più tre pannelli a scomparsa, poi una barra a sinistra (che rubava la colonna ai prodotti), poi una riga di schede — per una scelta che si fa ogni tanto. Sul telefono, dove nella barra non ci sta un elenco, si apre il foglio dal basso: lo stesso gesto di «⋯ Azioni», che al banco si conosce già. La ricerca sta sopra; sotto, una riga sola con due TENDINE (filtri di scorta e assortimento, fornitore), il valore di magazzino, card/lista come due icone e il tasto per un prodotto nuovo. Il tasto di una tendina dice cosa è scelto senza doverla aprire. I filtri (tutti, in scorta, in esaurimento, esauriti, e i quattro di assortimento) stanno su UNA RIGA sola, con scritto che sono filtri: sembravano un riepilogo, si leggevano i numeri senza capire che toccandoli la lista si restringeva. Il valore di magazzino è lì accanto ma non si tocca: è un numero da leggere, non un filtro. «IN SCORTA» È LA DOMANDA CHE MANCAVA (segnalato al banco il 18/08, coi 388 articoli veri sotto gli occhi: «al filtro manca quelli in magazzino»). Si poteva chiedere solo cosa sta finendo e cosa è finito; per vedere cosa c'è davvero sullo scaffale bisognava guardare «Tutti» e saltare a occhio due terzi di righe esaurite — 232 su 388. Sta per prima delle tre, che è l'ordine in cui ci si fa le domande, e ha il suo conteggio come le altre. GLI «IN ESAURIMENTO»
 
 CI STANNO DENTRO: sono in magazzino, solo pochi. «In esaurimento» è una lente più stretta dentro la stessa famiglia, non un'altra famiglia — e chi guarda cosa c'è vuole vedere anche l'ultima bottiglia di gin, che è proprio quella che gli serve sapere. Così il conto torna a vista: in scorta più esauriti fa il totale, e chi somma le voci non trova numeri che non tornano.
 
@@ -1051,6 +1077,568 @@ SOTTO UN GIORNO PIENO NON SI DIVIDE: una conta aperta e chiusa in tre ore darebb
 
 **Dove**: `src/lib/warehouse.js stockCountCompute, src/components/InventoryManager.jsx` · **Lo dimostrano**: `tests/unit/warehouse.test.js`, `tests/component/StockCountPanel.test.jsx`
 
+#### REQ-MAG-035 — Il listino si compila nella scheda del fornitore, non ordinando
+
+Chiesto dall'utente il 27/08/2026, dopo aver provato quello che era stato costruito: «l'associazione prodotto -> fornitori DEVE avvenire nella gestione Fornitori. Quando creo/modifico un fornitore mi si deve aprire una pagina dove posso associare i prodotti gia' in magazzino a quel fornitore, o addirittura CREARE un prodotto che poi andra' a finire in magazzino. Posso aggiungere anche un prezzo di listino, che poi sara' quello che vedro' quando compilero'/precompilero' un ordine nella sezione ordini».
+
+COSA CAMBIA RISPETTO A OGGI. Il listino (REQ-MAG-029) esiste gia' come dato — `supplier_prices`, una riga per coppia prodotto-fornitore — ma non ha una schermata: si popola da solo consegnando gli ordini, e la scheda prodotto ha una tendina che ne scrive una riga. Chi implemento' REQ-MAG-029 lascio' fuori l'editor scrivendo che «non era chiesto». Adesso lo e', ed e' il PUNTO DI PARTENZA di tutto il giro: senza listino compilato la schermata dell'ordine non ha prezzi da proporre.
+
+LA SCHEDA DEL FORNITORE diventa quindi il posto dove si dice CHE COSA quel fornitore vende e A QUANTO: si cercano i prodotti gia' in magazzino e li si associa, si mette il prezzo di listino per pezzo, e si puo' creare li' un prodotto che ancora non esiste — che nasce in magazzino come qualunque altro.
+
+IL PREZZO DI LISTINO E' QUELLO CHE SI VEDE QUANDO SI ORDINA. Non e' il costo del prodotto (che resta uno solo, l'ultimo pagato, REQ-MAG-029) e non e' il prezzo di vendita del menu, che e' di Flavio.
+
+RESTA VERO che il prezzo si aggiorna anche dall'altro capo: quando si riceve merce e si corregge il prezzo, quella riga di listino si aggiorna con la sua data. Le due strade scrivono lo stesso dato. E LA FATTURA HA L'ULTIMA PAROLA. Aggiunto dall'utente il 27/08: «se il fornitore cambia i prezzi rispetto all'ordine — e possiamo vederlo solo dalla fattura — I PREZZI DEL LISTINO VANNO ALLINEATI A QUELLI DELLA FATTURA, mantenendo lo STORICO DEI PREZZI per le statistiche che voleva Flavio sull'andamento dei prezzi». E' la regola giusta perche' segue chi decide davvero: il listino e' cio' che ci aspettiamo di pagare, la fattura e' cio' che si paga. Un listino che resta fermo mentre le fatture salgono fa preventivare ordini a cifre che non esistono piu', e l'aumento si scopre solo guardando il conto corrente.
+
+SERVE QUINDI UNO STORICO, e oggi NON C'E': la riga di `supplier_prices` tiene UN prezzo solo (`price`, `last_price`, `last_price_at`), quindi ogni aggiornamento CANCELLA quello di prima. Finche' e' cosi', la domanda «quanto e' aumentato il Campari da gennaio» non ha dove leggersi. Va aggiunto un registro delle variazioni — per coppia prodotto-fornitore: prezzo, data, e DA DOVE viene (compilato a mano, corretto alla consegna, allineato da una fattura), perche' un prezzo scritto a mano e uno preso da un documento non hanno lo stesso peso. E' il dato che rende possibile il grafico che Flavio ha chiesto e che REQ-MAG-029 aveva rimandato: «ogni volta che carico qualcosa e vado a modificare il prezzo, il sistema mi dovrebbe registrare quanto acquistato e la variazione di prezzo su un grafico». Il grafico resta un'altra voce; QUI si scrive il dato senza cui non potra' mai esistere. Chi tocca questa parte scriva lo storico anche se il grafico non c'e' ancora: uno storico non si puo' ricostruire all'indietro. COM'E' STATO FATTO (27/08/2026). Il listino e' il DETTAGLIO della riga del fornitore, non una sottosezione in piu': si apre da «📋 Listino» in Fornitori -> Gestione fornitori, si esce con «← Fornitori» e uscendo si dimentica (docs/navigazione.md). Creando un fornitore si apre subito il suo listino, che e' quello che l'utente chiedeva con «quando creo/modifico un fornitore». La scheda prodotto del magazzino resta dov'era, tendina fornitore compresa: «non deve cambiare l'attuale UI o UX del magazzino» — scrive la sua riga di listino come prima, e adesso anche la variazione.
+
+IL PRODOTTO CHE NASCE DA QUI passa dalla stessa funzione del prodotto che nasce da una consegna (`prodottoDaRigaOrdine`, REQ-MAG-032): nome e prezzo, contato a pezzi, con la SCHEDA DA COMPLETARE addosso. L'id se lo da' il client invece di aspettare `addDoc`, che offline non torna mai: il prodotto esiste subito, anche senza rete.
+
+LO STORICO E' UNA COLLEZIONE A RADICE, `supplier_price_history`, una riga per variazione: `supplier_id`, `item_id`, `price`, `previous_price`, `origine` (manuale / consegna / fattura) e `at`. L'id e' deterministico — coppia piu' istante — perche' le scritture in sottofondo si ripetono quando falliscono, e con un id casuale il secondo tentativo lascerebbe un doppione che sul grafico si legge come un'oscillazione mai avvenuta. Il prezzo di prima sta SULLA RIGA: chi legge una variazione da sola deve poter dire di quanto e' salita.
+
+LE TRE STRADE CHE LA SCRIVONO passano tutte da `scriviVariazionePrezzo` in `api.js`: `salvaRigaListino` (a mano), il ramo dentro `registraAcquisto` chiamato dalla consegna di un ordine, e lo stesso ramo chiamato dalle righe di una fattura. Il prezzo di prima si legge PRIMA di scrivere, nella stessa attesa che gia' legge gli articoli: dopo, la cache direbbe gia' quello nuovo. Una variazione si scrive solo se il prezzo cambia davvero, al centesimo — se no lo storico si riempirebbe di righe uguali a ogni consegna.
+
+RESTA FUORI, ed e' voluto: il grafico dell'andamento dei prezzi (voce sua), e la schermata degli ordini, che si rifa' col 036/037.
+
+**Dove**: `src/components/ListinoFornitore.jsx, src/lib/storicoPrezzi.js, src/lib/api.js` · **Lo dimostrano**: `tests/unit/storicoPrezzi.test.js`, `tests/unit/storicoPrezziScrittura.test.js`, `tests/component/ListinoFornitore.test.jsx`
+
+#### REQ-MAG-036 — «Nuovo Ordine»: una tabella sola, e la riga che si apre
+
+Chiesto dall'utente il 27/08/2026, bocciando quello che era stato costruito: «nella sezione ordini NON MI PIACE LA DOPPIA LISTA e quei box sono POSTICCI. Serve una UX e UI piu' moderna e semplice. Deve esserci UNA SOLA TABELLA dove su ogni riga vedro' il nome del prodotto e i vari campi per compilare l'ordine, compresa una dropdown per la scelta del fornitore».
+
+LA RIGA. Nome del prodotto · fornitore (tendina) · prezzo unitario preso dal LISTINO di quel fornitore (REQ-MAG-035) · prezzo totale rispetto ai pezzi voluti, modificabile sulla riga stessa · e un modo per selezionare le righe da ordinare.
+
+IL FILTRO E LA RICERCA, parole sue: «quando filtro per fornitore vedro' nella tabella solo gli item di quel fornitore; se cerco un prodotto vedro' probabilmente il prodotto DUPLICATO se associato a piu' di un fornitore». Il duplicato non e' un difetto: e' lo stesso prodotto in due listini, e si distingue per fornitore e colore (REQ-MAG-029).
+
+LA RIGA CHE SI APRE: «quando seleziono un item mi si deve aprire la riga che mi dira' anche le info di quel prodotto — se in assortimento, out, in linea eccetera, quante scorte ho ancora in magazzino — piu' la possibilita' di modificare gli stessi campi che modificherei inline sulla riga stessa». Le stesse cose, due strade: in linea per chi sa gia' cosa vuole, aperta per chi deve guardare prima di decidere.
+
+LA PRESELEZIONE, che e' il motivo per cui questa schermata esiste: sono spuntati di partenza i prodotti FINITI o SOTTO LA SOGLIA di riordino impostata sul prodotto. Chi apre la schermata trova gia' fatto il lavoro di girare il magazzino.
+
+NON SI PRECOMPILA CHI E' FUORI LINEA: «se e' fuori linea non viene considerato nella precompilazione dell'ordine» (utente, 27/08). Un prodotto `out` si puo' sempre ordinare a mano — e' cosi' che rientra — ma non si propone da solo. L'ORDINE STA DI FIANCO, NON IN FONDO. Aggiunto dall'utente il 27/08/2026 dopo aver provato: «e' SCOMODISSIMO l'ordine in basso. Dobbiamo metterlo affianco, e gia' li' separare i prodotti di un fornitore rispetto a un altro». La schermata si legge quindi a due colonne: a sinistra il catalogo da cui si sceglie, a destra l'ordine che si sta componendo, gia' diviso per fornitore. In fondo obbligava a scorrere avanti e indietro per sapere cosa si era gia' messo — e il riepilogo per fornitore (REQ-MAG-037) arrivava troppo tardi, alla conferma, quando lo si vuole sapere MENTRE si sceglie. L'INTESTAZIONE RESTA IN ALTO E ORDINA. «Voglio l'header della tabella fisso in alto, coi titoli delle colonne che posso usare per ordinare»: per NOME, per DISPONIBILITA' IN INVENTARIO, per PREZZO DI LISTINO e per FORNITORE. Con centinaia di righe, un'intestazione che scorre via lascia chi guarda a indovinare che cosa sia la terza colonna.
+
+LA DISPONIBILITA' HA TRE STATI e vanno mostrati:
+
+IN SCORTA, IN ESAURIMENTO, ESAURITO. Non e' un dato nuovo — e' `stockStatus` in src/lib/inventory.js (`ok` / `low` / `empty`), lo stesso che decide la preselezione: si mostra quello, non se ne calcola un altro.
+
+LE RIGHE SI PAGINANO. «Sono tanti e possono essere duplicati per piu' fornitori: e' vero che abbiamo la ricerca, ma dobbiamo paginare, e posso selezionare anche quanti risultati per pagina — oppure implementiamo un endless scroll che carica i successivi dopo un tot». Il numero misurato il 27/08 dice perche' serve: 388 prodotti e 367 righe di listino gia' importate, e una riga per COPPIA prodotto-fornitore. La ricerca non basta, perche' il primo gesto di chi apre la schermata non e' cercare: e' GUARDARE cosa manca. Delle due strade, quella da preferire e' lo SCORRIMENTO CONTINUO, e la ragione e' d'uso: si compone un ordine scorrendo, e una paginazione costringerebbe a ricordarsi cosa si e' spuntato a pagina 2 mentre si guarda la 3. Se pero' lo scorrimento continuo litiga con l'intestazione fissa o con l'ordinamento, si fa la paginazione con la scelta di quanti per pagina: e' la seconda strada che l'utente indica, non un ripiego inventato.
+
+IL TOCCO SULLA RIGA AGGIUNGE E TOGLIE. Chiesto dall'utente il 27/08 dopo aver provato: «se clicco su una riga degli ordini, questo deve essere aggiunto se non e' aggiunto e toglierlo se e' aggiunto. In pratica basta che tocco la riga». Il bersaglio e' tutta la riga, non solo la casella: si compone un ordine passando in rassegna decine di prodotti, e centrare una casella piccola decine di volte e' il tipo di fatica che non si nota finche' non la si fa. I campi che si scrivono (quantita', tendina del fornitore) e il tasto che apre la riga restano esclusi dal tocco, se no scriverci dentro toglierebbe il prodotto dall'ordine.
+
+LA CASELLA RESTA DOV'E', ed e' la scelta che tiene in piedi il gesto per chi non usa il dito: e' lei a portare ruolo, nome e stato («Ordina Bjorne, casella di controllo, selezionata») e a farsi premere con lo spazio dopo esserci arrivati col tabulatore. Il tocco sulla riga e' un bersaglio piu' grande sopra la stessa cosa, non un gesto suo: un `div` cliccabile al posto della casella sarebbe un comando che col tabulatore non esiste e che nessun lettore di schermo annuncia. Quello che e' gia' nell'ordine si riconosce anche dal FONDO della riga, perche' componendo se ne scorrono decine e la spunta da sola e' un segno piccolo in fondo a sinistra.
+
+LA QUANTITA' SELEZIONA: «se aggiungo una quantita' sulla riga del prodotto, questo viene selezionato automaticamente per l'ordine». Scrivere una quantita' E' la decisione di ordinarlo: chiedere anche la spunta sarebbe far dire due volte la stessa cosa. COM'E' STATO FATTO (27/08/2026). La composizione e' una schermata sua, `NuovoOrdinePanel`, dentro il pannello Ordini; i conti — ordinamento, preselezione, prezzi, finestra delle righe, raggruppamento per fornitore — stanno in `src/lib/composizioneOrdine.js`, dove si provano senza Firebase. La tabella riusa le classi che esistono gia' (`inv-list inv-table`, `inv-thead`, `inv-row`, `inv-row-dettaglio`) e l'intestazione ordinabile e' lo stesso componente della lista del magazzino, spostato in `src/components/SortTh.jsx` invece di essere riscritto due volte.
+
+SCORRIMENTO CONTINUO, non paginazione: e' la strada che l'utente preferisce e non litiga con niente. L'intestazione resta in alto perche' a scorrere e' la TABELLA, che ha una barra sua (`position: sticky` dentro un riquadro che scorre), e l'ordinamento riparte dalla prima finestra invece di tenere in vita seicento righe gia' disegnate. Il passo e' 40 righe. Accanto al conteggio c'e' un tasto «Mostra altre righe»: chi arriva con la tastiera non fa scorrere niente col tabulatore, e senza quel tasto la finestra non crescerebbe mai.
+
+IL FUORI LINEA ADESSO E' IN TABELLA. Prima gli `out` erano esclusi dal catalogo ordinabile (REQ-MAG-007, «non si ricompra»): cosi' pero' non c'era modo di farli rientrare, e ordinarne uno e' esattamente il gesto con cui rientrano. Restano fuori dalla PRESELEZIONE, che e' quello che l'utente ha chiesto, e portano scritto «fuori linea» accanto al nome.
+
+IL TOTALE SI CORREGGE, IL €/pz NO. La colonna del prezzo unitario e' il LISTINO di quel fornitore e resta di sola lettura: e' il dato che dice quanto ci si aspetta di pagare, e non deve mettersi a ballare mentre si scrive. Il totale della riga si scrive a mano, e da li' si ricava il prezzo che finisce sull'ordine (totale / pezzi). Cambiando i pezzi o il fornitore la correzione si perde: valeva per QUEI pezzi da QUEL fornitore.
+
+LA PRESELEZIONE PRENDE UNA RIGA SOLA PER PRODOTTO — quella del fornitore dell'ULTIMO ACQUISTO — perche' lo stesso Campari su due listini ha due righe, e spuntarle tutte e due vorrebbe dire comprarlo due volte. I DUE SUGGERIMENTI DI REQ-MAG-029 (chi e' l'ultimo acquisto, chi e' il piu' economico) sono passati dalla riga alla SCHEDA che si apre: in una riga di tabella a otto colonne non ci stavano, e la scheda e' dove si guarda un prodotto prima di decidere.
+
+LA TENDINA SELEZIONA COME LA QUANTITA': scegliere chi ci vende quel prodotto e' la stessa decisione di scrivere quanti pezzi servono, e lasciare la riga non spuntata dopo averlo fatto sarebbe un secondo gesto per la stessa cosa.
+
+RESTA FUORI, ed e' voluto: lo STORICO ORDINI e' rimasto quello di prima, sotto la composizione, con le sue fette per fornitore — diventa «Lista Ordini» con REQ-MAG-038, e il riepilogo di conferma e' REQ-MAG-037. La bozza della composizione vive finche' si sta sulla schermata: non e' la bozza del POS e non e' stato chiesto che sopravviva a un'uscita.
+
+**Dove**: `src/components/NuovoOrdinePanel.jsx, src/components/PurchaseOrdersPanel.jsx, src/lib/composizioneOrdine.js, src/lib/listini.js, src/lib/inventory.js` · **Lo dimostrano**: `tests/unit/composizioneOrdine.test.js`, `tests/component/NuovoOrdineTabella.test.jsx`
+
+#### REQ-MAG-037 — Il riepilogo per fornitore, e «in assortimento» come stato di passaggio
+
+Chiesto dall'utente il 27/08/2026. La conferma di un giro d'ordini non e' un tasto: e' una schermata di revisione, fornitore per fornitore. «La creazione dell'ordine deve portarmi a una schermata di RIEPILOGO dove avro' una serie di tabelle in base all'ordine che voglio fare ai vari fornitori. Le tabelle saranno A SCOMPARSA, una sotto l'altra: se clicco sul nome di un fornitore mi si apre la tabella dei prodotti selezionati per quel fornitore, che io posso revisionare, e PER SINGOLO FORNITORE posso creare l'ordine. Se confermo l'ordine per quel fornitore, sulla riga relativa al fornitore vedro' il badge ORDINATO e tutti i prodotti di quell'ordine passeranno IN ASSORTIMENTO. E deve funzionare cosi' per tutte le tabelle, per tutti i fornitori — che sono ovviamente visibili SOLO se ho selezionato e sto ordinando prodotti da quel fornitore».
+
+UN ORDINE PER FORNITORE, deciso dall'utente il 27/08 rispondendo a una domanda diretta. Questo SOSTITUISCE la decisione del 20/08 («un ordine puo' contenere item di piu' fornitori, il per-fornitore e' una vista») e con lei il modello a FETTE costruito il 26-27/08: alla conferma nascono N ordini distinti, uno per fornitore, ognuno col suo stato e la sua fattura. Il «giro» torna a essere la SESSIONE di composizione — cioe' la schermata «Nuovo Ordine» — e non un documento. PERCHE' SEMPLIFICA: la Lista Ordini (REQ-MAG-038), la riconciliazione e il legame con la fattura diventano cose per ORDINE invece che per fetta. Il legame fattura-fetta di REQ-MAG-031 diventa fattura-ordine, e la guardia sul fornitore resta (la fattura e' di chi la emette). «IN ASSORTIMENTO», e qui va letto con attenzione perche' ribalta quanto scritto in REQ-MAG-029 («non cambia significato»). Parole dell'utente, 27/08, che chiudono la questione: «e' la gestione di Flavio che usa lo stato. In assortimento e' piu' relativo allo STATO DEI PRODOTTI: dipende dalla giacenza di magazzino ma viene comunque gestito come stato commerciale». I VERI STATI COMMERCIALI SONO TRE:
+
+IN LINEA, PREMIUM, FUORI LINEA (out). «In assortimento» e' UNO STATO SUPERIORE che viene indicato AL POSTO di «in linea» o «premium», e alla fine RESTITUISCE quello di prima. Quindi il prodotto deve RICORDARE lo stato da cui viene: senza quella memoria, un premium tornerebbe indietro come un prodotto qualunque e la classificazione di Flavio si cancellerebbe da sola, un ordine per volta, su tutto il magazzino.
+
+QUANDO SI ENTRA, e questo va letto senza scorciatoie (precisato dall'utente il 27/08: «va in assortimento SOLO DOPO CHE FLAVIO HA CREATO L'ORDINE, o solo se lo imposta manualmente, mi raccomando»). Il grilletto e' la CONFERMA DELL'ORDINE a quel fornitore nel riepilogo, e nient'altro: NON la giacenza sotto soglia, NON la spunta nella tabella, NON l'aver aperto la schermata. La catena, detta dall'utente: «se lo spunti in tabella verra' visualizzato nel RIEPILOGO dell'ordine, e SOLO DOPO LA CONFERMA di Flavio passera' in assortimento». La spunta porta il prodotto nel riepilogo e li' si ferma: finche' Flavio non conferma quel fornitore, in magazzino non e' cambiato niente — e infatti dal riepilogo si puo' ancora togliere. Un prodotto sotto soglia che nessuno ordina resta in linea o premium — e' basso, non e' in arrivo, e dire il contrario riempirebbe il magazzino di prodotti «in assortimento» che non ha ordinato nessuno. La giacenza bassa resta la condizione per cui il prodotto si PROPONE da solo nella tabella (REQ-MAG-036), che e' un'altra cosa dal cambiargli stato. Il prodotto «DEVE essere in linea o premium per poter passare allo stato in assortimento quando fa parte di un ordine aperto»: un `out` non ci passa, e' fuori linea e non lo si sta rifornendo.
+
+QUANDO SI ESCE, e questo paragrafo e' stato CORRETTO il 27/08 in implementazione perche' si contraddiceva da solo: diceva che si esce al carico "se la giacenza torna sopra la soglia", e trenta righe piu' sotto lo stesso testo decide l'opposto ("torna comunque in linea o premium", "due sole strade per uscirne"). Vale quello che viene dopo, che e' anche l'ultima cosa detta dall'utente:
+
+SI ESCE QUANDO IL PRODOTTO NON STA PIU' IN UN ORDINE APERTO, e la giacenza non entra nella decisione. A MANO SI PUO', MA COSTA UNA DOMANDA. «Siccome Flavio potrebbe voler impostare a mano quello stato, bisogna fargli presente che se lo imposta bisogna associarlo anche a un ordine — internamente sara' tipo IN ASSORTIMENTO SENZA ORDINE — e anche in quel caso verra' preso in considerazione come un prodotto sotto soglia o esaurito nella precompilazione dell'ordine». Quindi: lo stato messo a mano e' legittimo, si distingue perche' non ha un ordine dietro, e fa entrare il prodotto fra quelli proposti al prossimo giro.
+
+IL CARICO A MANO RESTA, E NON SPEGNE LO STATO. Parole dell'utente, 27/08: «Flavio potrebbe aver comprato la bottiglia oggi al supermercato perche' si e' scordato di ordinarla. Se lo stato e' in assortimento e Flavio fa carico manuale, NON CAMBIA NIENTE: rimane in assortimento. Questo puo' succedere perche' ha fatto un ordine, ma l'ordine e' in ritardo e a lui servono bottiglie. Semplicemente aumentano le scorte, ma siccome c'e' un ordine attivo in attesa di essere ricevuto lui rimane in assortimento». Quindi non e' la GIACENZA a spegnere lo stato: e' il fatto che il prodotto non stia piu' dentro un ordine aperto. Legarlo alla soglia farebbe sparire l'informazione «sta arrivando altra merce» proprio nel momento in cui serve — Flavio si ritroverebbe la cassa piena di roba comprata di corsa e nessun segno che dal fornitore ne arriva dell'altra.
+
+DUE SOLE STRADE PER USCIRNE, ed e' l'utente a dirle: 1) L'ORDINE ARRIVA (passa a consegnato): si carica sulle quantita' ricevute e il prodotto torna al suo stato di prima, in linea o premium.
+
+2) SI TOGLIE L'ITEM DALL'ORDINE: «quello che Flavio puo' fare e' eliminare quell'item dall'ordine ANCHE SE GIA' FATTO, e si ripristina lo stato in linea o premium».
+
+SE INVECE CAMBIA LO STATO A MANO DAL MAGAZZINO, l'app non lo lascia fare in silenzio: «gli si deve DIRE che quel prodotto e' presente in un ordine in attesa di essere ricevuto. Se cambia lo stato manualmente, il prodotto va eliminato dall'ordine». Sono la stessa decisione presa dai due capi, e non possono divergere: un prodotto che non e' piu' «in assortimento» ma resta dentro un ordine aperto e' un ordine che nessuno sa piu' di aver fatto.
+
+SE L'ORDINE ARRIVA MA LE SCORTE RESTANO BASSE, il prodotto torna comunque IN LINEA o PREMIUM. Deciso dall'utente il 27/08, che ha scartato l'ipotesi contraria: «ma anche no. In assortimento SENZA ORDINE e' solo se Flavio lo cambia manualmente. Torna in linea o premium ma con scorte in esaurimento». E' la regola piu' semplice, ed e' anche la piu' giusta: sono DUE ASSI DIVERSI, e nel codice lo sono gia'. Lo STATO COMMERCIALE dice che posto ha quel prodotto nel locale (in linea, premium, fuori linea); la SCORTA — `stockStatus`, che confronta giacenza e soglia — dice se ce n'e' abbastanza. «In assortimento» e' l'unico punto in cui i due assi si toccano, e li si tocca per una ragione precisa e temporanea: c'e' un ordine aperto. Finito l'ordine, i due assi si separano di nuovo. Quindi uscire dall'ordine restituisce SEMPRE lo stato di prima, senza guardare la giacenza. Che le scorte siano ancora in esaurimento lo dice gia' la scorta, si vede in magazzino come per qualunque altro prodotto basso, e basta quello per farlo tornare fra i proposti al giro dopo (REQ-MAG-036). Non serve un secondo modo di dire la stessa cosa. L'INTERFACCIA DEL MAGAZZINO NON SI TOCCA: «non deve cambiare l'attuale UI o UX del magazzino, mi raccomando» (utente, 27/08). I quattro stati restano quattro in schermata e nei filtri; quello che cambia e' chi li scrive e il fatto che uno dei quattro sia di passaggio e ricordi il precedente.
+
+MA QUELLO CHE SI LEGGE CAMBIA, e va detto invece di far finta che il magazzino resti identico (precisazione dell'utente, 27/08: «non e' del tutto vero, perche' i prodotti ordinati in magazzino diventeranno in assortimento»). Non si spostano comandi ne' colonne: cambia il VALORE che la lista mostra. Un prodotto dentro un ordine aperto si legge «in assortimento» al posto di «in linea» o «premium», e ci resta finche' l'ordine non arriva. Quindi in magazzino comparira' un gruppo di prodotti in quello stato che prima non c'era mai, i filtri per stato ne risentiranno, e chi cerca «i premium» in quel momento non ci trovera' quelli in arrivo. E' voluto — e' l'informazione che Flavio vuole a colpo d'occhio — ma e' un cambiamento di cosa dice la schermata, non solo di cosa fa l'ordine. COM'E' STATO FATTO (27/08/2026). Il riepilogo e' una schermata sua, `RiepilogoOrdini`, dove `NuovoOrdinePanel` porta col tasto «Rivedi e conferma»: una riga per fornitore, la tabella dei suoi prodotti che si apre toccando il nome, un tasto «Crea l'ordine» per ognuno e il badge «Ordinato» al posto del tasto quando e' fatto. La macchina degli stati del prodotto sta in `src/lib/statoAssortimento.js`, logica pura, dove si prova senza Firebase: e' la parte che, se sbagliata, fa danni silenziosi sui dati veri.
+
+DOVE VIVE LA MEMORIA: due campi sul prodotto, `assortimento_da` (lo stato a cui tornare) e `ordini_assortimento` (gli id degli ordini aperti che ce lo tengono). E' una LISTA e non un id solo perche' lo stesso prodotto puo' finire in due giri diversi: si esce quando non resta piu' nessun ordine, se no il primo che arriva spegnerebbe lo stato mentre l'altra merce e' ancora per strada.
+
+SE LA MEMORIA MANCA NON SI INVENTA NIENTE: un prodotto senza `assortimento_da` — tutti quelli scritti prima di questa voce — uscendo dall'ordine resta dov'e', e si liberano solo i due campi. Meglio fermo che promosso a caso. «IN ASSORTIMENTO SENZA ORDINE»
+
+SI RICONOSCE DALLA MEMORIA, non dal solo stato, e questa e' una decisione presa in implementazione sui numeri veri: 'assortimento' e' stato per anni il valore di DEFAULT di ogni prodotto che non dichiarava niente — 65 su 150 nella prima pagina del magazzino importato. Se bastasse lo stato a dire «l'ha messo Flavio a mano», meta' del magazzino risulterebbe messa a mano e si ritroverebbe preselezionata al primo ordine. Chi lo sceglie davvero scrive anche da dove veniva, e quella e' la firma. L'ASSORTIMENTO PRE-IMPOSTATO DI REQ-MAG-025 PUNTO 5 E' STATO TOLTO (casella «In assortimento quando arriva» e campo `status_target` sulla riga d'ordine). Non e' una semplificazione: chiedeva di ACCENDERE quello stato nell'istante esatto in cui adesso va spento, e tenere tutti e due i comportamenti vorrebbe dire una consegna che mette e toglie la stessa cosa nello stesso momento.
+
+SI TOGLIE SOLO QUELLO CHE NON E' ANCORA ARRIVATO. Una riga gia' consegnata ha alzato la giacenza, scritto un movimento e aggiornato il listino: toglierla vorrebbe dire scaricare merce che sta sullo scaffale, e non e' quello che e' stato chiesto. Chi ha ricevuto per sbaglio corregge con una rettifica di magazzino. Vale per tutte e due le strade — il tasto nello storico e il cambio di stato a mano. L'ORDINE CHE RESTA SENZA RIGHE NON SI CANCELLA: e' comunque un ordine mandato a un fornitore, e farlo sparire vorrebbe dire non poter piu' spiegare la telefonata che arriva dopo.
+
+IL GRUPPO «SENZA FORNITORE»
+
+SI PUO' CONFERMARE LO STESSO: 378 prodotti su 388 non stanno sul listino di nessuno, e rifiutarlo vorrebbe dire perdere per strada quello che si e' appena scelto. Resta in fondo, come nella composizione.
+
+LA CONFERMA NON ASPETTA LA RETE: `createPurchaseOrder` prendeva l'id da Firestore e poi RILEGGEVA il documento appena scritto — due attese in fila, e con la cassa offline il tasto restava premuto senza che succedesse niente. Adesso l'id si prende in locale, la scrittura parte in sottofondo e l'ordine si compone in memoria (BUG-045). Lo stesso vale per il passaggio in assortimento, che usa gli articoli gia' in mano alla schermata e non rilegge niente. L'ORDINE CANCELLATO LIBERA I SUOI PRODOTTI, e non era stato chiesto: il cestino dello storico c'era gia', e senza questo i prodotti di quell'ordine sarebbero rimasti «in arrivo» per sempre, da un documento che non esiste piu', con la sola via d'uscita di cambiargli stato a mano uno per uno. E' la terza porta della stessa stanza, e non poteva restare murata.
+
+LE RIGHE CONFERMATE ESCONO DALLA COMPOSIZIONE, e il riepilogo lavora su una FOTOGRAFIA: tornando indietro resta da fare solo quello che non e' partito, ma la tabella del fornitore confermato resta a schermo col suo badge. Se il riepilogo leggesse la composizione dal vivo, il fornitore appena confermato sparirebbe nell'istante della conferma.
+
+**Dove**: `src/components/PurchaseOrdersPanel.jsx, src/lib/inventory.js, src/lib/api.js` · **Lo dimostrano**: `tests/unit/statoAssortimento.test.js`, `tests/unit/ordiniSenzaRete.test.js`, `tests/component/RiepilogoOrdini.test.jsx`, `tests/component/AssortimentoAMano.test.jsx`
+
+#### REQ-MAG-038 — «Lista Ordini»: gli stati, la fattura, e i due confronti che contano
+
+Chiesto dall'utente il 27/08/2026. La sottosezione «Ordini» si divide in due: «NUOVO ORDINE» e' la schermata di composizione (REQ-MAG-036), e nasce «LISTA ORDINI», «che conterra' lo storico di tutti gli ordini fatti, filtrabile per STATO dell'ordine».
+
+GLI STATI DELL'ORDINE SONO I TRE LIVELLI DI FLAVIO, spostati dalla riga all'ordine (precisato dall'utente il 27/08: «richiesto, consegnato, pagato RIMANGONO per ordine per fornitore, non vanno via completamente, mi raccomando»). Non spariscono con il modello a fette: cambiano soltanto di posto, e il posto giusto e' il documento, perche' adesso il documento e' di un fornitore solo.
+
+RICHIESTO = l'ordine e' stato mandato al fornitore ed e' aperto (e' quello che l'utente chiama anche «effettuato/aperto»).
+
+CONSEGNATO = la merce e' arrivata in negozio ed e' stata verificata: e' qui che avviene il carico a magazzino, sulle quantita' RICEVUTE, e i prodotti escono da «in assortimento» (REQ-MAG-037). «CONSEGNATO» E «ORDINE RICEVUTO»
+
+SONO LA STESSA COSA: «e' solo estetica, parole — il concetto e' lo stesso» (utente, 27/08). Non sono due stati e non vanno messi in fila uno dopo l'altro. A schermo se ne usa UNA sola, sempre la stessa, in tutte e tre le schermate: due nomi per lo stesso stato fanno cercare a chi legge una differenza che non c'e', ed e' il modo piu' rapido per far credere che manchi un passaggio.
+
+PAGATO = il documento del fornitore e' stato pagato.
+
+CHIUSO e' il gesto in piu' che l'utente chiede, e non e' un sinonimo di pagato: si puo' mettere solo quando la fattura e' stata RICONCILIATA — cioe' quando ordinato, ricevuto e fatturato tornano. Un ordine puo' essere pagato e non ancora riconciliato (si paga per non far aspettare il fornitore) e riconciliato ma non pagato: per questo la chiusura e' un gesto suo e non arriva da sola. Il filtro della Lista Ordini e' su questi.
+
+LA FATTURA, e sono due strade diverse che finiscono nello stesso posto:
+
+1) SI ASSOCIA: «un tasto associa fattura che mi permettera' di selezionare una fattura/proforma — qualsiasi documento fiscale — a quell'ordine»;
+
+2) SI GENERA DALL'ORDINE: «la posso anche generare dall'ordine, coi prezzi dell'ordine», che sono quelli del listino definito nella scheda del fornitore (REQ-MAG-035).
+
+QUINDI ANCHE LA FATTURA HA DEGLI STATI, e la differenza che conta e' fra una fattura GENERATA da noi — utile per sapere quanto ci si aspetta di pagare — e una fattura VERA, arrivata dal fornitore, «che puo' essere fatto caricando il documento reale della fattura, anche una foto o un pdf» (l'allegato c'e' gia': REQ-MAG-033).
+
+IL PRIMO CONFRONTO — PREZZI: «nel caso l'ordine abbia la fattura associata, bisognera' mostrare la DIFFERENZA DI PREZZO da quando e' stato fatto l'ordine rispetto al prezzo indicato in fattura». E' il motivo per cui il listino serve: senza un prezzo atteso non c'e' niente da confrontare, e un aumento passa inosservato. E IL CONFRONTO NON FINISCE IN UN AVVISO: il prezzo della fattura ALLINEA il listino di quel fornitore, e la variazione finisce nello storico dei prezzi (REQ-MAG-035). Mostrare la differenza e lasciare il listino fermo vorrebbe dire far ricomparire lo stesso scarto al giro dopo, e a quel punto l'avviso diventa rumore che si impara a ignorare.
+
+IL SECONDO CONFRONTO — QUELLO CHE E' ARRIVATO: se l'ordine e' ancora aperto, «quando l'ordine arriva deve poter MODIFICARE L'ORDINE in base a quello che ha effettivamente ricevuto». Da qui nascono tre elenchi da tenere distinti: quello che si e' ORDINATO, quello che si e' RICEVUTO, e quello che c'e' SULLA FATTURA. «Quando associera' la fattura potra' verificare se ci sono gli stessi articoli e i prezzi rispetto a quanto indicato nell'ordine effettuato e nell'ordine ricevuto».
+
+LA BOZZA, stato in piu' chiesto dall'utente il 27/08: «forse sarebbe meglio anche salvare l'ordine come BOZZA. L'ordine bozza NON IMPATTA SUL MAGAZZINO. In questo modo Flavio puo' riprendere la creazione dell'ordine in un altro momento e confermarlo quando effettivamente gli serve». Sta PRIMA di «richiesto» ed e' l'unico stato che non fa niente: niente «in assortimento» sui prodotti, niente segnalazioni, niente numeri nel riepilogo dei soldi che escono. E' importante che non impatti, perche' comporre un ordine di venti righe e' un lavoro che si interrompe — arriva gente, si apre il locale — e senza bozza si ricomincia da capo oppure si conferma un ordine solo per non perderlo, che e' peggio.
+
+LO STORICO DELL'ORDINE, chiesto per lo stesso motivo: «serve a questo punto una LISTA DEI MOVIMENTI fatti per quell'ordine, una specie di history, se l'ordine e' gia' stato confermato da Flavio ma Flavio fa delle modifiche». Un ordine mandato al fornitore che poi cambia — una riga tolta perche' la bottiglia e' stata comprata al supermercato, una quantita' corretta all'arrivo, un prezzo rifatto sulla fattura — senza storico diventa un documento che non corrisponde piu' a niente e nessuno sa piu' perche'. Con tre elenchi da confrontare (ordinato, ricevuto, fatturato) le modifiche sono la norma, non l'eccezione: vanno registrate con cosa e' cambiato e quando. «PAGATO»
+
+NON E' UN DATO DELL'ORDINE: E' UNA DOMANDA ALLA SUA FATTURA. Deciso il 27/08/2026 dopo che l'utente ha notato la sovrapposizione: «il discorso degli ordini pagati e' gia' nello scadenzario». E' vero, e resta scritto in un posto solo — sulla fattura (`paid`), che e' anche dove sta il tasto, il filtro «solo da pagare» e il totale «Da pagare». Chi paga, paga un DOCUMENTO: il bonifico porta sopra il numero della fattura, non quello dell'ordine. Quindi: · l'ORDINE sa cosa hai chiesto e cosa e' arrivato — richiesto, consegnato — perche' e' lui a conoscerli; · la FATTURA sa se e' stata pagata; · l'ordine e' «pagato» quando la fattura collegata lo e'. Due copie dello stesso stato divergono sempre, e il giorno che divergono il totale «Da pagare» smette di valere qualcosa proprio quando serve, a fine mese col commercialista.
+
+DA QUI IL GANCIO DIVENTA PORTANTE e non piu' una comodita': senza fattura collegata, un ordine non sa se e' stato pagato (REQ-MAG-031). E NESSUN PAGAMENTO SENZA UNA RIGA NELLO SCADENZARIO. Chiesto esplicitamente dall'utente il 27/08: «il caso di pagare un fornitore senza fattura non c'e'. Anche se puo' capitare, io creero' SEMPRE un item nello scadenzario che paga un ordine anche senza fattura/scontrino/proforma allegato. Possiamo semplicemente indicare nella fattura NESSUN DOCUMENTO, ma farlo risultare lo stesso pagato». Quindi non nasce nessuna strada alternativa per segnare pagato un ordine: si crea la riga nello scadenzario, la si marca «Nessun documento» e si paga. Il contante al piccolo fornitore e il contrassegno alla consegna restano soldi che escono, e devono comparire nel totale del mese come tutti gli altri — se ne esistesse una seconda strada, sarebbero gli unici a non comparirci. «Nessun documento» e' quindi un valore del TIPO DI DOCUMENTO (`doc_type`, che gia' esiste), non un caso speciale: e la fattura senza allegato si vede gia' a colpo d'occhio col chip «Senza allegato» (REQ-MAG-033), che qui diventa la spia giusta.
+
+LA RICONCILIAZIONE e' il gesto che dichiara che i tre elenchi tornano. Solo dopo l'ordine si puo' mettere a CHIUSO.
+
+IL CARICO A MAGAZZINO avviene «automaticamente dopo che Flavio ha effettivamente verificato che gli sia arrivato tutto quello che ha richiesto» — cioe' al passaggio a ORDINE RICEVUTO, sulle quantita' ricevute e non su quelle ordinate. In quel momento i prodotti «non avranno piu' lo stato in assortimento» e riprendono quello di prima se la giacenza torna sopra la soglia (REQ-MAG-037).
+
+COSA SOSTITUISCE. I tre livelli per riga richiesto/consegnato/pagato (REQ-MAG-029) e la consegna per fetta (REQ-MAG-032) lasciano il posto agli stati dell'ordine: il documento e' di un fornitore solo, quindi il livello per riga non serve piu' a distinguere consegne diverse. Resta il principio, che non cambia: il prezzo si corregge quando la merce arriva, il fornitore no.
+
+DOPO, NON ADESSO: l'OCR con l'AI sul documento allegato, «per associare i prodotti in fattura all'ordine, o anche solo verificare». La strada e' gia' apparecchiata dai tre elenchi e dall'allegato; e' una voce sua (REQ-AI-001) e non un pezzo di questa. ── COM'E' STATO FATTO (27/08/2026) ── DUE SOTTOSEZIONI AL POSTO DI UNA: «Nuovo ordine» e «Lista ordini» in FornitoriTab. A tenere i dati e i gesti resta un pannello solo (PurchaseOrdersPanel, con `vista`), perche' magazzino, fornitori, listini, ordini e documenti servono a tutte e due e leggerli due volte vorrebbe dire due versioni della stessa serata a schermo nello stesso momento. Quello che si vede sta in `OrdiniListaPanel.jsx`; le decisioni e i conti in `src/lib/statiOrdine.js` e `src/lib/confrontoOrdine.js`, logica pura, dove si provano senza Firebase.
+
+DUE ASSI, NON UNA FILA SOLA, ed e' la decisione piu' pesante presa in implementazione. I cinque stati SEMBRANO in fila (bozza -> richiesto -> consegnato -> pagato -> chiuso) ma non lo sono: il ciclo della MERCE lo sa l'ordine, il PAGAMENTO lo sa la fattura, la CHIUSURA e' un gesto a parte. Metterli in fila vorrebbe dire che un ordine pagato in anticipo — una proforma saldata prima che parta il camion, cosa che si fa per non far aspettare il fornitore — smetterebbe di risultare «richiesto», e la merce mai arrivata non la cercherebbe piu' nessuno. A schermo si legge quindi lo stato della merce come BADGE e il pagamento come chip ACCANTO; il filtro invece e' uno solo, e ogni voce fa la sua domanda all'asse che la riguarda.
+
+IL FILTRO HA UNA VOCE IN PIU', «Da pagare», che il requisito non chiedeva: e' la stessa domanda del totale dello scadenzario vista dal lato dell'ordine, costa niente una volta che «pagato» c'e', e senza di lei l'unico modo di sapere cosa resta aperto sarebbe contare a mano. Esclude le bozze: una bozza non e' stata mandata a nessuno, quindi nessuno la fatturera', e comparire fra i debiti la farebbe sembrare un conto in sospeso.
+
+IL VOCABOLARIO IN ARCHIVIO NON SI TOCCA. Sul documento il campo resta `status` coi suoi valori di sempre, 'inviato' e 'ricevuto', piu' il nuovo 'bozza'; a tradurli in «richiesto» e «consegnato» ci pensa `statoOrdineDi`, in un punto solo. Rinominare due parole su ordini veri sarebbe una migrazione pagata per non guadagnare niente, e gli ordini senza il campo (quelli piu' vecchi) continuano a leggersi dalle righe — un ordine di ieri non e' una bozza per il fatto di non avere il campo.
+
+CHIUSO E' UNA DATA A PARTE (`closed_at`) E NON UNO STATO: un ordine chiuso resta consegnato. Se la chiusura sostituisse lo stato, chiudere un ordine cancellerebbe l'informazione che la merce era arrivata. «PAGATO»
+
+NON SI SCRIVE PIU' NEMMENO SULLA RIGA: `segnaRighePagate` e il tasto «💶 Pagato» sull'ordine non ci sono piu'. Il livello 'pagato' della riga resta LEGGIBILE, pero': sta scritto su ordini veri, e toglierlo dal vocabolario farebbe rileggere una riga pagata come se non fosse mai stata consegnata. Non si scrive piu', si legge ancora.
+
+TRE ELENCHI, TRE CAMPI. `qty_packages` resta SEMPRE quello ordinato e il ricevuto va in `qty_received`; il prezzo di quando l'ordine e' partito si conserva in `unit_cost_ordinato` la prima volta che lo si corregge, mentre `unit_cost` segue la bolla. Senza questi due campi il ricevuto sovrascriverebbe l'ordinato — la cassa mancante non la vedrebbe nessuno e la si pagherebbe in fattura — e il confronto dei prezzi direbbe per sempre «nessuna differenza». Le righe scritte prima ricadono sull'ordinato, che e' anche il caso normale: e' arrivato quello che si e' chiesto.
+
+LA RICONCILIAZIONE SI CALCOLA, NON SI SPUNTA. `riconciliato` guarda il prospetto: se ha un solo scarto non torna niente. Con una fattura SENZA RIGHE — la testata registrata a mano, che e' il caso normale (REQ-MAG-030) — la merce non e' confrontabile ma i soldi si': si accetta il documento che cade fra il netto ricevuto e il netto piu' l'IVA, che e' la forbice dentro cui deve stare per forza. Piu' stretti si direbbe «non torna» a un documento che torna, e chi legge imparerebbe a ignorare l'avviso. L'ALLINEAMENTO DEL LISTINO E' UN GESTO, non una conseguenza automatica dell'aggancio, ed e' la scelta prudente: riscrive il listino di quel fornitore e lascia una riga nello storico dei prezzi, e farlo di nascosto nell'istante in cui si collega un documento vorrebbe dire muovere prezzi che nessuno ha guardato. Il tasto dice quanti prezzi sposta. Passa da `registraAcquisto` con il carico SPENTO — la merce e' gia' entrata alla consegna — quindi resta una strada sola per cui un prezzo si aggiorna, con origine 'fattura'.
+
+LA FATTURA GENERATA SI RICONOSCE DA UN CAMPO, `generata`, e da un chip («Generata dall'ordine») che si vede sia nella Lista ordini sia nello Scadenzario. L'importo e' il LORDO, come su qualunque documento dello scadenzario, e le righe arrivano da `righeDaOrdine`, la stessa funzione con cui lo scadenzario le ricopia: una seconda versione qui vorrebbe dire due forme della stessa riga. «NESSUN DOCUMENTO» E' UN TIPO COME GLI ALTRI in `TIPI_DOCUMENTO`, e la riga si crea dalla stessa strada che genera la fattura, gia' pagata. Su quelle righe il chip ambra «senza allegato» non compare: segnalare un lavoro che manca a chi ha appena dichiarato che non esiste e' il modo di far ignorare gli avvisi.
+
+LA STORIA E' UN ARRAY SUL DOCUMENTO (`storia`), non una collezione a parte: un ordine ha una decina di movimenti in tutto e si scrivono nella STESSA `updateDoc` che tocca le righe — due scritture, e a restare indietro sarebbe proprio il diario che spiega l'altra. Non si ricostruisce all'indietro come quella di un conto (`storiaOrdine.js`): una riga tolta non lascia traccia e una quantita' corretta cancella quella di prima. E LA STORIA SI SCRIVE ANCHE DAL LATO DELLA FATTURA (collegata, scollegata, generata), che REQ-MAG-031 aveva escluso per non avere due scrittori sullo stesso documento. Quella ragione resta buona per i DATI — il legame sta ancora su un campo solo, `order_id` sulla fattura — e qui si accetta il rischio solo per il diario: se due terminali scrivessero nello stesso istante si perderebbe una RIGA DI DIARIO, non un numero.
+
+IL BUCO SI SEGNALA SOLO DOVE C'E': «senza documento» compare sui soli ordini consegnati. Su uno ancora richiesto non e' arrivato niente, e su una bozza non e' mai partito niente.
+
+LA PAROLA E' UNA SOLA:
+
+CONSEGNATO, in tutte le schermate, e c'e' un test che sorveglia che «Ricevuto» non ricompaia come etichetta. ⚠️ IL LIMITE E' STATO TOLTO, il 27/08/2026, appena scritto. Questa voce diceva che la Lista ordini legge gli ULTIMI VENTICINQUE ordini, come faceva lo storico. L'utente: «questa cosa non ha senso, non deve esserci un limite». Chiamarlo «limite noto» era archiviare un difetto invece di correggerlo.
+
+IL MOTIVO E' IL FILTRO, e va detto come lo dice lui, perche' la prima versione di questo paragrafo lo diceva male: «non mi interessa il dato accumulato, mi interessa poter FILTRARE i pagati, ricevuti, ordinati». Il difetto non era che mancasse un totale — nessuno lo ha mai chiesto — ma che un filtro su una lettura troncata da' una risposta TRONCATA CHE SEMBRA INTERA: chi filtra «pagati» su venticinque ordini letti vede i pagati fra quei venticinque, e niente a schermo glielo dice.
+
+DA DOVE VENIVA: non e' una scelta di questa voce, arriva dal commit `aafa62f`, da quando quella lista era «gli ultimi ordini» in fondo alla schermata del magazzino. Li' andava bene, perche' quello che prometteva erano gli ultimi. Ha smesso di andare bene diventando l'ARCHIVIO con i filtri. E TRONCAVA IN TRE PUNTI, tutti in silenzio: la Lista ordini (25), l'elenco da cui si aggancia una fattura (25 — agli ordini piu' vecchi non ci si arrivava, quindi certe fatture non erano agganciabili) e il riepilogo dei soldi che escono (100 — sommava un pezzo di anno). Adesso `fetchPurchaseOrders()` senza argomenti li legge TUTTI; il limite resta accettato come parametro per chi ne avesse davvero bisogno.
+
+LA REGOLA CHE RESTA: una risposta parziale che non dichiara di esserlo e' peggio di una lettura lenta. La lentezza si vede, il pezzo mancante no. Se un giorno gli ordini peseranno, la cura e' una lettura paginata, e si fara' quando il problema esiste.
+
+**Dove**: `src/components/FornitoriTab.jsx, src/components/OrdiniListaPanel.jsx, src/lib/api.js` · **Lo dimostrano**: `tests/unit/statiOrdine.test.js`, `tests/unit/confrontoOrdine.test.js`, `tests/unit/listaOrdiniSenzaRete.test.js`, `tests/component/ListaOrdini.test.jsx`
+
+#### REQ-MAG-039 — L'ordine che si rifa' uguale: i modelli d'ordine
+
+Chiesto dall'utente il 27/08/2026: «Flavio potrebbe voler salvare un ordine come TEMPLATE, e nella creazione dell'ordine, oltre alla precompilazione, deve poter usare un template salvato — con quantita' gia' impostate e prodotti per fornitore gia' selezionati — in modo da poter partire da una situazione che lui conosce. Il template si puo' salvare in fase di creazione». PERCHE' SERVE, ed e' diverso dalla precompilazione. La precompilazione (REQ-MAG-036) guarda le SCORTE: propone quello che sta finendo adesso. Il modello guarda l'ABITUDINE: e' il giro che Flavio fa sempre — la settimana tipo, l'ordine grosso di inizio mese, quello prima di un evento. Le due cose rispondono a domande diverse e devono poter convivere: si parte dal modello e la precompilazione aggiunge quello che manca oggi, oppure si parte dalle scorte e si aggiunge il modello.
+
+COSA CONTIENE: prodotti, il fornitore scelto per ognuno e la quantita'.
+
+IL MODELLO NON MEMORIZZA IL PREZZO. Detto dall'utente il 27/08: «fa fede il prezzo ATTUALE del listino del fornitore, e il modello mostra sempre il prezzo aggiornato — il modello non memorizza il prezzo, ma quando lo carico il prezzo sulla creazione/modifica ordine e' sempre quello del listino del fornitore, aggiornato all'ultima fattura». Quindi il modello porta CHE COSA e QUANTO, mai A QUANTO. Il prezzo arriva sempre dal listino nel momento in cui si compone l'ordine, e quel listino e' tenuto allineato dalle fatture (REQ-MAG-035): la catena e' fattura -> listino -> ordine, e il modello non ci si mette in mezzo. Un modello che si portasse dietro i prezzi farebbe partire un ordine a cifre di due mesi fa senza che nessuno se ne accorga — ed e' proprio la cosa che il confronto ordine-fattura serve a scoprire, quindi ci si sparerebbe sui piedi da soli.
+
+SI SALVA DURANTE LA COMPOSIZIONE, non dopo: e' li' che Flavio ha davanti quello che vuole conservare. Un modello ha un nome suo, se ne tengono piu' d'uno, e si possono cambiare e cancellare.
+
+COSA FARE QUANDO IL MONDO E' CAMBIATO, e va deciso perche' succedera': un modello puo' contenere un prodotto che non esiste piu', o un fornitore che non lo vende piu' (riga di listino tolta). Chi lo applica deve vedere cosa non e' stato ripreso e perche', invece di trovarsi un ordine piu' corto senza spiegazione. IL «RESTA APERTO» E' CHIUSO, E LA RISPOSTA E' SI'. La domanda era se un modello debba potersi ricavare da un ordine gia' fatto («salva questo come modello» dalla Lista Ordini). Si fa, e la ragione che ha deciso NON e' che costava poco: e' che applicare un modello SI SOMMA a quello che e' gia' selezionato. Un ordine e' di un fornitore solo (REQ-MAG-037), quindi da un ordine esce un modello di un fornitore solo — e da solo non sarebbe «il giro» — ma quattro modelli applicati uno dopo l'altro rifanno il giro intero. Senza la somma la risposta sarebbe stata no, perche' avrebbe prodotto frammenti non ricomponibili. ── COM'E' STATO FATTO (27/08/2026) ── DOVE SI SALVA: nella composizione, in una riga sopra i filtri, con la tendina dei modelli, i tre gesti che li governano (usa, rinomina, elimina) e il salvataggio di quello che si sta componendo. Il tasto del salvataggio DICE QUANTE RIGHE SALVA («Salva le 12 righe come modello»): si salva mentre la tabella e' piena di righe che nell'ordine non ci sono, e senza quel numero non si saprebbe se sta per conservare le dodici scelte o tutto il magazzino. E DALLA LISTA ORDINI: dentro il DETTAGLIO dell'ordine, non fra i tasti in testa alla riga — quelli sono gia' cinque e vanno tutti a un fornitore vero, mentre questo non manda niente a nessuno. Il nome parte da quello del fornitore. La quantita' ripresa sono i COLLI ordinati e non `qty_packages`: quelli sono i pezzi entrati in magazzino, e riprenderne 48 come colli su un cartone da 24 vorrebbe dire ordinarne 1152 (REQ-MAG-040). Le righe scritte prima del collo ricadono su un collo da uno, che e' il caso degenere della scala.
+
+SALVARE CON UN NOME GIA' USATO AGGIORNA quel modello, e lo si dice prima di salvare: due voci con lo stesso nome in tendina sono il modo piu' rapido per applicare quella sbagliata.
+
+LA LOGICA E' PURA e sta in `src/lib/modelliOrdine.js` — comporre un modello, ricavarlo da un ordine, applicarlo — dove si prova senza Firebase. La collezione e' `purchase_order_templates`, sua e non dentro gli ordini: un modello non ha stato, non ha una consegna e non entra nei soldi che escono, e tenerlo fra gli ordini vorrebbe dire che ogni filtro e ogni totale della Lista ordini debba ricordarsi di scartarlo.
+
+IL PREZZO NON PASSA, E SI VEDE IN UN PUNTO SOLO: la selezione che `applicaModello` compone non porta il campo `totale`, che e' quello della correzione a mano nella tabella. Senza quel campo il prezzo lo rifa' il listino del fornitore ogni volta che si applica. C'e' un test che guarda proprio l'assenza di quel campo, e uno che guarda le chiavi del documento scritto su Firestore.
+
+APPLICARE SI SOMMA, NON SOSTITUISCE: la preselezione ha gia' messo quello che sta finendo adesso, il modello aggiunge il giro che si fa sempre, e sulle righe che il modello nomina vince la sua quantita' — e' quella che Flavio ha deciso di conservare.
+
+COSA SUCCEDE QUANDO IL MONDO E' CAMBIATO, caso per caso, e ognuno ha la sua frase a schermo: · PRODOTTO SPARITO dal magazzino: non si riprende. E' l'unico caso in cui una riga si perde, e per poterla NOMINARE il modello salva il nome del prodotto accanto al suo id — e' l'unico posto in cui quel nome serve, perche' per le righe riprese vale il nome vivo del magazzino. · FORNITORE CHE NON LO VENDE PIU' (riga di listino tolta): il prodotto SI RIPRENDE lo stesso, sulla riga che ha in tabella, col fornitore ancora scelto. Si puo' ordinare a chiunque — 378 prodotti su 388 non stanno sul listino di nessuno — e buttare via la riga sarebbe perdere un prodotto che Flavio voleva. Quello che si perde e' il PREZZO DI LISTINO, e infatti e' quello che l'avviso dice. · FORNITORE CANCELLATO dall'anagrafica: il prodotto si riprende SENZA fornitore. Riscrivere un id che non corrisponde piu' a nessuno sarebbe un ordine intestato al vuoto. · PRODOTTO MESSO FUORI LINEA nel frattempo: si riprende — ordinarlo e' il gesto con cui rientra (REQ-MAG-036) — ma va detto, perche' e' una decisione commerciale presa dopo che il modello era stato salvato. · DUE RIGHE CHE CADREBBERO SULLA STESSA RIGA di tabella: la seconda non si riprende. Si fermerebbe sopra la prima e ne cancellerebbe la quantita' senza che nessuno se ne accorga.
+
+LA QUANTITA' E' NELL'UNITA' DEL FORNITORE (colli da chi vende a colli), cioe' quella che si e' scritta, e i pezzi per collo NON si salvano: e' la stessa scelta del prezzo presa dall'altro capo — il modello dice «due cartoni», e quanto sia un cartone lo dice il listino nel momento in cui si compone l'ordine.
+
+RESTA FUORI, ed e' voluto: un modello non ha una sua schermata, e non si vede da nessuna parte quando e' stato usato l'ultima volta. Non e' stato chiesto, e una tendina con cinque voci non ha bisogno di un'anagrafica.
+
+**Dove**: `src/lib/modelliOrdine.js, src/components/ModelliOrdine.jsx, src/components/NuovoOrdinePanel.jsx, src/components/OrdiniListaPanel.jsx, src/components/PurchaseOrdersPanel.jsx, src/lib/api.js` · **Lo dimostrano**: `tests/unit/modelliOrdine.test.js`, `tests/unit/modelliSenzaRete.test.js`, `tests/component/ModelliOrdine.test.jsx`
+
+#### REQ-MAG-040 — Colli e pezzi: lo stesso prodotto a cartone da uno, a bottiglia dall'altro
+
+Trovato dall'utente il 27/08/2026 provando la tabella del nuovo ordine: «bisogna distinguere colli e pezzi in qualche modo. Da un fornitore le Bjorne vanno a pezzo, da un altro vanno a collo (cartone da X bottiglie): hai messo Bjorne 8 pz ma il prezzo unitario del fornitore e' AL COLLO, che e' 25 euro, e viene fuori 200 euro per 8 pezzi».
+
+IL NUMERO E' DEL FORNITORE, NON DEL PRODOTTO, ed e' questo che decide dove va scritto: la Bjorne da MAR si compra a bottiglia, da FONT a cartone da 24. Sul prodotto non ci puo' stare, perche' sarebbe uno solo per tutti i fornitori. Va sulla RIGA DI LISTINO, dove REQ-MAG-029 aveva gia' previsto «la confezione DI QUEL FORNITORE» col campo `package_label` — che pero' e' una scritta e non un numero, e su una scritta non ci si moltiplica.
+
+IL MECCANISMO ESISTE GIA' A META', e non va rifatto: nel carico a magazzino c'e' l'interruttore «Carico a colli — un cartone, una cassa» (REQ-MAG-018), dove si scrivono i pezzi per cartone e il totale del collo e l'app ricava l'unitario. Ma li' quel numero E' SOLO PER IL CALCOLO E NON VIENE SALVATO — c'e' scritto nel commento del codice. Quello che manca e' ricordarselo, per fornitore.
+
+IL DATO PER RIEMPIRLO C'E' NEI FOGLI, e si riconosce senza indovinare. In `GEN ORD REC.xlsx` Flavio usa la colonna `cl` con DUE significati: di norma il contenuto, ma quando il fornitore vende a cartone ci scrive i PEZZI PER CARTONE, e nella colonna del prezzo mette il prezzo del cartone. La Bjorne da MAR e' `cl 33` a 1,2333; da FONT e' `cl 24` a 25,05 — e 25,05 diviso 24 fa 1,04 a bottiglia, meno di 1,2333, che e' quello che ci si aspetta comprando a cassa.
+
+LA REGOLA PER RICONOSCERLI, misurata il 27/08 su 409 coppie: se il `cl` del foglio non torna col contenuto del prodotto, si guarda il prezzo. Se `prezzo` somiglia al costo del prodotto e' AL PEZZO; se `prezzo / cl` somiglia al costo e' UN COLLO da `cl` pezzi. Ne sono usciti DIECI, tutti FONT: 24 pezzi per le bibite e le birre industriali, 12 per le due birre artigianali MBU — e il prezzo al pezzo ricavato coincide col costo che l'app gia' conosceva (MBU California: 19,98/12 = 1,665 contro 1,67). Il fatto che il 12 esca da solo accanto al 24 dice che la regola non e' cucita addosso a un numero.
+
+RESTANO TRE RIGHE che non sono ne' pezzo ne' collo (Abaca Granatina, Lampone e Melone da NOVA: foglio 75 cl, prodotto 70 cl, prezzo 6,20 contro un costo in app di 9,85). Li' il `cl` e' una discrepanza di formato e il prezzo e' semplicemente diverso da quello in archivio: si trattano al pezzo, ed e' il caso in cui il listino serve — dice che da quel fornitore costa meno.
+
+COSA SI VEDE E COSA SI CONTA. Il listino tiene il prezzo di CIO' CHE IL FORNITORE FATTURA — il collo, dove c'e' un collo — piu' i pezzi che contiene; il prezzo al pezzo si RICAVA e si mostra accanto, perche' e' l'unico modo di confrontare due fornitori che vendono in confezioni diverse. L'ordine si compone nell'unita' in cui quel fornitore vende (cartoni, dove vende a cartoni), e cio' che entra in magazzino sono sempre PEZZI: cartoni x pezzi per collo. Il magazzino non impara una unita' nuova.
+
+IL BAGLIO DA EVITARE E' QUELLO GIA' VISTO: moltiplicare i pezzi per il prezzo del collo. Otto Bjorne da FONT costano 8,35 euro, non 200. ── LA SCALA E' UNA SOLA, E IL COLLO NON E' UN'ECCEZIONE ── Deciso dall'utente il 27/08/2026, DOPO la stesura qui sopra e in luogo di quello che quella stesura lasciava intendere («chi non ha un collo non cambia», cioe' due strade nel codice). Parole sue: «le cose da un pezzo, banalmente possiamo dire che in un collo c'e' un pezzo, cioe' equivale a un pezzo, e dovrebbe funzionare sempre. E anche i calcoli non si dovrebbero rompere». La gerarchia e' quindi UNA:
+
+**Dove**: `src/lib/listini.js, src/lib/composizioneOrdine.js, src/components/ListinoFornitore.jsx, src/components/NuovoOrdinePanel.jsx` · **Lo dimostrano**: `tests/unit/colliEPezzi.test.js`, `tests/component/ColliEPezzi.test.jsx`, `tests/component/ListinoFornitore.test.jsx`
+
+#### REQ-MAG-041 — I documenti dello scadenzario si possono correggere
+
+Chiesto da Flavio il 03/09/2026: «in Scadenzario i documenti creati devono essere modificabili nel caso di variazione o errore». COM'ERA: sul documento si poteva solo segnare pagato o non pagato. Non c'era modo di correggere importo, data, numero, fornitore o tipo, e chi sbagliava a battere una cifra doveva CANCELLARE e rifare — portandosi via, con la cancellazione, i prodotti (REQ-MAG-030), l'allegato (REQ-MAG-033) e il legame con l'ordine (REQ-MAG-031). Su un documento con la foto della fattura dentro, quello e' un lavoro perso.
+
+SI CORREGGE, NON SI STRAVOLGE. Modificabili sono i sei campi della testata che una persona batte a mano guardando la carta: fornitore, numero, data, tipo, importo, note (`CAMPI_MODIFICABILI` in src/lib/fatture.js). Righe, allegato e `order_id` non sono nemmeno NOMINATI nella patch, e non e' una dimenticanza: ognuno ha gia' il suo gesto, che sa fare anche le cose attorno — il carico a magazzino, il file da cancellare su Storage, la guardia sulla fetta gia' coperta — e passarli da qui vorrebbe dire una seconda strada che quelle cose non le fa. Quello che non si nomina non si puo' sovrascrivere per sbaglio.
+
+NEMMENO «PAGATO»
+
+PASSA DI QUI: il suo tasto e' quello sulla riga e resta uno solo (REQ-MAG-038). La casella «Gia' pagato» del modulo e' della creazione — serve alla riga «Nessun documento», che nasce gia' pagata — e correggendo non compare: due posti per dire la stessa cosa vogliono dire due stati da tenere allineati.
+
+IL FORNITORE DI UN DOCUMENTO AGGANCIATO NON SI CAMBIA. Il legame con l'ordine E' la coppia ordine + fornitore (REQ-MAG-031): cambiando fornitore sotto un documento agganciato, quella fetta resterebbe legata alla fattura di qualcun altro — merce pagata a chi non l'ha venduta, che a fine mese e' un conto che non torna. La regola sta in `modificaAmmessa`, che e' la stessa risposta usata per spegnere il campo e per rifiutare la scrittura: si impedisce prima invece di spiegarlo dopo con un errore. Si scollega, e scollegare e' un gesto che si vede. LOCAL-FIRST. `modificaFattura` (src/lib/api.js) non aspetta e non rilegge: parte dal documento che la schermata ha gia' in mano, compone il risultato in memoria e manda la scrittura in sottofondo con `bgWrite`. Rileggendo, la cache risponderebbe con la versione di prima (BUG-045). Senza niente di cambiato non si scrive niente.
+
+IL CONFRONTO SI RIFA' DA SOLO. Il prospetto ordine/fattura (REQ-MAG-038) non e' un valore salvato: `totaliProspetto` e `riconciliato` leggono `fattura.amount` ogni volta, quindi correggere l'importo lo cambia nello stesso istante. Resta un limite dichiarato: un ordine gia' CHIUSO porta `closed_at` addosso e resta chiuso anche se la cifra corretta non riconcilia piu'. Riaprirlo da qui vorrebbe dire un secondo scrittore sull'ordine per una decisione che non e' di questa schermata.
+
+LA TRACCIA STA SUL DOCUMENTO, e la decisione va detta perche' e' il punto in cui si poteva sbagliare. Una modifica su un documento PAGATO e' legittima — e' proprio il caso di Flavio, «mi devono modificare il prezzo di una fattura magari gia' pagata» — ma e' il gesto che a fine mese qualcuno vorra' spiegarsi. Si e' riusato il meccanismo della storia dell'ordine (`movimento`, `conMovimento`, `storiaDi`, `descriviMovimento` in src/lib/statiOrdine.js) con un movimento nuovo, `documento_corretto`, ma scritto nell'array `storia` DEL DOCUMENTO e non dell'ordine: un documento dello scadenzario puo' non avere nessun ordine dietro — e' uno dei due buchi di REQ-MAG-031 — e la sua correzione resterebbe senza traccia proprio nei casi in cui non c'e' nient'altro che la spieghi. La voce porta cosa e' cambiato, da cosa a cosa, gia' scritto in italiano (`cambiFattura`), e dice se il documento era gia' pagato. Le frasi si compongono in fatture.js e non in `descriviMovimento` per due ragioni: un importo formattato nel momento in cui e' successo resta leggibile mesi dopo anche se il formato cambia, e statiOrdine.js resta fuori dai tipi di documento — che sarebbe un anello di import. L'IMPORTO SI CONFRONTA COL SEGNO. Una fattura da 120 diventata nota di credito (BUG-100) porta ancora scritto 120, ma sui conti quei soldi si sono spostati di 240: la storia deve accorgersene, se no la correzione piu' pesante sarebbe l'unica che non si racconta.
+
+COSA SI VEDE: sulla riga del documento un tasto «matita»; il modulo prende il posto della riga, gia' compilato, ed e' LO STESSO modulo della creazione — due copie prima o poi divergono, una impara a chiedere il fornitore e l'altra no. Sotto il documento, le correzioni fatte, dalla piu' recente.
+
+**Dove**: `src/lib/fatture.js, src/lib/statiOrdine.js, src/lib/ore.js, src/lib/api.js, src/components/SupplierInvoicesPanel.jsx` · **Lo dimostrano**: `tests/unit/modificaDocumento.test.js`, `tests/component/ModificaDocumento.test.jsx`, `tests/unit/fatture.test.js`
+
+#### REQ-MAG-034 — «Altre spese» e il «Riepilogo»: i soldi che escono, mese per mese
+
+Ritagliato da REQ-MAG-025, di cui sono gli ULTIMI DUE PEZZI: la terza sottosezione di Fornitori e la quarta voce che le tiene insieme.
+
+DA DOVE NASCE, ed è una domanda dell'utente (19/08): «quelle spese da inserire a mano non sono gli ordini?». La risposta, misurata sui fogli, è che in parte sì: la sua riga SPESE è sempre più grande degli acquisti dello stesso mese — gennaio 2.380 contro 1.809, aprile 5.005 contro 2.884, giugno 12.726 contro 8.673 — quindi contiene la merce PIÙ altro, da 570 a 4.050 euro al mese. COS'È QUELL'ALTRO, trovato e non ipotizzato: il foglio «TO BUY» di FORNITORI REC.xlsx — tavoli da esterno, sgabelli, divani, una tenda, uno scaffale IKEA, bicchieri di plastica in cinque misure — con le colonne articolo, quantità, prezzo, totale, DOVE si compra (Amazon, Bricoware, IKEA, Vente-Unique) e note, per 2.468,59 in tutto. Sono arredi, attrezzature e materiale di consumo: roba che esce dal conto corrente, non entra in magazzino e che nessun ordine fornitore intercetterà mai. Le colonne della sottosezione sono quelle del foglio. ── LA COSA CHE REGGE TUTTO:
+
+COMPRATA O SOLO DESIDERATA ── Quel foglio è una LISTA DELLA SPESA, non un registro: si chiama «da comprare» e diverse righe hanno prezzo zero, cioè non sono ancora prezzate. Serve quindi sapere se una voce è GIÀ STATA COMPRATA: solo quelle comprate pesano sul mese, le altre sono un promemoria. Senza questa distinzione un divano desiderato abbasserebbe l'utile di gennaio.
+
+IL DATO SONO DUE CAMPI E NON UNO: `bought` dice SE, `bought_at` dice QUANDO — ed è la data che decide su quale mese l'uscita pesa. Una spesa non comprata non ha mese, perché non è successo niente; segnarla comprata dalla riga ci mette la data di oggi, che è quando il gesto sta succedendo, e chi l'ha comprata un altro giorno la corregge dalla modifica.
+
+LA MODIFICA NON È UN DI PIÙ, ed è la conseguenza di com'è fatto il foglio: una voce nasce spesso senza prezzo e lo prende il giorno che la si compra. Senza poterla riaprire, quel numero non entrerebbe mai.
+
+IL BUCO DI QUESTA SOTTOSEZIONE, con lo stesso linguaggio degli altri due (REQ-MAG-031): una voce segnata comprata ma senza prezzo pesa zero sul mese e nessuno se ne accorge finché non si confrontano i totali. Porta la scritta «senza prezzo» in ambra e si isola col chip in testa. Su una riga ancora DA comprare invece il prezzo a zero è la normalità del foglio, e segnalarla insegnerebbe a ignorare il segnale.
+
+NIENTE ESEMPI NEI CAMPI, e non è una svista: REQ-CASSA-012 avverte che l'elenco «affitto, SIAE, commercialista, utenze» era una LISTA INVENTATA da chi scriveva quella voce, non una frase di Flavio. Un segnaposto nel campo insegnerebbe a scriverci quello che ci siamo immaginati noi. Campi vuoti, e basta. ── IL RIEPILOGO, QUARTA VOCE ── Mette insieme i tre elenchi in un totale PER MESE: merce (dalle fatture fornitore), altre spese (quelle comprate) e quanto resta APERTO. È il numero che poi Bilancio → Mesi userà per il netto, e la ragione per cui sta QUI e non lì è che i soldi che escono si guardano dove si registrano.
+
+COSA ENTRA NEL TOTALE E COSA NO, ed è il modo in cui questo numero potrebbe sbagliare in silenzio.
+
+TOTALE = merce + altre spese. «Da pagare» è una FETTA della merce già contata — quelle fatture stanno dentro «merce», sommarle conterebbe due volte la stessa uscita — e dice solo quanta parte del mese è ancora un debito. «Senza fattura» è merce ARRIVATA di cui manca il documento (il primo buco di REQ-MAG-031): sommarla la conterebbe una seconda volta il giorno che la fattura arriva, e tenerla fuori mostrandola accanto dice quanto manca al mese senza sporcarlo. Sotto le righe c'è scritto in una frase.
+
+DA DOVE VIENE OGNI NUMERO: la merce dall'importo dei documenti, sul mese della loro DATA (non del pagamento); le altre spese dal totale quantità per prezzo delle comprate, sul mese di `bought_at`; il senza fattura dal NETTO delle fette consegnate e non fatturate (`fetteSenzaFattura`, già scritto per REQ-MAG-031), sul mese dell'ordine. Una fattura senza data non ha mese e resta fuori: metterla in quello corrente sposterebbe soldi da un mese all'altro senza che nessuno l'abbia deciso. ⚠️ IL NUMERO DELL'APP VALE MENO DI QUELLO DEI FOGLI, e sta scritto a schermo: è la conseguenza della decisione di REQ-CASSA-012 («nell'app le due cose restano separate»). Nel foglio mensile la riga «spese» comprende anche la merce; qui la merce si conta una volta sola, nella sua colonna. La frase sta in testa al Riepilogo, dove i totali si confrontano — se non la si dice, al primo confronto sembra che l'app sbagli e si torna al foglio. La stessa cosa detta dall'altro lato è la didascalia di «Altre spese»: la merce dei fornitori non va lì, si conta dalle fatture, e riscriverla la conterebbe due volte.
+
+DOVE VIVONO I DATI: collezione `altre_spese`, un documento per riga (name, qty, unit_cost, shop, notes, bought, bought_at). Il TOTALE non si scrive: è quantità per prezzo, e un terzo numero da tenere d'accordo con gli altri due è il primo che qualcuno dimentica di aggiornare. La quantità che manca vale UNO e non zero — chi scrive solo il prezzo ha comprato una cosa, non zero cose — perché con lo zero il totale sparirebbe dal mese in silenzio. LOCAL-FIRST ANCHE QUI, che è di gestione e non la coda: l'IDENTIFICATIVO SE LO FA IL TERMINALE (`doc(collection(...))` e `setDoc`, non `addDoc`), perché con `addDoc` si aspetta il server per sapere come si chiama il documento appena scritto e senza rete quell'attesa non finisce mai. Le scritture partono in `bgWrite` e il risultato si COMPONE invece di rileggerlo (BUG-045). Lo dimostra un test che gira senza rete, sul modello di `giroInLocale.test.js`. ── LE DECISIONI PRESE IN IMPLEMENTAZIONE ── 1) LE DUE VOCI NON SONO PREMIUM e non se ne è inventato un modulo nuovo: le altre spese si scrivono a mano e non dipendono da nessuna funzione a pagamento; il riepilogo mette insieme quello che c'è, e con lo scadenzario spento la colonna della merce resta a zero — che è la verità di quel locale, non un pezzo mancante. Il filtro `voceVisibile` di FornitoriTab le lascia passare senza un «if» in più.
+
+2) LE REGOLE FIRESTORE DI `altre_spese` sono quelle delle altre collezioni dei fornitori (`isBartender()`, che vale anche per l'admin): nell'app la sezione è del solo admin, ma un documento contabile non può essere più aperto della fattura che gli sta accanto. Le regole sono SCRITTE, non pubblicate: la pubblicazione è un gesto di chi gestisce.
+
+3) IL RIEPILOGO GUARDA CENTO ORDINI e non venticinque come lo Scadenzario: lì servono gli ultimi, per agganciare il documento che si ha in mano; qui si guarda indietro di mesi, e una consegna senza fattura di marzo sparirebbe dal conto del suo mese senza dire niente.
+
+RESTA APERTA UNA DOMANDA CHE NON È DI QUESTA VOCE (REQ-CASSA-012): fra gennaio e giugno le spese di Flavio superano gli acquisti di 11.243 euro e il foglio «TO BUY» ne spiega 2.469 — restano quasi novemila euro in sei mesi di cui non si sa la natura, e la risposta ce l'ha solo lui. La forma di questa sottosezione regge in tutti e due i casi: poche voci ricorrenti o tante di natura diversa. Se un giorno servirà RAGGRUPPARLE, il campo si aggiunge senza rifare niente — e finché la domanda non ha risposta, inventare le categorie sarebbe rifare l'errore che REQ-CASSA-012 nomina per nome.
+
+**Dove**: `src/lib/spese.js, src/lib/riepilogoFornitori.js, src/lib/api.js, src/components/AltreSpesePanel.jsx, src/components/RiepilogoFornitoriPanel.jsx, src/components/FornitoriTab.jsx, firestore.rules` · **Lo dimostrano**: `tests/unit/spese.test.js`, `tests/unit/riepilogoFornitori.test.js`, `tests/unit/speseInLocale.test.js`, `tests/component/AltreSpesePanel.test.jsx`, `tests/component/RiepilogoFornitori.test.jsx`
+
+#### REQ-MAG-033 — L'allegato della fattura: il documento vero, foto o PDF
+
+Ritagliato da REQ-MAG-025, punto 2 delle DECISIONI DEL 20/08, di cui REQ-MAG-031 aveva gia' fatto il legame. Qui c'e' l'ultima riga di quel punto, con le parole dell'utente: «Allegare = IL DOCUMENTO VERO (foto/PDF), non solo un numero. Serve lo Storage; da decidere in implementazione limite di peso e formati». PERCHE' SERVE: il numero dice quale fattura e', la carta e' quella che il commercialista chiede. Fino a ieri lo scadenzario teneva la testata (fornitore, numero, data, importo), le righe (REQ-MAG-030) e il legame con la fetta d'ordine (REQ-MAG-031) — tutto tranne il documento. La carta restava in una cartelletta al banco, e a fine mese si cercava li'.
+
+FATTO (27/08/2026).
+
+COSA SI PUO' FARE: dalla riga del documento, nello Scadenzario, si allega una foto o un PDF; l'allegato si riapre, si sostituisce e si toglie; e i documenti senza allegato si vedono a colpo d'occhio.
+
+IL TERZO BUCO, e si guarda come gli altri due (REQ-MAG-031): il segno «senza allegato» in ambra sulla riga e il chip «Senza allegato (n)» che tiene solo quelli. NON e' un linguaggio nuovo, ed e' deliberato: e' lo stesso del «senza ordine» che sta due righe piu' su, perche' e' la stessa cosa — lavoro che manca, non un errore dell'app (in questa app il rosso vuol dire annullato, DESIGN.md).
+
+SI CHIAMA «ALLEGATO» E NON «DOCUMENTO», per forza: in questa schermata «documento» e' gia' la fattura stessa — «Nuovo documento», «Eliminare il documento» — e un badge «senza documento» sotto un documento sarebbe una parola con due significati sulla stessa riga. ── LA DECISIONE SU PESO E FORMATI, che il requisito lasciava aperta ── FORMATI AMMESSI:
+
+JPG, PNG, WebP e PDF. Una fattura arriva in due modi soli — fotografata col telefono (JPEG, o PNG per uno screenshot) oppure scaricata dal portale del fornitore (PDF) — e tutto il resto non e' una cosa che il locale possa poi riaprire. L'ELENCO E' CHIUSO E NON E' `image/*`, ed e' la parte che costa: un HEIC di iPhone passerebbe da `image/*`, ma il canvas del browser non lo sa decodificare — finirebbe su Storage a piena dimensione e non si aprirebbe piu'. Meglio rifiutarlo nell'istante in cui lo si sceglie, dicendo cosa va bene. In pratica quasi non capita: caricando dalla libreria foto, iOS consegna gia' un JPEG.
+
+PESO MASSIMO: 8 MB, ed e' quello che finisce su Storage. Una foto ridotta sta in mezzo mega e un PDF di fattura pure, ma un PDF scansionato di piu' pagine — che certi fornitori mandano — arriva tranquillamente a cinque; sopra gli otto non e' piu' una fattura, e' un catalogo, e riscaricarlo dalla connessione del locale costerebbe piu' che ricercare la carta. Il limite vero sta in `storage.rules`; quello nell'app serve a DIRLO PRIMA, sul tasto, invece di far fallire un caricamento gia' partito.
+
+LE FOTO SI RIDUCONO NEL BROWSER, prima di partire: 2000 punti sul lato lungo e qualita' JPEG 0,72. Chi scatta e' in piedi in magazzino con la connessione del locale, e uno scatto di una fattura A4 sono facilmente 5 MB; da qui esce intorno al mezzo. Duemila punti su un A4 fanno circa 170 punti per pollice, che e' la soglia sotto la quale il corpo piccolo — aliquote, numeri di riga — comincia a impastarsi:
+
+UNA FATTURA SI DEVE LEGGERE, NON STAMPARE. Le foto dei drink si riducono a 1200 perche' sono francobolli in un menu; e' lo stesso conto (`downscaleImage` in storage.js) con numeri diversi, non una seconda strada.
+
+IL PDF NON SI TOCCA: ricomprimerlo vorrebbe dire rovinare il testo, che e' esattamente la cosa da leggere. Si accetta o si rifiuta.
+
+UN TERZO LIMITE, prima di tutti: 25 MB sullo scatto NON ancora ridotto. Una foto da telefono sta fra i 3 e i 5 MB e passa senza accorgersene; venticinque vuol dire un file che non viene da una fotocamera, e provare ad aprirlo in canvas su un telefono di tre anni fa vuol dire la schermata piantata con la merce in mano.
+
+IL LIMITE SI DICE PRIMA, e non dopo: formati e peso stanno scritti sul tasto («Allega foto o PDF, fino a 8 MB») e ogni rifiuto dice cosa fare — allegare solo le pagine che servono, rifare la foto — non che cosa chi legge ha sbagliato.
+
+DOVE FINISCE IL FILE: `fatture/<id fattura>/<istante>-<caso>.<est>` su Firebase Storage. Una cartella per fattura, cosi' la regola parla del documento e non di un mucchio comune; l'istante piu' un numero a caso nel nome perche' due terminali che allegano nello stesso secondo non si sovrascrivano. L'estensione la decide il TIPO e non il nome di partenza: dopo la riduzione il file E' un JPEG anche se si chiamava `.png`.
+
+SULLA FATTURA SI SCRIVE UNA SCHEDA, non solo l'URL: `attachment` con url, PERCORSO, tipo, peso, nome originale e data. Il percorso e' quello che permette di cancellare — senza, il file di una fattura eliminata resterebbe su Storage per sempre senza che nessuno sappia piu' di chi era; il nome originale e' l'unica cosa che permette di riconoscere l'allegato senza aprirlo. COM'E' PROTETTO: `storage.rules`, cartella `fatture/`, lettura scrittura e cancellazione al solo bartender/admin — LO STESSO permesso che ha `supplier_invoices` in `firestore.rules`, perche' la carta di un documento contabile non puo' essere piu' aperta del documento stesso. Non e' la regola delle foto dei drink, che sono a lettura pubblica.
+
+DA SAPERE, e non e' nascosto: l'app apre l'allegato con il download URL (`getDownloadURL`), che porta un token e vale per chiunque ce l'abbia. Quel link pero' sta scritto SOLO dentro il documento della fattura, che le regole proteggono: per averlo bisogna gia' poter leggere la fattura. Sostituire o togliere l'allegato cancella il file, e con lui il token. La strada alternativa — tenere solo il percorso e scaricare il file con `getBlob`, che passa dalle regole a ogni lettura — vuole la CORS del bucket configurata a mano, e senza quella l'allegato non si aprirebbe affatto: si e' scelto quello che funziona, scrivendo qui il prezzo.
+
+QUI SI ASPETTA, ed e' l'eccezione che conferma il local-first: non c'e' modo di scrivere sulla fattura il riferimento a un file che non e' ancora su Storage, e comporre in memoria un allegato che potrebbe non esistere vorrebbe dire una fattura che dice di avere una foto e non ce l'ha. Questa e' una schermata di gestione e non la coda. L'ATTESA SI VEDE («Carico l'allegato…» al posto della riga) e un caricamento fallito lo dice e lascia il documento esattamente com'era. La scrittura su Firestore invece resta `bgWrite` come tutte, e il documento aggiornato si COMPONE senza rileggerlo (BUG-045).
+
+SOSTITUIRE NON BUTTA VIA PRIMA DI AVERE: il vecchio file si cancella solo dopo che il nuovo e' su. E' il caso che fa il danno — la rete che cade a meta' sostituzione — e a quel punto sulla fattura c'e' ancora l'allegato di prima, intero.
+
+CHI CANCELLA LA FATTURA PORTA VIA ANCHE L'ALLEGATO. Prima se ne va il documento, che e' quello che conta e lo si aspetta; poi il file, che e' un tentativo e non solleva niente: un file gia' assente non e' un motivo per lasciare in pagina una fattura appena eliminata.
+
+COSA DEVE PUBBLICARE CHI GESTISCE, e senza quello non funziona: `storage.rules` (`firebase deploy --only storage`). Le regole sono scritte, NON pubblicate — la pubblicazione e' un gesto suo.
+
+**Dove**: `src/lib/allegati.js, src/lib/storage.js, src/lib/api.js, src/components/SupplierInvoicesPanel.jsx, storage.rules` · **Lo dimostrano**: `tests/unit/allegatoFattura.test.js`, `tests/unit/allegatoInArchivio.test.js`, `tests/component/AllegatoFattura.test.jsx`
+
+#### REQ-MAG-032 — Il prodotto che nasce da una consegna, e il carico che si sceglie
+
+Ritagliato da REQ-MAG-025, che resta da fare per il resto: qui ci sono tre pezzi soli, quelli che toccano la merce che entra.
+
+1) IL PRODOTTO NUOVO CHE SI PERDEVA IN SILENZIO, ed e' la ragione per cui questa voce esiste. Davanti a una riga d'ordine il cui articolo non sta in anagrafica non succedeva niente: la riga passava a «consegnato», la giacenza non si muoveva, nessun movimento veniva scritto e nessuno se ne accorgeva — a schermo la consegna sembrava andata a buon fine. Se il fornitore mandava una referenza nuova, quella merce SPARIVA: non entrava in magazzino e non risultava da nessuna parte. Una merce contata male si vede e si corregge; una che sparisce in silenzio no, e quella e' la peggiore delle due.
+
+2) IL TASTO «CARICA TUTTI» (REQ-MAG-025 punto 4). 3) L'ASSORTIMENTO PRE-IMPOSTATO (REQ-MAG-025 punto 5).
+
+FATTO (27/08/2026).
+
+IL PRODOTTO NASCE ALLA CONSEGNA, con quello che l'ordine sa gia' — nome, prezzo, IVA della riga — e CON LO STESSO id della riga d'ordine: cosi' l'ordine continua a puntare a un prodotto vero, e una seconda consegna della stessa referenza ritrova quello di prima invece di farne un doppione. Passa dalla stessa strada di ogni altra merce che entra (`registraAcquisto` in api.js, REQ-MAG-030), quindi alza la giacenza, scrive il movimento «ordine fornitore» e la riga di listino di quel fornitore col prezzo e la sua data. La forma del prodotto la compone `prodottoDaRigaOrdine` (src/lib/inventory.js), che e' logica pura e si prova senza database.
+
+SI SCRIVE UN DOCUMENTO INTERO, NON UNA PATCH: `increment()` non ha niente da incrementare su un documento che non esiste, e `updateDoc` su un id che non c'e' fallisce. Il prodotto nasce con la merce gia' dentro, in una scrittura sola.
+
+IL NOME NON E' QUELLO DEL TRAVASO, ed e' la trappola che REQ-MAG-025 segnalava. In magazzino esiste gia' una lista «da sistemare»: sono i prodotti che il passaggio alla gestione a pezzi (REQ-MAG-018) non sa convertire da solo, e finche' ce n'e' uno il magazzino INTERO resta in sola lettura. Qui non c'e' niente di bloccato e niente da convertire: c'e' una scheda nata a meta', che si compila con calma mentre il locale lavora. Le due situazioni NON sono la stessa, e due liste omonime sulla stessa schermata sarebbero due significati per una parola sola — si pagherebbero il giorno in cui qualcuno legge «da sistemare» e ferma un turno per niente. Questo stato ha quindi un nome suo:
+
+SCHEDA DA COMPLETARE (`scheda_da_completare` sul prodotto), e non blocca nessuno.
+
+LA CONFEZIONE NON SI SCRIVE, e non e' una dimenticanza. La riga d'ordine porta un `package_size` ma non dice di che misura sia quel contenuto: scriverlo senza `content_unit` farebbe rispondere `motivoNonMigrabile` — «c'e' scritto che un pezzo contiene 700, ma non di che misura» — e da quel momento IL MAGAZZINO INTERO andrebbe in sola lettura per colpa di un prodotto appena nato, col locale aperto. Il prodotto nasce quindi contato a pezzi e basta, che e' esattamente quello che l'ordine sa: sei confezioni sono sei pezzi.
+
+DOVE SI VEDE, ED E' L'ALTRO LATO DELLO STESSO BUCO. Un prodotto senza categoria non ha macro d'acquisto, quindi la sua spesa non compare in «Bilancio → Acquisti x Fatturato» (REQ-MAG-022): sparisce dai conti invece di risultare sbagliata, che e' peggio. Sta percio' accanto alle CATEGORIE SENZA MACRO (REQ-UI-022), in Magazzino → Macro-categorie, perche' e' la stessa mancanza vista dall'altro lato e si guardano nello stesso momento. Nella lista dei prodotti il segno e' una matita accanto al nome, come la coroncina del premium; aperto, il prodotto dice cosa manca — la categoria, quanto contiene un pezzo, la soglia di riordino — in ambra, che vuol dire lavoro che manca (il rosso, in questa app, vuol dire annullato: DESIGN.md).
+
+LA SCHEDA SI CHIUDE CON LA CATEGORIA, non col semplice fatto di averla aperta. Bastasse un salvataggio qualunque, il segno sparirebbe dal prodotto guardato per un secondo e la spesa continuerebbe a non comparire nei conti senza piu' niente che lo dica. Le altre due cose che mancano si leggono nella scheda e non tolgono soldi a nessun totale. L'IVA D'ACQUISTO eredita quella della riga d'ordine, e il default (22%) dove la riga non la dice: l'ordine porta il prezzo, non l'aliquota (REQ-MAG-025 punto 3).
+
+IL FORNITORE NON SI SCRIVE SUL PRODOTTO: da REQ-MAG-029 quel legame vive nel listino, perche' un prodotto puo' averne piu' d'uno, ed e' la riga di listino a nascere insieme al prodotto. «CARICA TUTTI», E RIGA PER RIGA. La finestra della consegna adesso ha una spunta per riga: il fornitore consegna quello che ha, non quello che e' stato ordinato, e le due casse su tre arrivate si caricano mentre la terza resta «richiesta» e si carichera' quando arriva.
+
+SI PARTE CON TUTTO SPUNTATO, perche' la consegna intera e' il caso normale e chi non tocca niente carica quello che ha ordinato; il tasto dice sempre quante righe sta per caricare e se sono tutte — «Carica tutti (3)» oppure «Carica i selezionati (2)» — cosi' il gesto non si fa alla cieca, e con una riga sola non cambia niente rispetto a prima. C'e' un «Spunta tutte / Togli tutte le spunte» per non spuntarle a una a una. Passa dalla stessa strada del carico singolo (`consegnaRigheOrdine` con i suoi `indici`, REQ-MAG-029): non c'e' nessuna seconda funzione. Le righe gia' consegnate non compaiono piu' nella finestra: di li' si carica, non si ricarica — la stessa regola delle righe gia' in archivio di una fattura (REQ-MAG-030). L'ASSORTIMENTO PRE-IMPOSTATO si segna quando l'ordine si compone, con una casella sulla riga («In assortimento quando arriva»), e si applica AL CARICO: metterlo in assortimento mentre la merce viaggia vorrebbe dire offrire in carta una bottiglia che non c'e'. Sul dato e' un campo `status_target` sulla riga d'ordine — generico apposta, perche' e' uno stato commerciale e non un si'/no: il giorno in cui serviranno anche «in linea» o «premium» cambia la sola casella. «In assortimento» NON cambia significato: resta lo stato commerciale di REQ-MAG-007, come REQ-MAG-029 dice a chiare lettere. Qui si programma quel cambio e lo si applica al momento giusto, e basta.
+
+DECISO IN IMPLEMENTAZIONE, e non stava nel testo: (1) la casella dell'assortimento si chiede SOLO dove cambia qualcosa — su un prodotto gia' in assortimento sarebbe una casella che non fa niente, e su un premium spuntata per sbaglio sarebbe una retrocessione silenziosa; (2) il campo si scrive sulla riga solo dove e' stato chiesto, per non seminare un dato in piu' su ogni riga di ogni ordine; (3) il pre-impostato oggi si sceglie solo in COMPOSIZIONE, non su un ordine gia' mandato: modificare le righe di un ordine salvato e' un gesto che non esiste ancora, e inventarlo qui vorrebbe dire un secondo scrittore su un documento che consegna e pagamento gia' scrivono dal banco.
+
+RESTA APERTO, ed e' una domanda per chi decide: il pre-impostato serve soprattutto a far RIENTRARE un prodotto «fuori assortimento», ma oggi quei prodotti non compaiono nel catalogo ordinabile («non si ricompra», REQ-MAG-007), quindi quel caso non si puo' ancora raggiungere. La casella e' pronta e il campo pure; se si decide che un «out» si puo' riordinare, e' una riga di filtro.
+
+DOVE VA LA CESOIA, se si decidera' di separare l'arrivo dal carico (REQ-MAG-025 punti 3 e 4, che contraddicono la registrazione di Flavio del 26/08 su cui e' costruito il flusso di oggi): il taglio sta in `consegnaRigheOrdine` (api.js), che oggi fa due cose in fila — segna la riga e chiama `registraAcquisto`. Si spezza in due funzioni che scrivono le righe con lo stesso `scriviRigheOrdine`, si aggiunge un livello «arrivato» fra «richiesto» e «consegnato» in `LIVELLI` (src/lib/listini.js), e la finestra della consegna — che gia' sceglie le righe — diventa la finestra del carico. Il resto non si muove: il prodotto che nasce, il listino, il movimento e il pre-impostato stanno tutti dentro `registraAcquisto`, cioe' dalla parte del carico. ⚠️ AGGIORNAMENTO 27/08/2026 (REQ-MAG-038): i tre livelli richiesto/consegnato/pagato NON SPARISCONO — si spostano dalla RIGA all'ORDINE, ed e' li' che vanno letti. Con un ordine per fornitore non serve piu' distinguere consegne diverse dentro lo stesso documento, quindi il livello per riga perde il suo mestiere; ma i tre nomi sono di Flavio e restano i suoi, sul documento. Cade la consegna per FETTA, non la scala dei livelli. Il carico avviene al passaggio a ORDINE RICEVUTO, sulle quantita' RICEVUTE.
+
+RESTA VALIDO E NON SI TOCCA il pezzo che questa voce ha di suo: il prodotto che nasce quando il fornitore manda una referenza che in anagrafica non c'e', con la sua «scheda da completare» — quello e' indipendente da come e' fatto l'ordine, e continua a valere. ⚠️ AGGIORNAMENTO 27/08/2026 (REQ-MAG-037): L'ASSORTIMENTO PRE-IMPOSTATO NON C'E' PIU'. La casella «In assortimento quando arriva» e il campo `status_target` sulla riga d'ordine sono stati tolti, e non per semplificare: da REQ-MAG-037 «in assortimento» vuol dire «c'e' un ordine aperto», quindi la consegna è il momento in cui quello stato FINISCE. Una casella che chiede di accenderlo QUANDO ARRIVA chiederebbe di accendere uno stato nell'istante esatto in cui va spento. Al carico, adesso, `registraAcquisto` scrive la patch che fa USCIRE il prodotto dall'assortimento e gli restituisce lo stato di prima. Cade con la casella anche la domanda che restava aperta qui sopra (far rientrare un «out» col pre-impostato): un `out` si riordina dalla tabella di REQ-MAG-036, che è il modo in cui rientra.
+
+**Dove**: `src/lib/inventory.js, src/lib/api.js, src/components/PurchaseOrdersPanel.jsx, src/components/InventoryManager.jsx, src/components/MacroCategoryManager.jsx` · **Lo dimostrano**: `tests/unit/prodottoNuovoDaOrdine.test.js`, `tests/component/CaricoOrdine.test.jsx`, `tests/component/InventoryManager.test.jsx`
+
+#### REQ-MAG-031 — La fattura si aggancia alla FETTA di fornitore dentro l'ordine
+
+Ritagliato da REQ-MAG-025, che resta da fare per il resto: qui c'e' il solo LEGAME, che l'utente ha precisato il 20/08 con parole sue. «La vista degli ordini contiene piu' fornitori, ma la fattura e' collegata all'ordine PER IL FORNITORE, perche' e' il fornitore che rilascia la fattura».
+
+QUINDI IL LEGAME NON E' FATTURA-ORDINE, E' FATTURA-FETTA: la fetta di quel fornitore dentro l'ordine, la stessa che il filtro gia' mostra (REQ-MAG-029). Un ordine con tre fornitori ha fino a tre fatture, ognuna agganciata alla sua fetta. PERCHE' SERVE, ed e' la ragione per cui l'utente l'ha chiesto: «sono le due cose che a fine mese fanno tornare o non tornare i conti con il commercialista». Le due cose sono i due buchi — una fetta CONSEGNATA MA SENZA FATTURA (la merce e' arrivata, il documento no) e una FATTURA SENZA FETTA (il documento c'e', l'ordine no) — e vanno visti a colpo d'occhio, non cercati.
+
+DOVE VIVE IL DATO: `order_id` sulla FATTURA, e basta quello. Il fornitore la fattura ce l'ha gia' (`supplier_id`), e la coppia dei due E' la fetta — la stessa chiave con cui `fetteFornitore` la ritaglia. Su un campo solo, «una fattura sta su al massimo una fetta» e' vero per costruzione: non c'e' nessun posto dove scriverne una seconda. SULL'ORDINE NON SI SCRIVE NIENTE, ed e' deliberato: l'ordine lo scrivono la consegna e il pagamento, gesti che partono dal banco, e un secondo scrittore su quel documento vuol dire due terminali che si sovrascrivono le righe per aggiungere un riferimento che sta comodo dall'altra parte.
+
+IL VERSO OPPOSTO — una fetta, al massimo una fattura — nessun campo lo garantisce da solo, e lo tiene `aggancioAmmesso` (src/lib/fatture.js): la stessa funzione filtra gli elenchi delle candidate E sta davanti alla scrittura in api.js, cosi' le due cose non possono divergere. Le schermate aperte sono due e i terminali del locale pure: una fetta coperta da un altro terminale un minuto fa non si vede.
+
+IL FORNITORE FA DA GUARDIA: si aggancia solo un documento DELLO STESSO FORNITORE della fetta, e il modo di impedirlo e' non farlo comparire nell'elenco — non spiegarlo dopo con un errore. Agganciare la fattura di Nova alla fetta di Enofel non e' un errore di battitura: e' merce pagata a chi non l'ha venduta.
+
+SI AGGANCIA E SI SGANCIA DAI DUE LATI. Dalla fetta (Fornitori -> Ordini) si sceglie il documento di quel fornitore; dal documento (Fornitori -> Scadenzario) si sceglie l'ordine, e si legge a quale fetta si riferisce — data, articoli, netto della sola fetta. Staccare e' lo stesso gesto al contrario (`order_id` a null) ed e' un gesto che si vede: il campo e' uno solo, e riscriverlo di nascosto lascerebbe scoperta la fetta di prima senza che nessuno l'abbia deciso. I DUE BUCHI, DOVE SI VEDONO. Negli Ordini, una fetta consegnata e senza documento porta la scritta «manca la fattura» e in testa allo storico c'e' quante sono; nello Scadenzario, un documento senza ordine porta «senza ordine» e il chip «Senza ordine (n)» tiene solo quelli. L'ambra e non il rosso: non e' un errore, e' lavoro che manca — in questa app il rosso vuol dire annullato (DESIGN.md). «RIPRENDI LE RIGHE DA UN ORDINE» E L'AGGANCIO SONO STATI UNITI, ed e' una decisione presa in implementazione. Erano due gesti: si copiavano le righe (REQ-MAG-030, aiuto di compilazione) e il legame restava non scritto proprio nell'istante in cui uno l'aveva appena dimostrato — «questa fattura e' di quest'ordine» — e a fine mese quella fetta risultava scoperta. Adesso scegliere l'ordine copia le righe E aggancia il documento, in UNA scrittura sola (due scritture, e una delle due puo' restare indietro). Chi vuole il legame senza le righe ha «Collega a un ordine» sulla riga del documento; chi vuole le righe senza il legame cerca i prodotti per nome, come per un documento qualsiasi.
+
+CADUTA LA CONDIZIONE «SOLO ORDINI GIA' CONSEGNATI» che filtrava gli ordini riprendibili: una proforma arriva anche prima della merce, e allora quelle righe sono proprio quelle da copiare. La fetta ancora «richiesta» si collega, ma non conta come buco: li' non e' arrivato niente, e segnalarla insegnerebbe a ignorare il segnale.
+
+NON C'E' DENTRO L'ALLEGATO DEL DOCUMENTO (foto/PDF), che REQ-MAG-025 cita nello stesso punto: serve lo Storage e non sono decisi ne' peso ne' formati. Resta li'. ⚠️ AGGIORNAMENTO 27/08/2026 (REQ-MAG-037/038): con un ordine per fornitore la FETTA non esiste piu' come cosa a se', perche' l'ordine ha gia' un fornitore solo. Il legame diventa quindi FATTURA-ORDINE, che e' la forma semplice di quello che questa voce descrive. Restano validi e vanno riusati: la guardia che vieta di agganciare la fattura di un fornitore a un ordine di un altro, l'uno-a-uno impedito per costruzione, e i due buchi che si vedono a colpo d'occhio — ordine senza fattura e fattura senza ordine. E IL GANCIO DIVENTA PORTANTE: senza fattura collegata un ordine non sa se e' stato pagato, perche' «pagato» e' una domanda alla fattura e non un dato dell'ordine (REQ-MAG-038). Da qui due conseguenze su questa voce. La prima: «SULL'ORDINE NON SI SCRIVE NIENTE» vale ancora per i DATI — il legame resta su `order_id`, un campo solo, sulla fattura — ma NON piu' per il diario: collegare, scollegare e generare un documento lasciano una riga nella `storia` dell'ordine, e il rischio dei due scrittori si accetta perche' cio' che si perderebbe e' una riga di diario, non un numero. La seconda: un ordine senza documento non e' «da pagare», e' un ordine di cui non si sa niente — e va detto cosi', invece di darlo per non pagato.
+
+**Dove**: `src/lib/fatture.js, src/lib/api.js, src/components/PurchaseOrdersPanel.jsx, src/components/SupplierInvoicesPanel.jsx` · **Lo dimostrano**: `tests/unit/legameFattura.test.js`, `tests/unit/agganciaFattura.test.js`, `tests/component/FatturaDellaFetta.test.jsx`
+
+#### REQ-MAG-030 — Dalla fattura al magazzino: «Aggiungi prodotti», col prezzo che si decide
+
+Nasce da Flavio, che ha guardato lo scadenzario (registrazione del 26/08/2026, 00:40): «ho appena visto che questa cosa quasi gia' c'e' ed e' scadenzario, e dalla foto e' proprio quello che mi serve. Pero' sotto mi deve apparire un tasto che fa il carico. Dobbiamo usare un'altra dicitura sicuramente, tipo AGGIUNGI PRODOTTI magari, e ci mettiamo anche i prodotti, in modo tale che li va gia' a caricare all'interno dei prodotti di magazzino. Sempre che poi dopo mi fa la domanda se voglio aggiornare il prezzo — nel caso lo vado a modificare — oppure lasciarlo invariato, cosi', senza carico, perche' magari me li sono caricati gia' prima in altro modo».
+
+IL DATO CHE VINCOLA IL DISEGNO, verificato il 26/08: una fattura in `supplier_invoices` oggi e' SOLO UNA TESTATA — fornitore, data, importo, stato pagato, note.
+
+NON HA RIGHE. Quindi il tasto non puo' «elencare i prodotti della fattura»: quei prodotti non esistono ancora come dato. E' il tasto stesso a metterli, ed e' quello che Flavio dice con «ci mettiamo anche i prodotti». La fattura guadagna delle righe, e le guadagna li'.
+
+LA DICITURA NON E' UN DETTAGLIO. Flavio chiede esplicitamente di NON chiamarlo «carico»: «dobbiamo usare un'altra dicitura sicuramente». Il tasto si chiama «Aggiungi prodotti» perche' e' quello che fa — il carico a magazzino e' una CONSEGUENZA, e per giunta facoltativa. Chiamarlo «carico» prometterebbe una cosa che l'utente puo' decidere di non fare.
+
+IL CARICO E' FACOLTATIVO, e la ragione e' operativa, non teorica: «magari me li sono caricati gia' prima in altro modo». Chi aggiunge i prodotti a una fattura sta ricostruendo un documento contabile, che e' cosa diversa dal muovere una giacenza. Le due cose vanno tenute separate: si possono aggiungere le righe SENZA toccare il magazzino. Caricare due volte la stessa merce e' l'errore da impedire, e qui lo si impedisce lasciando scegliere invece che decidendo al posto suo.
+
+IL PREZZO SI CHIEDE, NON SI IMPONE. Dopo aver messo le righe, per ogni prodotto il cui prezzo di acquisto differisce da quello in archivio si chiede se aggiornarlo, mostrando vecchio e nuovo affiancati e lasciando il nuovo MODIFICABILE («nel caso lo vado a modificare»). Chi non risponde non aggiorna niente: il pre-impostato non muove i prezzi. Il prezzo accettato aggiorna la riga di listino di quel fornitore con la sua data e il costo di riferimento del prodotto, esattamente come alla consegna di un ordine (REQ-MAG-029): e' la stessa strada, e va riusata, non riscritta.
+
+IL PREZZO DI VENDITA NON LO TOCCA NESSUNO. Vale qui la regola gia' scritta in REQ-MAG-029: cambia il costo, non il prezzo del menu, che e' di Flavio.
+
+RAPPORTO CON GLI ORDINI. Quando la fattura e' gia' agganciata a un ordine (REQ-MAG-025), le righe si propongono da quell'ordine invece di farle ribattere a mano: sono le stesse merci, e ribatterle e' lavoro doppio con due occasioni di sbagliare. Resta possibile correggerle, aggiungerne e toglierne: la fattura fa fede sulla merce arrivata, non l'ordine.
+
+FATTO (26/08/2026). Il tasto sta SOTTO ogni documento dello scadenzario e si chiama «Aggiungi prodotti». Apre una finestra che cerca il prodotto per nome, ne mette la quantita' in confezioni e il prezzo, e scrive le righe dentro il documento (`lines` su `supplier_invoices`): la fattura, che era solo una testata, guadagna le sue righe.
+
+IL CARICO E' UNA CASELLA A PARTE, e il tasto di conferma cambia dicitura con lei — «Aggiungi e carica» oppure «Aggiungi senza caricare» — cosi' il gesto non si puo' fare alla cieca. Il pre-impostato e' ACCESO, perche' e' il giro che Flavio descrive («in modo tale che li va gia' a caricare»), ma il doppio carico non e' impedito dall'attenzione: resta scritto sulla riga se il carico e' avvenuto (`caricata`), e le righe gia' in archivio non tornano mai dentro la finestra — di li' si aggiunge, non si ricarica. E' la risposta al RESTA APERTO qui sopra, presa nella direzione che quel testo dava per probabile.
+
+LA DOMANDA SUL PREZZO COMPARE SOLO DOVE IL PREZZO E' CAMBIATO (oltre il centesimo), con vecchio e nuovo affiancati e il nuovo che e' il campo stesso, quindi modificabile. Parte SPENTA. Il si' scrive la riga di listino di quel fornitore con la sua data e il costo di riferimento del prodotto; il prezzo di vendita del menu non lo tocca nessuno.
+
+UNA STRADA SOLA COL CARICO DEGLI ORDINI: la sequenza «prezzo accettato → listino → costo → giacenza e movimento» e' stata ESTRATTA da `consegnaRigheOrdine` in `registraAcquisto` (api.js), con due leve — `carica` e `aggiornaPrezzo` — che alla consegna sono accese tutte e due. Il conto delle unita' base sta in `caricoDaConfezioni` (inventory.js), perche' due copie della stessa moltiplicazione sono due occasioni di scriverla diversa.
+
+DECISO IN IMPLEMENTAZIONE, e non stava nel testo: (1) l'IMPORTO della testata non si muove da solo — i prodotti si aggiungono a mano, un po' per volta, e riscrivere l'importo dopo la prima riga farebbe sembrare sbagliata una fattura che e' giusta; il netto delle righe si legge accanto, e il confronto lo fa una persona; (2) il MAGAZZINO IN SOLA LETTURA (BUG-029) spegne il carico ma NON impedisce di aggiungere le righe: sono carta, non giacenze, e bloccarle sarebbe un divieto per un motivo che non le riguarda; (3) il catalogo dentro la finestra si vede solo cercando, perche' 388 prodotti dentro una finestrella non si scorrono.
+
+IL RAPPORTO CON GLI ORDINI, per adesso, e' SOLO UN AIUTO DI COMPILAZIONE: «Riprendi le righe da un ordine» pesca fra gli ordini dello stesso fornitore che hanno gia' consegnato qualcosa e ne copia le righe come punto di partenza, modificabili. NON scrive nessun id d'ordine sulla fattura: il gancio persistente fattura-ordine e' REQ-MAG-025, ancora da decidere, e inventarlo qui vorrebbe dire creare un dato che poi qualcun altro dovrebbe reggere. Le righe riprese da un ordine consegnato spengono il carico da sole: quella merce e' entrata in magazzino alla consegna. ⚠️ AGGIORNAMENTO 27/08/2026 (REQ-MAG-031): il paragrafo qui sopra e' SUPERATO. Il gancio persistente e' stato deciso e fatto, e non e' verso l'ordine ma verso la FETTA di fornitore. «Riprendi le righe da un ordine» quindi non e' piu' solo un aiuto di compilazione: scegliere l'ordine copia le righe E aggancia il documento, in una scrittura sola. Erano due gesti, e il legame restava non scritto proprio nell'istante in cui uno l'aveva appena dimostrato. Resta vero tutto il resto, compreso che le righe riprese da una consegna spengono il carico.
+
+**Dove**: `src/components/SupplierInvoicesPanel.jsx, src/lib/listini.js, src/lib/inventory.js, src/lib/api.js` · **Lo dimostrano**: `tests/unit/fatture.test.js`, `tests/unit/prodottiFattura.test.js`, `tests/component/SupplierInvoicesPanel.test.jsx`
+
+#### REQ-MAG-029 — Un prodotto, piu' fornitori: il listino si stacca dal magazzino
+
+Nasce da Flavio, che ha provato la sezione Ordini (registrazioni del 26/08/2026): «questo significa che quel prodotto — ad esempio il Campari — deve essere associato a quel fornitore, e io questo non lo posso fare CATEGORICAMENTE: e' quasi sicuro che il Campari lo prendo anche da fornitori differenti». E subito dopo: «sarebbe buono se avesse il campetto di ricerca, in modo tale che io posso mettere il prodotto INDIPENDENTEMENTE da quale fornitore resta associato».
+
+IL DATO CHE CAMBIA LA DISCUSSIONE, misurato il 26/08: il legame prodotto-fornitore oggi non esiste. Dieci prodotti su 388 hanno un fornitore scritto; gli altri hanno il campo a nullo, perche' l'import da Excel lo scrive nullo per ogni riga (src/dev/importExcel.js). La sezione Ordini non ha un limite di disegno: non ha i dati. Scegliendo NOVA si vedono tre prodotti su 388. Non c'e' niente da migrare.
+
+IL MODELLO, deciso dall'utente il 26/08: si associano I PRODOTTI AI FORNITORI e non i fornitori ai prodotti. Nasce il LISTINO, una collezione con una riga per coppia prodotto-fornitore (id deterministico, cosi' l'unicita' della coppia e' un fatto strutturale e non un controllo applicativo): fornitore, prodotto, prezzo netto per pezzo, la confezione DI QUEL FORNITORE, il codice sul suo listino, l'ultimo prezzo pagato con la sua data.
+
+IL MAGAZZINO NON CAMBIA: il prodotto Campari resta UNO, con UNA giacenza. Parole dell'utente: «l'entita' prodotto sara' sempre la stessa anche se associata a fornitori diversi: se ordino il Campari da Pippo o da Pluto deve valere la SOMMA dell'ordine Campari, e il magazzino deve popolare il prodotto Campari, che NON sara' duplicato». A DUPLICARSI E' LA RIGA DELLA TABELLA. Sempre parole sue: «facciamo una tabella con tutta la lista di prodotti, anche se sono duplicati, e li distinguiamo per fornitore. Quando Flavio seleziona un fornitore vedra' solamente la lista dei prodotti ordinabili da quel fornitore; se seleziona un altro fornitore lo puo' ordinare da quell'altro. Se non seleziona nessun fornitore vedremo i doppioni, identificati da un COLORE e dal fornitore associato». Quindi: senza filtro una riga per coppia prodotto-fornitore, col filtro il catalogo di quel fornitore. Il colore del fornitore si sceglie alla creazione (a caso, oppure scelto a mano) e si vede come le strisce laterali della lista del magazzino (REQ-MAG-027). I TRE LIVELLI DELL'ORDINE, parole di Flavio del 26/08: «ci devono stare i livelli di RICHIESTO, CONSEGNATO, PAGATO. Io mi creo l'ordine che devo mandare al fornitore e in quel momento lui non mi carica ancora i prodotti; una volta che me li ha portati io faccio consegnato, e dopo mi fa il carico». Il carico a magazzino avviene quindi al passaggio a CONSEGNATO, non prima: e' questo che risolve «ordinato ma non ancora ricevuto» senza inventare uno stato nuovo.
+
+IL PREZZO SI CORREGGE ALLA CONSEGNA, IL FORNITORE NO. Flavio: «prendo dieci cose, mi esce 300 euro di ordine; una volta che il fornitore mi scarica l'ordine vedo se veramente sono 300 o di piu' o di meno, e modifico il prezzo quando necessario.
+
+NON POSSO MODIFICARE IL FORNITORE PERCHE' DA LUI L'HO COMPRATO. Lo metto come consegnato, e da li' me lo metto come da pagare, e me lo inizia anche a caricare nel magazzino». La correzione aggiorna il prezzo di quella riga di listino (con la sua data) e il costo di riferimento del prodotto.
+
+IL COSTO, deciso dall'utente: «il costo del prodotto dipendera' da quanto e' stato pagato, dallo specifico fornitore, ma il costo che poi viene del menu rimane quello che decide Flavio». Due numeri distinti, e nessuno dei due si muove da solo: il LISTINO tiene il prezzo per fornitore e serve a CONFRONTARE PRIMA DI ORDINARE; il costo sul prodotto resta UN NUMERO SOLO — l'ultimo effettivamente pagato, chiunque fosse il fornitore, come gia' fa il carico — e serve a VALORIZZARE il magazzino e a calcolare il costo ricetta. Il PREZZO DI VENDITA del drink non lo tocca nessuno: e' di Flavio, e il prezzo consigliato resta un suggerimento.
+
+IL FORNITORE PROPOSTO quando si aggiunge un prodotto a un ordine e' quello dell'ULTIMO ACQUISTO. Non il piu' economico: il prezzo piu' basso in archivio e' quasi sempre il piu' vecchio, perche' nessuno aggiorna al rialzo un fornitore da cui non compra piu'. Il piu' economico si MOSTRA accanto, come confronto, non si sceglie. Un fornitore da cui quel prodotto e' gia' stato ordinato nello stesso giro non e' piu' scegliibile per la stessa riga: «va anche bene che e' disabilitato il fornitore in quanto gia' l'ho ordinato a quel fornitore» (Flavio). L'ORDINE RESTA UNO, coi fornitori dentro, e il per-fornitore e' una VISTA: e' la decisione del 20/08 in REQ-MAG-025. Di conseguenza il testo dell'email, la stampa e il gancio con la fattura vanno per FETTA di fornitore: mandare a Nova anche le righe di Enofel e' un errore verso il fornitore, non un dettaglio grafico. «IN ASSORTIMENTO»
+
+NON CAMBIA SIGNIFICATO. Il campo di stato del prodotto (assortimento / linea / premium / fuori assortimento, REQ-MAG-007) resta politica commerciale. Lo stato «ordinato ma non ancora ricevuto» non ha bisogno di un nome nuovo, perche' e' un LIVELLO DELLA RIGA D'ORDINE ed e' Flavio stesso a nominarlo: richiesto, consegnato, pagato. Il pre-impostato di REQ-MAG-025 punto 5 resta quello che era: alla consegna, insieme al carico, si puo' applicare il cambio di stato commerciale deciso al momento dell'ordine.
+
+COME SI POPOLANO I LISTINI. Li associa Flavio a mano, e va bene cosi': «devo associare io i prodotti ai fornitori, in modo tale che magari il Campari ce l'ho associato a due fornitori su cinque, e va bene cosi'». L'utente ha aggiunto che si puo' tentare di ripassare l'Excel, e il dato c'e': REQ-MAG-023 descrive GEN ORD REC.xlsx, centotrenta fogli, ognuno il catalogo intero con IL FORNITORE SULL'ARTICOLO e il prezzo netto al pezzo. Centotrenta fogli nel tempo vogliono dire lo stesso prodotto con fornitori diversi in giri diversi: cioe' il listino, con prezzi e date. Il reimport e' una strada, non un prerequisito: la schermata deve reggere anche con zero listini.
+
+IL PASSAGGIO NON MIGRA NIENTE. La compatibilita' sta in una funzione sola: un prodotto senza righe di listino ma col vecchio fornitore scritto produce una riga VIRTUALE con quel fornitore e quel costo. I dieci prodotti agganciati si comportano come oggi, senza che nessuno lanci niente contro il database. La scheda prodotto smette di SCRIVERE il vecchio campo e non lo cancella. Uno script di pulizia e' facoltativo, idempotente, e gira su emulatore o test:
+
+LA PRODUZIONE NON SI TOCCA.
+
+DOPO, NON ADESSO (Flavio, 26/08): «affronteremo in un secondo momento il discorso delle statistiche, mettiamo prima a posto inventario e ordini. Poi vediamo: potrebbe essere carino l'andamento dei prezzi — ogni volta che carico qualcosa e vado a modificare il prezzo, il sistema mi dovrebbe registrare quanto acquistato e la variazione di prezzo su un grafico». La riga di listino con prezzo e data e' gia' il dato che serve: la voce si aprira' quando sara' il momento.
+
+RESTA APERTO: se la confezione di un fornitore diversa da quella del prodotto debba potersi ordinare come tale o convertirsi al carico; quanti prodotti col vecchio campo e quanti ordini ci siano davvero in produzione, da contare in SOLA LETTURA prima di scrivere il ramo di compatibilita'.
+
+FATTO (26/08/2026). Il listino vive nella collezione `supplier_prices`, con id `<fornitore>__<prodotto>`: l'unicita' della coppia e' cosi' un fatto del database e non un controllo che qualcuno dimentica di fare da un secondo terminale. La logica pura sta in `src/lib/listini.js`, senza Firebase, perche' e' li' che si prova.
+
+LA SCHERMATA ORDINI PARTE DALLA RICERCA. Campo «Cerca un prodotto» in cima, filtro fornitore sotto come VISTA; il catalogo ha una riga per coppia prodotto-fornitore, con la striscia del colore del fornitore — le stesse di REQ-MAG-027, riusate e non riscritte — e le due etichette «ultimo acquisto» e «piu' economico». Il fornitore si sceglie sulla RIGA DELL'ORDINE, dove la decisione conta: la tendina propone l'ultimo acquisto e DISABILITA chi e' gia' stato usato per quel prodotto nello stesso ordine. I TRE LIVELLI stanno sulla RIGA (`stato`: richiesto / consegnato / pagato). Il carico avviene alla consegna, per FETTA di fornitore: `consegnaRigheOrdine` in api.js alza la giacenza, scrive il movimento, aggiorna il prezzo di quella riga di listino con la sua data e il costo di riferimento del prodotto. Il vecchio `receivePurchaseOrder`, che caricava l'ordine intero in un colpo, non c'e' piu': con piu' fornitori dentro quel gesto non esiste, perche' consegnano in giorni diversi. Il PAGATO si puo' mettere solo su cio' che e' gia' consegnato.
+
+EMAIL, STAMPA E COPIA VANNO PER FETTA. `fetteFornitore` taglia l'ordine e ogni fetta ha la stessa FORMA di un ordine (data, nome, righe, totali): cosi' `purchaseOrderText` e `printOrdineFornitore` non cambiano di una riga, e a Nova non arrivano le righe di Enofel.
+
+IL COLORE DEL FORNITORE si sceglie alla creazione — a caso, oppure a mano dalla tavolozza nell'anagrafica — e chi e' nato prima ne riceve uno STABILE calcolato dal suo id (`coloreFornitore`), perche' un colore che cambia a ogni ricarica non identifica niente.
+
+NESSUNA MIGRAZIONE, NESSUNO SCRIPT LANCIATO. `rigaVirtuale` fa il ramo di compatibilita': un prodotto senza righe di listino ma col vecchio `supplier_id` scritto produce una riga virtuale con quel fornitore e quel costo. La scheda prodotto ha smesso di SCRIVERE quel campo — ne fa una riga di listino — e non lo cancella; il filtro per fornitore del magazzino guarda il listino (`fornitoriPerArticolo`) e ricade sul vecchio campo dove il listino non c'e'.
+
+DECISO IN IMPLEMENTAZIONE, e non stava nel testo: (1) un prodotto senza nessun fornitore resta ORDINABILE, con la casella vuota e la fetta «Senza fornitore» — sono 378 su 388, e nasconderli avrebbe lasciato la schermata vuota; (2) la scheda prodotto TIENE la sua tendina fornitore (REQ-MAG-028 dice che di li' si crea un fornitore nuovo, e quella strada resta), ma adesso scrive nel listino; (3) il catalogo a schermo si ferma a 60 righe e lo dice, perche' 388 prodotti per i loro fornitori non si scorrono — si cercano; (4) il campo `status` in testa all'ordine resta nel vocabolario di prima (inviato / ricevuto) e si ricava dalle righe, per non rinominare un campo scritto su documenti veri. ⚠️ FATTO IL 27/08/2026:
+
+IL REIMPORT DEI FOGLI, che qui sopra era chiamato «una strada, non un prerequisito». La strada c'era davvero. In `GEN ORD REC.xlsx` la colonna `FORNIT` e' compilata su TUTTI e 126 i fogli — 420 coppie prodotto-fornitore distinte col prezzo netto, e 33 prodotti comprati da piu' fornitori, che e' la prova nei dati di quello che diceva Flavio. I fogli nominano 13 fornitori mentre l'anagrafica ne aveva 6. Attrezzi: `scripts/migra-listini.mjs` (il vecchio campo `supplier_id` del prodotto diventa una riga di listino) e `scripts/importa-listini.mjs` (i fogli diventano listini, agganciando i nomi con `nameMatch.js`). Girano SOLO sull'emulatore; la produzione non compare in quei file.
+
+LA LEZIONE, che vale per il prossimo aggancio di nomi: la somiglianza dei nomi NON basta e sbaglia in modo pericoloso, perche' i nomi vicini sono spesso prodotti DIVERSI — «Brockmans Agave Cut» non e' «Brockmans» (e' gin tagliato con agave, un'altra categoria merceologica) e «Mazzetti Barricata» non e' «Mazzetti Bianca». Quello che decide davvero e' IL FORMATO: il foglio porta la colonna `cl`, il magazzino il contenuto del pezzo, e confrontarli scioglie i casi che il nome lascia aperti — «Estathe' Limone» a 33 cl e' la LATTINA e non il vetro, «Schweppes Ginger» a 18 cl e' la Ginger BEER (180 ml) e non la Ale (200 ml), «Pompelmo» a 20 cl NON e' il «Pompelmo 1L» e va creato. Ha sciolto anche «Nikka From the Barrel» → «Nikka»: 50 cl, che e' il formato tipico di quella bottiglia mentre le altre Nikka sono da 70. ⚠️ AGGIORNAMENTO 27/08/2026 (REQ-MAG-037/038). Due cose scritte qui sopra sono SUPERATE, e vanno lette li'. 1) «L'ORDINE RESTA UNO, coi fornitori dentro, e il per-fornitore e' una VISTA»: non piu'. L'utente ha deciso il 27/08 UN ORDINE PER FORNITORE. La schermata di composizione resta una sola e attraversa i fornitori, ma alla conferma nascono N ordini distinti. 2) «IN ASSORTIMENTO NON CAMBIA SIGNIFICATO»: cambia. E' uno stato SUPERIORE e temporaneo che prende il posto di «in linea» o «premium» e poi restituisce quello di prima. Il perche' e le regole di entrata e uscita stanno in REQ-MAG-037.
+
+RESTA VERO tutto il resto, ed e' la parte che regge il seguito: il listino come collezione con id deterministico, un prodotto solo in magazzino con una giacenza sola, il fornitore proposto che e' quello dell'ultimo acquisto e non il piu' economico, il costo come numero solo e il prezzo del menu che non si tocca.
+
+**Dove**: `src/lib/listini.js, src/components/PurchaseOrdersPanel.jsx, src/lib/inventory.js, src/lib/api.js, firestore.rules` · **Lo dimostrano**: `tests/unit/listini.test.js`, `tests/unit/consegnaOrdine.test.js`, `tests/component/PurchaseOrdersPanel.test.jsx`
+
+#### REQ-MAG-028 — «Fornitori» è una sezione sua: anagrafica, ordini e scadenzario
+
+Chiesto dall'utente il 26/08/2026, parole sue: «Dobbiamo spostare Fornitori come sezione a parte, e sotto Fornitori andrà la sottosezione Gestione Fornitori, lo Scadenzario e Ordini (che attualmente è sottosezione di magazzino)».
+
+PERCHÉ NON STAVANO BENE NEL MAGAZZINO. Il magazzino risponde a «cosa ho sullo scaffale»; queste tre rispondono a «con chi lavoro e quanto gli devo». Erano tre sottosezioni sparse fra prodotti e categorie, e non si parlavano: si ordinava di là, si segnava la fattura di qua, e quale fattura pagasse quale ordine non lo sapeva nessuno — è la stessa osservazione da cui nasce REQ-MAG-025, che questa voce ANTICIPA in parte (la pagina loro, e il ruolo che la vede) senza toccarne il cuore (il legame fattura-ordine e il giro d'ordini, ancora da fare).
+
+LE TRE SOTTOSEZIONI, in quest'ordine: «🏭 Gestione fornitori» (l'anagrafica: era la sottosezione `fornitori` del magazzino), «🛒 Ordini» e «📄 Scadenzario». Si apre sull'anagrafica, che è il posto da cui si parte quando si entra qui senza un motivo preciso.
+
+NEL MAGAZZINO RESTANO Prodotti, Conta, Categorie, Macro-categorie e Movimenti (vedi REQ-MAG-010).
+
+IL MECCANISMO È QUELLO CHE C'È GIÀ: `lib/sottosezioni.js`, come Cassa, Magazzino, Impostazioni e Statistiche — le voci vanno nel menu a scomparsa, rientrate sotto la pagina aperta (docs/navigazione.md). FornitoriTab.jsx è scritto sul modello di CassaTab: un elenco `SEZIONI` e un ramo per voce. Aggiungerne una costa una voce e un ramo.
+
+SOLO ADMIN, e non è una stretta nuova: è la decisione già a verbale in REQ-MAG-025 («visibile SOLO all'ADMIN: sono i soldi che escono dal locale, e non è roba da turno»). Finché stavano dentro il magazzino le vedeva ogni gestore, ma per contiguità, non per una scelta. Il ruolo si confronta con `ruoli.js` (`isAdmin`), come per Bilancio, e la voce si TOGLIE dal menu invece di aprirsi per dire «non puoi»; anche l'indirizzo battuto a mano (`?tab=fornitori`) è filtrato, da `sezioneConsentita`.
+
+COSA NON PERDE CHI STA AL BANCO: un fornitore nuovo si crea ancora dalla tendina del modulo prodotto, nel magazzino, senza passare da qui. È la strada che si usa davvero quando si inventaria una referenza nuova.
+
+NIENTE COLLEGAMENTI ROTTI: le sottosezioni non erano indirizzabili (nessun `?sezione=` per il magazzino, lo stato è del componente), quindi non c'era nessun vecchio indirizzo da rimappare in `VECCHI_INDIRIZZI`. `?tab=inventario` continua ad aprire il magazzino, che esiste ancora.
+
+LO SCADENZARIO RESTA UNA FUNZIONE PREMIUM (REQ-LIC-001): dove il modulo non lavora la sua voce non c'è, e la sezione non resta né vuota né monca perché le altre due ci sono sempre. La sottosezione aperta si ricava dall'elenco filtrato: se il modulo si spegne da un altro terminale mentre lo si guarda, si torna all'anagrafica.
+
+**Dove**: `src/components/FornitoriTab.jsx, src/lib/sezioni.js, src/components/InventoryManager.jsx, src/pages/BartenderPage.jsx` · **Lo dimostrano**: `tests/component/FornitoriTab.test.jsx`, `tests/unit/sezioni.test.js`, `tests/component/InventoryManager.test.jsx`
+
+#### REQ-MAG-025 — Ordini e fatture: una pagina sola, e una fattura paga un ordine
+
+Chiesto dall'utente il 19/08. Oggi ordini fornitore e documenti stanno dentro Magazzino, in due sottosezioni che non si parlano: si ordina di la', si segna la fattura di qua, e nessuno sa quale fattura paghi quale ordine. Devono diventare UNA PAGINA LORO, «Ordini e fatture», nel menu laterale e visibile SOLO ALL'ADMIN, con due sottosezioni: «Ordini» e «Fatture». Sono i soldi che escono dal locale, e non e' roba da turno. ⚠️ IL CONTENITORE C'E' GIA', dal 26/08/2026: e' la sezione «Fornitori» (REQ-MAG-028), che l'utente ha chiesto con quel nome e con tre sottosezioni — anagrafica, Ordini, Scadenzario — visibile solo all'admin, esattamente per la ragione scritta qui sopra. Quindi di questa voce restano da fare LE DUE COSE CHE CONTANO, e non il trasloco: il LEGAME fattura-ordine e il GIRO d'ordini descritti qui sotto, piu' il prodotto nuovo che oggi si perde in silenzio. Chi la lavora parte da `FornitoriTab.jsx`, non da zero.
+
+IL LEGAME, che e' il cuore della richiesta:
+
+UNA FATTURA PAGA UN ORDINE (e un ordine e' di UN fornitore solo). Dall'ordine si arriva alla sua fattura e viceversa; un ordine senza fattura si vede a colpo d'occhio (la merce e' arrivata ma il documento no), e una fattura senza ordine pure — sono le due cose che a fine mese fanno tornare o non tornare i conti con il commercialista.
+
+TRE LIVELLI, NON DUE (precisato dall'utente il 19/08). Non e' una fattura che copre piu' ordini: e' un GIRO D'ORDINI che ne contiene diversi, UNO PER FORNITORE, e ogni fornitore manda la SUA fattura. «Un giro di ordini, non un ordine. Sono piu' fatture perche' ci sono diversi fornitori» — parole sue. Quindi: giro -> N ordini (uno per fornitore) -> N fatture (una per ordine). Il legame fattura-ordine resta uno-a-uno; quello che sta sopra e' il giro, che tiene insieme la serata di ordinazione.
+
+LO DICONO ANCHE I FOGLI, e adesso si spiegano: in GEN ORD REC ogni foglio e' un giro e si chiama coi numeri dei documenti che lo compongono («1410+1438+AGO+PAD+PIC», «nova+ago+picc»), col fornitore scritto sull'ARTICOLO e non sull'ordine — un foglio solo, piu' fornitori dentro (REQ-MAG-023).
+
+COSA CAMBIA PER L'APP: oggi `purchase_orders` e' gia' UN ORDINE PER FORNITORE, quindi quel livello c'e' e non si tocca. Manca il giro sopra: si guarda il fabbisogno una volta sola e ne escono N ordini insieme, che poi vivono ognuno per conto suo (arriva, si carica, si fattura). Da decidere se il giro e' un dato scritto (una collezione sua, che tiene la data e i suoi ordini) o solo un modo di crearli in blocco: la prima strada permette di chiedersi «quanto e' costato il giro di martedi'», la seconda costa meno.
+
+IL CARICO AL RICEVIMENTO C'E' GIA' e non va rifatto: receivePurchaseOrder in api.js, quando l'ordine passa a «ricevuto», alza la giacenza riga per riga (confezioni x contenuto, o pezzi), aggiorna le bottiglie totali e scrive un movimento «ordine fornitore». Questa voce ci aggiunge il pezzo che manca. ⚠️ AGGIORNAMENTO 26/08/2026 (REQ-MAG-029): `receivePurchaseOrder` non esiste piu'. Il carico avviene al passaggio della RIGA a «consegnato», per FETTA di fornitore — `consegnaRigheOrdine` — perche' con piu' fornitori dentro un ordine solo il gesto «ricevuto» sull'ordine intero non esiste: consegnano in giorni diversi. Il conto del carico e' lo stesso di prima, e il punto 4 qui sotto («il carico non e' automatico») e' fatto a meta': il gesto e' gia' per riga, quello che manca e' il tasto «CARICA TUTTI».
+
+IL PRODOTTO NUOVO, che oggi si perde in silenzio. Quel ciclo salta le righe il cui articolo non esiste in anagrafica (`if (!s.exists()) continue`): se il fornitore manda una referenza nuova, la riga non carica niente e nessuno se ne accorge. Deve invece NASCERE il prodotto, inventariato con quello che l'ordine sa gia' (nome, fornitore, prezzo, confezione) e marcato come DA SISTEMARE — perche' quello che l'ordine non sa e' proprio cio' che serve al resto del sistema: la categoria (e quindi la macro d'acquisto), l'unita' di misura vera, la soglia di riordino.
+
+ATTENZIONE AL NOME: nel magazzino esiste gia' una lista «da sistemare», ma e' del travaso a pezzi (i prodotti che la migrazione non sa convertire da sola) ed e' una cosa diversa. O si riusa quella stessa strada — e allora si dice perche' le due situazioni sono la stessa — o il nuovo stato ha un nome suo. Due liste omonime che vogliono dire cose diverse, sulla stessa schermata, sono un guaio che si paga dopo.
+
+COME SI INCASTRA COL RESTO, ed e' la parte da non sbagliare: 1) MACRO-CATEGORIE. Un prodotto nuovo senza categoria non ha macro d'acquisto, quindi la sua spesa non compare in «Bilancio → Acquisti x Fatturato» (REQ-MAG-022): sparisce dai conti invece di risultare sbagliata, che e' peggio. Il prodotto da sistemare va quindi mostrato insieme alle categorie senza macro (REQ-UI-022): sono lo stesso buco visto da due lati. 2) SCARICO. La giacenza caricata da un ordine si scala con le regole di sempre — snapshot della ricetta, unita' base, scarico a «pronto»: qui non cambia niente, e non deve cambiare. 3) IVA. L'ordine porta il prezzo d'acquisto; l'IVA d'acquisto ha gia' il suo default (22%) e il campo per prodotto. Un prodotto nato da un ordine eredita il default finche' qualcuno non lo corregge.
+
+4) SPESE DEL MESE (REQ-CASSA-012): le fatture fornitore sono spesa registrata. Va deciso — e scritto — se entrano da sole nel netto del mese o se restano due elenchi separati, altrimenti la stessa uscita si conta due volte.
+
+ATTENZIONE, DUE «FATTURE»
+
+NEL CODICE: `supplier_invoices` sono i documenti dei FORNITORI (quello di cui parla questa voce), `invoices` sono le fatture di VENDITA ai clienti. Nomi vicini, mestieri opposti.
+
+TRE SOTTOSEZIONI, NON DUE (utente, 19/08): «Ordini», «Fatture» e «ALTRE SPESE», piu' un RIEPILOGO che le tiene insieme. La terza nasce da una domanda sua — «quelle spese da inserire a mano non sono gli ordini?» — e la risposta, misurata sui fogli, e' che in parte SI': la sua riga SPESE e' sempre piu' grande degli acquisti dello stesso mese (gen 2.380 contro 1.809, giu 12.726 contro 8.673), quindi contiene la merce PIU' altro, da 570 a 4.050 euro al mese.
+
+COSA C'E' IN QUELL'ALTRO, trovato il 19/08 e non piu' un'ipotesi: sta in FORNITORI REC.xlsx, foglio «TO BUY» — tavoli da esterno, sgabelli, divani, una tenda, uno scaffale IKEA, bicchieri di plastica in cinque misure. Colonne: articolo, quantita', prezzo, totale, DOVE si compra (Amazon, Bricoware, IKEA, Vente-Unique) e note. Totale del foglio 2.468,59.
+
+QUINDI SONO ARREDI, ATTREZZATURE E MATERIALE DI CONSUMO: roba che esce dal conto corrente e non entra in magazzino, e che nessun ordine fornitore intercettera' mai. Da qui la sottosezione, e le sue colonne sono quelle del foglio.
+
+IL FOGLIO PERO' E' UNA LISTA DELLA SPESA, non un registro: si chiama «da comprare» e diverse righe hanno prezzo zero, cioe' non ancora prezzate. Serve quindi sapere se una voce e' GIA' STATA COMPRATA: solo quelle comprate pesano sul netto del mese, le altre sono un promemoria. Senza questa distinzione un divano desiderato abbasserebbe l'utile di gennaio.
+
+IL RIEPILOGO, quarta voce del menu: mette insieme i tre elenchi in un totale per mese — merce (dalle fatture), altre spese, e quanto resta aperto (ordini senza fattura, fatture non pagate). E' il numero che poi Bilancio -> Mesi usa per il netto, e la ragione per cui sta QUI e non li': i soldi che escono si guardano dove si registrano.
+
+DECISIONI DEL 20/08 (l'utente, a voce sua), che AGGIORNANO il modello scritto sopra — dove si contraddicono, vince quanto segue: 1) L'ORDINE PUO' CONTENERE ITEM DI PIU' FORNITORI: «un ordine puo' contenere item da piu' fornitori, per questo deve essere possibile FILTRARE l'ordine per fornitori». Il giro e l'ordine collassano in una cosa sola: quello che sopra si chiamava «giro» E' l'ordine, e il livello per-fornitore diventa una VISTA (il filtro), non un documento. Le fatture restano piu' d'una — di norma una per fornitore coinvolto.
+
+2) LE FATTURE SI ALLEGANO ALL'ORDINE **PER FORNITORE** (precisato dall'utente subito dopo): «la vista degli ordini contiene piu' fornitori, ma la fattura e' collegata all'ordine PER IL FORNITORE, perche' e' il fornitore che rilascia la fattura». Quindi il legame della fattura non e' con l'ordine intero ma con LA FETTA di quel fornitore dentro l'ordine — la stessa fetta che il filtro mostra: filtro su Nova = le sue righe E la sua fattura. Un ordine con tre fornitori ha fino a tre fatture, ognuna agganciata alla sua fetta, e si vede a colpo d'occhio quale fetta e' ancora senza documento. Allegare = il documento vero (foto/PDF), non solo un numero. Serve lo Storage; da decidere in implementazione limite di peso e formati. 3) «ARRIVATO»
+
+LO DECIDE L'ADMIN: e' il suo gesto a segnare l'ordine arrivato, ed e' quel gesto che APRE la possibilita' di caricare l'inventario.
+
+4) IL CARICO NON E' AUTOMATICO: «e' il bartender che decide, quando l'ordine e' arrivato, SE e QUALI prodotti caricare in inventario». Riga per riga, piu' un tasto «CARICA TUTTI» quando l'ordine e' arrivato. Il receivePurchaseOrder di oggi (carica tutto in un colpo al ricevimento) va quindi spezzato in due: l'arrivo (admin) e il carico (bartender, selettivo o tutto).
+
+5) ASSORTIMENTO PRE-IMPOSTATO, opzionale: prima che l'ordine arrivi si puo' segnare, per ogni prodotto dell'ordine, il passaggio a «in assortimento» — e il cambio si applica quando l'ordine e' arrivato e il carico di quel prodotto e' stato fatto davvero. Serve a preparare il listino mentre la merce viaggia, senza che il cambio scatti prima che la merce esista. ⚠️ AGGIORNAMENTO 27/08/2026 (REQ-MAG-031):
+
+IL LEGAME E' FATTO, ed e' il punto 2 qui sopra — la fattura agganciata alla FETTA di fornitore, i due versi, la guardia sul fornitore e i due buchi a colpo d'occhio. Vive in `order_id` sulla fattura piu' `aggancioAmmesso` (src/lib/fatture.js), e si usa da Fornitori -> Ordini e da Fornitori -> Scadenzario. Di quel punto 2 resta fuori solo l'ALLEGATO del documento (foto/PDF): serve lo Storage e non sono decisi ne' peso ne' formati.
+
+QUESTA VOCE RESTA DA FARE per tutto il resto: il tasto «CARICA TUTTI», i due gesti separati arrivato/carico (punti 3 e 4), l'assortimento pre-impostato (punto 5), «Altre spese» col Riepilogo, e il prodotto nuovo che oggi si perde in silenzio. ⚠️ AGGIORNAMENTO 27/08/2026 (REQ-MAG-032):
+
+TRE PEZZI SONO FATTI, e sono il PRODOTTO NUOVO che si perdeva in silenzio, il tasto «CARICA TUTTI» col carico riga per riga (punto 4) e l'ASSORTIMENTO PRE-IMPOSTATO (punto 5). Il prodotto nasce alla consegna con lo stesso id della riga d'ordine e passa da `registraAcquisto` (api.js) come ogni altra merce che entra; la sua forma la compone `prodottoDaRigaOrdine` (src/lib/inventory.js). Lo stato nuovo NON riusa il nome «da sistemare» del travaso — le due situazioni non sono la stessa, e quella blocca il magazzino mentre questa non blocca niente — e si chiama SCHEDA DA COMPLETARE; si guarda accanto alle categorie senza macro (REQ-UI-022), che e' lo stesso buco visto dall'altro lato. La spunta riga per riga e il tasto che le prende tutte stanno nella finestra della consegna e passano dagli `indici` di `consegnaRigheOrdine`, senza nessuna seconda strada.
+
+DI QUESTA VOCE RESTANO: i due gesti separati arrivato/carico (punti 3 e 4, che si contraddicono con la registrazione di Flavio del 26/08 su cui e' costruito il flusso di oggi — la decisione e' dell'utente, e REQ-MAG-032 dice dove andrebbe messo il taglio), «Altre spese» col Riepilogo, e l'allegato del documento (foto/PDF). ⚠️ DECISIONE DEL 27/08/2026, che CHIUDE la contraddizione fra i punti 3 e 4 qui sopra (20/08) e REQ-MAG-029 (26/08). Vale il gesto solo:
+
+CONSEGNARE UNA RIGA LA CARICA, come lo descrive Flavio — «lo metto come consegnato e me lo inizia anche a caricare nel magazzino» — e come e' stato costruito. L'utente, richiesto di scegliere: «resta com'e'». Il punto 4 del 20/08 («e' il bartender che decide SE e QUALI prodotti caricare») NON viene tradito, ed e' la ragione per cui la scelta costa poco: quel «se e quali» c'e' gia', perche' si consegnano le righe che si spuntano, una per una, piu' il tasto «Carica tutti» per farle tutte insieme (REQ-MAG-032). Quello che cade e' solo il PASSAGGIO IN PIU': nessun livello «arrivato» fra richiesto e consegnato, e nessuna divisione di ruoli fra chi segna l'arrivo e chi carica. Un passaggio in piu' a ogni consegna, su una schermata che si usa con la merce in mano, si paga tutte le sere; il controllo che avrebbe dato lo si ha gia' spuntando le righe. Il punto 3 («arrivato lo decide l'admin») decade con lui.
+
+DI QUESTA VOCE RESTANO DUNQUE SOLO: «Altre spese» col Riepilogo, e l'allegato del documento (foto/PDF). ⚠️ AGGIORNAMENTO 27/08/2026 (REQ-MAG-033): L'ALLEGATO E' FATTO, ed e' l'ultima riga del punto 2 qui sopra — «il documento vero (foto/PDF), non solo un numero». Dalla riga del documento, in Fornitori -> Scadenzario, si allega una foto o un PDF, lo si riapre, si sostituisce e si toglie; i documenti senza allegato si contano in testa e si isolano col chip «Senza allegato», con lo stesso linguaggio degli altri due buchi. Il file vive su Firebase Storage sotto `fatture/<id fattura>/`, protetto dalla stessa mano che protegge le fatture (bartender/admin, `storage.rules`), e se ne va insieme alla fattura che lo nomina.
+
+IL PESO E I FORMATI, che questa voce lasciava da decidere, sono decisi:
+
+JPG, PNG, WebP e PDF, fino a 8 MB, con le foto ridotte nel browser a 2000 punti sul lato lungo prima di partire — il perche' di ognuno di quei numeri sta in REQ-MAG-033.
+
+DI QUESTA VOCE RESTA DUNQUE SOLO «Altre spese» col Riepilogo. ⚠️ AGGIORNAMENTO 27/08/2026 (REQ-MAG-034): «ALTRE SPESE»
+
+COL RIEPILOGO È FATTO, ed erano gli ultimi due pezzi rimasti. «Altre spese» è la terza sottosezione di Fornitori, con le colonne del foglio «TO BUY» e la distinzione che regge tutto — comprata o solo desiderata, `bought` e `bought_at` in `src/lib/spese.js`: solo il comprato pesa sul mese. Il «Riepilogo» è la quarta voce e somma per mese la merce (dalle fatture), le altre spese e quanto resta aperto, tenendo fuori dal totale il «da pagare» (già dentro la merce) e il «consegnato senza fattura» (che entrerà quando il documento arriva) — `src/lib/riepilogoFornitori.js`. Che il numero dell'app valga MENO di quello dei fogli di Flavio sta scritto in testa al Riepilogo, come chiedeva REQ-CASSA-012.
+
+QUESTA VOCE PASSA A «implemented», e non le resta niente: il legame fattura-fetta è REQ-MAG-031, il prodotto nuovo col carico scelto e l'assortimento pre-impostato REQ-MAG-032, l'allegato del documento REQ-MAG-033, i punti 3 e 4 sono decaduti con la decisione del 27/08 («resta com'è», il gesto solo) e questi due sono REQ-MAG-034. Le prove stanno nei `test_cases` di quelle voci, che è dove vive il lavoro: qui resta la storia di come ci si è arrivati.
+
+NON CI SONO DENTRO, e non c'erano nemmeno prima: gli ordini che nascono dalle giacenze (REQ-MAG-026) e le spese del mese in Bilancio → Mesi (REQ-CASSA-012), che questa voce alimenta ma non contiene.
+
+**Dove**: `src/components/PurchaseOrdersPanel.jsx, src/components/SupplierInvoicesPanel.jsx, src/components/InventoryManager.jsx, src/lib/api.js, src/lib/ruoli.js, src/components/StaffDrawer.jsx` · ⚠️ **Nessun test lo verifica.**
+
 #### REQ-MAG-027 — I segni del magazzino si spiegano da soli: la legenda sopra la lista
 
 Nata da una domanda vera di Flavio (vocale del 20/08, 14:39, con lo screenshot del telefono): «perche' alcune cose all'interno del magazzino hanno questa bacchettina davanti — rossa, blu, oppure non ce l'hanno? Che significa?». Se il titolare deve chiederlo, quattro colori senza spiegazione sono un codice segreto. I DUE SEGNI, che gia' esistevano e ora si spiegano: il PALLINO dice quanta roba c'e' (verde c'e', giallo in esaurimento, rosso esaurito); la STRISCIA a sinistra dice che assortimento e' (blu in linea, ambra premium, rossa fuori/OUT, neutra in assortimento).
@@ -1071,9 +1659,9 @@ La serata appartiene al proprio giorno anche dopo la mezzanotte, fino all'ora di
 
 #### REQ-CASSA-002 — Apertura e chiusura cassa, con fondo e conteggio
 
-La cassa si apre con un fondo e si chiude con il riepilogo della serata: incassato per metodo e per ora, conti chiusi, conti ancora da incassare. Senza cassa aperta non si battono ordini.
+La cassa si apre con un fondo e si chiude con il riepilogo della serata: incassato per metodo e per ora, conti chiusi, conti ancora da incassare. Senza cassa aperta non si battono ordini. E LA CHIUSURA E' LOCAL-FIRST come tutto il resto: `closeCashSession` non restituisce niente da aspettare, la scrittura parte in sottofondo e lo scontrino di chiusura parte per conto suo — se la stampante non risponde, la cassa resta comunque chiusa. E la stampa NON aspetta la risposta della stampante (REQ-STAMPA-016): il lavoro si chiude sull'invio, l'esito arriva dopo e si legge nel registro delle stampe. Chi chiude cassa col locale pieno non sta fermo davanti a una testina.
 
-**Dove**: `src/lib/cassa.js, src/components/CashFlow.jsx` · **Lo dimostrano**: `tests/unit/cassa.test.js`
+**Dove**: `src/lib/cassa.js, src/components/CashFlow.jsx` · **Lo dimostrano**: `tests/unit/cassa.test.js`, `tests/unit/chiusuraCassaSenzaRete.test.js`
 
 #### REQ-CASSA-007 — Il flusso cassa serve DURANTE la serata, non solo alla chiusura
 
@@ -1235,9 +1823,9 @@ STA SUL DATO: `receipt_print_at` sul conto, scritto in sottofondo a carta uscita
 
 VUOL DIRE: al gesto della riscossione CHE CHIUDE IL CONTO. Una riscossione parziale non ha mai fatto uscire niente — la stampa è appesa a `closePaid` — ed era una scelta presa quando l'acconto era un caso di margine. Adesso quella riscossione ha la SUA carta, che è un documento diverso: lo scontrino d'acconto (REQ-STAMPA-015). Lo scontrino di chiusura resta quello descritto qui, con la sua pretesa e il suo segno sul dato; l'acconto non prende né l'una né l'altro, perché è un evento e non lo stato del conto — su un conto ce ne stanno tre, e il segno ne lascerebbe uscire uno solo.
 
-SULLA COMANDA LE VOCI SONO SEMPRE ACCORPATE (BUG-083, 22/08/2026), e non «come stanno sul conto». Al POS «Unisci / Separa uguali» serve ai SOLDI — dividere il conto fra chi paga cosa — mentre chi prepara conta PEZZI: quattro righe «1 JEFFERSON» si contano peggio di una «4 JEFFERSON». La regola è una funzione pura, `righeDellaComanda` in lib/comande.js, e la attraversano tutte le stampe del banco perché il punto in cui si accorpa è UNO, dentro `printComanda`. La chiave è quella del POS (`lineSignature`): stesso drink, stesso prezzo, stessa ricetta e STESSA NOTA — una nota è lavoro diverso, e il prezzo tiene separati due prodotti liberi battuti con lo stesso nome a cifre diverse. Sui soldi non cambia niente: scontrino e schermata di pagamento restano come sono.
+SULLA COMANDA LE VOCI SONO SEMPRE ACCORPATE (BUG-083, 22/08/2026), e non «come stanno sul conto». Al POS «Unisci / Separa uguali» serve ai SOLDI — dividere il conto fra chi paga cosa — mentre chi prepara conta PEZZI: quattro righe «1 JEFFERSON» si contano peggio di una «4 JEFFERSON». La regola è una funzione pura, `righeDellaComanda` in lib/comande.js, e la attraversano tutte le stampe del banco perché il punto in cui si accorpa è UNO, dentro `printComanda`. La chiave è quella del POS (`lineSignature`): stesso drink, stesso prezzo, stessa ricetta e STESSA NOTA — una nota è lavoro diverso, e il prezzo tiene separati due prodotti liberi battuti con lo stesso nome a cifre diverse. Sui soldi non cambia niente: scontrino e schermata di pagamento restano come sono. E UNA STAMPA NON PUÒ RESTARE APPESA (BUG-086, 24/08/2026). La carta che non esce è un guaio; una stampa che non finisce MAI è un guaio peggiore: la pretesa dello scontrino si prende PRIMA di stampare e torna libera solo nel `catch` di chi l'ha chiesta — e una promessa che non si chiude né bene né male quel `catch` non lo fa partire mai. Quel conto non stampa più, nemmeno riaperto, nemmeno dalla coda, e a schermo non compare niente. Quindi ogni lavoro di stampa ha un tempo massimo suo, QUINDICI SECONDI: scaduti, la promessa rifiuta, la pretesa torna libera, il messaggio arriva a schermo e la coda delle stampe riparte. Il lavoro abbandonato, se poi arriva in fondo, scrive nel vuoto: una seconda copia non esce. E UN DOCUMENTO STORTO NON SI MANGIA IL TICKET: una riga senza nome esce come «(senza nome)» e una senza prezzo come «0.00€», ma la carta esce. Prima `item.name.toUpperCase()` faceva saltare la comanda a metà, e l'auto-stampa ci riprovava a ogni snapshot senza farla uscire mai.
 
-**Dove**: `src/lib/printer.js` · **Lo dimostrano**: `tests/unit/logoScontrino.test.js`, `tests/unit/scontrinoSegnato.test.js`, `tests/unit/comandaAccorpata.test.js`, `tests/unit/aliquotaIva.test.js`
+**Dove**: `src/lib/printer.js` · **Lo dimostrano**: `tests/unit/logoScontrino.test.js`, `tests/unit/scontrinoSegnato.test.js`, `tests/unit/comandaAccorpata.test.js`, `tests/unit/aliquotaIva.test.js`, `tests/unit/stampaCheNonSiChiude.test.js`
 
 #### REQ-STAMPA-002 — La stampante non deve smettere di funzionare a metà serata
 
@@ -1255,7 +1843,39 @@ Sullo scontrino e sulla chiusura di cassa i metodi di pagamento si scrivono per 
 
 Lo scontrino di chiusura riporta gli incassi divisi per metodo di pagamento, elencando quelli davvero usati e non un elenco fisso.
 
-**Dove**: `src/lib/printer.js` · ⚠️ **Nessun test lo verifica.**
+**Dove**: `src/lib/printer.js` · **Lo dimostrano**: `tests/component/ChiusuraCassaStampa.test.jsx`, `tests/unit/scontrinoChiusura.test.js`
+
+#### REQ-STAMPA-016 — La risposta della stampante e' DIAGNOSTICA: racconta, non trattiene
+
+Fino ad agosto 2026 la risposta della stampante — `onreceive`, con esito e codice: carta finita, coperchio aperto, fuori linea — finiva in una riga di console scollegata dal lavoro che l'aveva causata:
+
+NON SAPEVAMO SE LA CARTA FOSSE USCITA, ed e' la causa strutturale di BUG-098 («la chiusura di cassa spesso non stampa, e non compare nessun avviso»).
+
+LA STAMPA SI CHIUDE SULL'INVIO, e non deve mai fare altro. Chi chiude cassa o batte una comanda vede l'esito nell'istante in cui tocca: e' il local-first del CLAUDE.md applicato alla stampante — come non si aspetta Firestore per mostrare un conto incassato, non si aspetta la testina per dire che la stampa e' partita.
+
+LA RISPOSTA ARRIVA DOPO E PER CONTO SUO, e serve solo a RACCONTARE: aggiorna la voce gia' scritta nel registro delle stampe (da «inviata» a com'e' andata davvero) e, quando e' un errore, manda un avviso. Non chiude niente, non trattiene nessuno, non fa ritentare. PERCHE' QUESTO REQUISITO E' STATO RISCRITTO IL 01/09/2026, ed e' la cosa che serve fra sei mesi: la prima stesura (31/08) aveva messo il lavoro ad ASPETTARE la risposta, con un ritentativo automatico e una memoria «questa stampante parla / non parla» per decidere quando valesse la pena aspettare. Era un `await` sulla stampante nel mezzo di un gesto, cioe' il divieto numero uno di questo progetto, e tutta la macchina che ci stava intorno — attesa, ritentativo, memoria dei silenzi — esisteva solo per rendere sopportabile quell'attesa. Tolta l'attesa, e' sparita anche quella: quello che non serve piu' non resta a fare da trappola per chi legge. Il ritentativo in particolare NON torna: senza attesa non c'e' piu' il momento in cui riprovare, a ristampare e' una persona, ed e' anche l'unico modo di non rischiare il doppio scontrino su una stampa che era uscita.
+
+COME SI CORRELA una risposta col foglio che l'ha causata, senza identificativi (l'SDK non ne da'): le risposte tornano nell'ordine degli invii, quindi si contano — chi aspetta l'invio n scarta la risposta n-1, che e' di un foglio gia' passato — e si confronta anche l'oggetto stampante, perche' dopo una riconnessione e' un altro. L'ascolto si chiude da solo dopo qualche secondo: NON e' un'attesa (il lavoro e' chiuso da un pezzo), e' il momento in cui si smette di dare un padrone alle risposte, perche' un foglio che non riceve mai risposta lascerebbe il conto indietro di uno per sempre e da li' in poi ogni risposta finirebbe sul foglio sbagliato.
+
+SOLO GLI ERRORI FANNO RUMORE. Su risposta di errore parte un avviso (`notify`), che si vede subito e resta nello storico della campanella: dice COSA non e' uscito e PERCHE' in parole da banco («Scontrino conto #42: la carta e' finita»), mai il codice dell'SDK, che resta nel registro dove serve a chi ripara. Su risposta buona non si dice niente: la carta e' uscita e si vede, e un avviso a ogni comanda diventa rumore in mezz'ora. E NIENTE VALANGHE: lo stesso motivo non si ripete entro un minuto, perche' dieci strisce identiche sono peggio di una — si smette di leggerle. Il registro le ha comunque tutte.
+
+IL TEMPO MASSIMO DEL LAVORO (15 secondi, BUG-086) RESTA, ed e' un'altra cosa: difende da un lavoro che non finisce, e in quel caso la stampa RIFIUTA — perche' li' il chiamante deve saperlo adesso.
+
+**Dove**: `src/lib/printer.js (lavoroDiStampa, rispostaDallaStampante, raccontaLaRisposta)` · **Lo dimostrano**: `tests/unit/confermaDiStampa.test.js`
+
+#### REQ-STAMPA-017 — Il registro delle stampe: cosa e' uscito, quando e com'e' andata
+
+Una stampa fallita non lasciava NIENTE. L'avviso viveva otto secondi in una striscia che compare insieme a quella verde «Cassa chiusa» — e coi toast che si accavallano (BUG-078) puo' passare inosservata — e la risposta della stampante finiva in una console che nessuno legge. Con una cassa che si chiude UNA VOLTA A NOTTE, cosi' si va per tentativi per settimane: e' la seconda meta' di BUG-098.
+
+IL REGISTRO STA SUL DISPOSITIVO e si legge in Impostazioni → Stampante, dove c'e' la MACCHINA (indirizzo, prova di stampa, i dati): e' il posto dove si va quando la stampante fa i capricci. Per ogni lavoro dice COSA si e' provato a stampare, QUANDO, COM'E' ANDATA e il MOTIVO quando e' andata male. Accanto c'e' lo stato della CODA — cosa e' in corso e quanto c'e' dietro — perche' la seconda domanda davanti a una stampante ferma e' «si e' impiantata?».
+
+LA VOCE NASCE «INVIATA» E SI CORREGGE DOPO (riscritto il 01/09/2026, col ripensamento di REQ-STAMPA-016): la stampa non aspetta la stampante, quindi la riga entra nel registro nell'istante in cui il foglio parte, e la risposta — se arriva — la cambia in «stampata» o «non stampata» col motivo. Una voce rimasta «in attesa di risposta» NON e' un buco: e' una stampante che non conferma niente, ed e' la prima cosa da leggere alla prossima chiusura mancata. Chi ha il pannello aperto vede la riga cambiare da se'.
+
+TRE VINCOLI. Non cresce all'infinito: le ultime 50 voci, e bastano perche' la voce che conta — la chiusura — e' l'ULTIMA stampa della serata e non viene mai spinta fuori dalle comande della sera dopo. Niente dati personali: la voce dice «Scontrino conto #42», mai il nome di chi era al tavolo — un registro di diagnostica non e' il posto dove tenere i clienti del locale. E non rallenta la stampa: la voce entra in memoria subito, il salvataggio in localStorage parte di lato, su un microtask.
+
+FUNZIONA IDENTICO CON LA STAMPANTE FINTA (REQ-STAMPA-009), che dal 28/08/2026 risponde come quella vera e sa anche fingere due guasti — carta finita e nessuna risposta — dal pannello Dev. Senza, questa catena si sarebbe potuta provare solo al banco, che e' esattamente il motivo per cui BUG-098 e' sopravvissuto tanto.
+
+**Dove**: `src/lib/registroStampe.js, src/components/PrinterSetup.jsx` · **Lo dimostrano**: `tests/unit/registroStampe.test.js`, `tests/component/RegistroStampe.test.jsx`
 
 #### REQ-STAMPA-009 — In locale la stampante è di carta finta
 
@@ -1315,9 +1935,13 @@ UN VOCABOLARIO CHIUSO, non un editor di modelli: i campi sono quelli che le due 
 
 LA LISTA DEI PRODOTTI È FISSA — parole dell'utente — e non compare nemmeno fra le scelte: non c'è modo di spegnerla per sbaglio. Sullo scontrino è fisso anche il TOTALE (scelta nostra, dichiarata): un conto senza totale non è un conto, e chi lo riceve non avrebbe niente da controllare.
 
-SCONTRINO — si possono togliere: nome del locale, indirizzo, CAP e città, numero e data, chi ha battuto il conto, quante persone, tavolo o numero di comanda, intestazione delle colonne, coperto, sconto, IVA e imponibile, come è stato pagato, codice lotteria, codice del conto, ragione sociale in fondo. Si può aggiungere una riga di saluto, spenta di suo. Le PAROLE del nome del locale, dell'indirizzo e della ragione sociale restano dove sono sempre state (impostazioni della stampante, riquadro «Dati del locale»): lì si scrivono, qui si sceglie se stamparle — due posti che scrivono la stessa cosa sarebbero un modo per perderla.
+SCONTRINO — si possono togliere: nome del locale, indirizzo, CAP e città, numero e data, chi stampa lo scontrino, quante persone, tavolo o nome del cliente, intestazione delle colonne, coperto, sconto, IVA e imponibile, come è stato pagato, codice lotteria, codice del conto, ragione sociale in fondo. Si può aggiungere una riga di saluto, spenta di suo. Le PAROLE del nome del locale, dell'indirizzo e della ragione sociale restano dove sono sempre state (impostazioni della stampante, riquadro «Dati del locale»): lì si scrivono, qui si sceglie se stamparle — due posti che scrivono la stessa cosa sarebbero un modo per perderla.
 
-COMANDA — si possono togliere: fascia nera in cima (con le sue parole), ora nella fascia, riga del conteggio, riga del reparto, nome o tavolo in grande, riga sotto al nome, note dei singoli prodotti, nota del conto. Si può aggiungere una riga in fondo, spenta di suo. Fascia e ora spente insieme non lasciano una striscia nera vuota: la fascia non esce proprio (strisciaComanda, funzione pura).
+COMANDA — si possono togliere: fascia nera in cima, ora nella fascia, riga del conteggio, riga del reparto, nome o tavolo in grande, riga sotto al nome, note dei singoli prodotti, nota del conto. Si può aggiungere una riga in fondo, spenta di suo. Fascia e ora spente insieme non lasciano una striscia nera vuota: la fascia non esce proprio (strisciaComanda, funzione pura).
+
+COSA DICE LA FASCIA (dal 25/08/2026, BUG-089). «COMANDA 2 - ORDINE 28»: quale ticket è, dentro quale conto. Fino ad allora era una casella di testo che diceva «DIRETTO» su ogni comanda — un'etichetta di SumUp POS Pro, il modello da cui questa carta è stata copiata, dove indica la PRIMA infornata di un ordine spedito a portate (le successive sono «Ordine 1», «Ordine 2»). Noi la stampavamo anche sulla seconda e sulla terza comanda dello stesso tavolo, cioè col significato ribaltato. «Non usiamo Diretto o Subito. Chiamiamo Comanda X - Ordine Y sulla comanda» (l'utente, 25/08/2026). Il numero c'è anche quando la comanda è una sola: «senza numero vuol dire la prima» è una regola che chi legge un ticket non deve conoscere. È lo stesso nome che la comanda ha sullo schermo (corsia e dettaglio del conto).
+
+IL TESTO LIBERO DELLA FASCIA È SPARITO, l'interruttore no: il contenuto viene dai dati e una casella lì sopra vorrebbe dire poter far mentire il ticket. Un locale che aveva scritto la sua parola non trova niente di rotto — quel testo non viene più letto — e per dire «questo ticket è del bar» resta la riga del reparto. L'ORA È SCESA SOTTO, dentro lo stesso rettangolo nero: a corpo doppio sulla carta da 80 mm ci stanno 24 caratteri e la riga ne occupa 21. Le due righe si pareggiano in larghezza, se no il nero uscirebbe a scaletta.
 
 SONO IMPOSTAZIONI DEL LOCALE (settings/bar: `stampa_scontrino`, `stampa_comanda`, `stampa_logo`), non del terminale: lo scontrino è l'identità del bar, non una preferenza del tablet che l'ha stampato. Ma la STAMPA NON ASPETTA LA RETE: printer.js legge la copia locale che subscribeSettings riscrive a ogni risposta del server (lib/impostazioniLocali.js).
 
@@ -1326,6 +1950,10 @@ NIENTE MIGRAZIONE: impostazione assente vuol dire valore di partenza, e i valori
 UN CAMPO CHE IL VOCABOLARIO NON CONOSCE SI STAMPA: se domani printer.js scrive un blocco nuovo e qui nessuno l'ha ancora elencato, la carta esce completa. Una riga sparita in silenzio sarebbe il difetto peggiore che questa roba possa avere.
 
 DOVE: Impostazioni → Stampante, sotto la connessione: «Cosa c'è sullo scontrino», «Cosa c'è sulla comanda» e «Logo sulle stampe» (REQ-STAMPA-011). Ogni riquadro ha una PROVA DI STAMPA che stampa un conto finto passando dalle stesse funzioni della serata — in locale apre il facsimile, al banco esce la carta: scegliere i campi senza vedere il risultato è scegliere alla cieca.
+
+COSA STAMPANO `operatore` E `riga_vendita` (dal 25/08/2026, BUG-088). Fino ad allora l'interruttore c'era ma quello che accendeva non diceva il vero: `operatore` scriveva la costante «Utente A» — uguale per chiunque e per sempre — e `riga_vendita`, senza tavolo, ripiegava su «Vendita - Comanda #28», cioè il numero del CONTO già stampato in cima e per giunta chiamato comanda. `operatore` porta il NOME DI CHI STA STAMPANDO: l'utente collegato a quel terminale, non chi ha battuto il conto né chi ha incassato («quell'"Utente A" dovrebbe essere il nome dell'utente che stampa lo scontrino», l'utente, 25/08/2026). Il nome arriva dall'ascolto di Firebase Auth (App.jsx) insieme all'uid con cui la stampante sceglie già la sua scheda, si ricorda in memoria locale — la prima stampa può capitare prima che Firebase abbia finito — e si ricava con `placedByName`, la stessa funzione della coda e del dettaglio conto. Una RISTAMPA porta il nome di chi ristampa: è lui che quel foglio lo consegna. Nessuno collegato:
+
+LA RIGA NON ESCE, che è meglio di una formula vuota. `riga_vendita` dice a chi appartiene il conto e nient'altro: il tavolo, o il nome del cliente se il tavolo non c'è (la stessa scelta del titolo grande della comanda), o niente. Il numero sta in cima, e una riga che lo ripete si legge come un secondo numero. Il plurale della riga `persone` è «2 clienti»: fino al 25/08 usciva «2 clientei». Le stesse due regole valgono sulla ricevuta d'acconto (REQ-STAMPA-015), che ha gli stessi due campi.
 
 **Dove**: `src/lib/campiStampa.js, src/lib/printer.js (printScontrino, printComanda), src/components/CampiStampa.jsx` · **Lo dimostrano**: `tests/unit/campiStampa.test.js`, `tests/unit/campiDiStampa.test.js`, `tests/component/CampiStampa.test.jsx`
 
@@ -1346,6 +1974,8 @@ IL TERZO TASTO STAMPA SEMPRE, la stampa automatica del terminale non c'entra: è
 NIENTE PRETESA E NIENTE SEGNO SUL DATO: `claimReceiptPrint` e `receipt_print_at` dicono «la carta di QUESTO CONTO è già uscita», che è uno stato del conto. Un acconto è un evento — su un conto ce ne stanno tre — e legarlo a quel segno vorrebbe dire che il secondo non stampa più, o bruciare la pretesa dello scontrino finale (BUG-047). Il lettore SumUp resta fuori: lì l'incasso si registra quando risponde il lettore, non al gesto, e la carta segue il gesto.
 
 IL PRECONTO ELENCAVA GIÀ GLI ACCONTI ma non diceva quanto restava: «Totale con IVA» sopra e gli incassi sotto, e la sottrazione la faceva a mente chi teneva il foglio davanti al cliente. Adesso su un conto ancora aperto con degli incassi presi c'è anche «Resta da pagare»; su uno scontrino di chiusura il residuo è zero e la riga non compare.
+
+LE DUE RIGHE SOTTO AL NUMERO seguono le stesse regole dello scontrino (REQ-STAMPA-014, BUG-088): `operatore` porta il nome di chi sta stampando — al banco è chi ha appena preso i soldi, la persona che il cliente ha davanti — e non esce se non si sa chi è; `riga_vendita` dice il tavolo o il nome del cliente, e non esce se non ce n'è nessuno dei due, perché il numero è già in cima («ACCONTO - 12»).
 
 **Dove**: `src/lib/printer.js (printScontrinoAcconto), src/lib/scontrinoAcconto.js, src/lib/campiStampa.js, src/components/PaymentScreen.jsx, src/components/SettingsTab.jsx` · **Lo dimostrano**: `tests/unit/scontrinoAcconto.test.js`, `tests/unit/cartaAcconto.test.js`, `tests/component/PaymentScreen.test.jsx`, `tests/component/SettingsTab.test.jsx`
 
@@ -1370,6 +2000,28 @@ NON E' BUG-050 AL CONTRARIO PER SBAGLIO, e va detto perche' la somiglianza ingan
 ASSUNZIONE — DICHIARATA, NON CONFERMATA (comunicata all'utente il 20/08): gli ordini dei CLIENTI dal telefono non hanno un terminale che li ha inseriti (`placed_by` vuoto), e qualcuno la carta la deve far uscire. Quelli restano come oggi: li stampa qualunque terminale con l'interruttore acceso — il banco, di fatto — col segno sul dato a evitare i doppioni. Se l'assunzione cade, cade con una riga sola (stampaQuestoTerminale). L'INCASTRO COL RIMBALZO (REQ-STAMPA-008), che la regola avrebbe spento: li' il locale ha scelto che le comande della sala escono AL BANCO, e il telefono che prende l'ordine non stampa affatto (MenuPage). Col rimbalzo acceso questa regola quindi NON si applica: stampa chi ha l'interruttore, come prima. Se no non stamperebbe nessuno. L'INCASTRO CON LA SESSIONE DI CREAZIONE (BUG-057): mentre si compone il conto la stampante tace (`in_creazione`); si esce, la coda vede la comanda, e la carta esce li'. Il giro «batto → esco → stampa QUI, non sul tablet accanto» e' provato per intero. E CHI ANNULLA NON STAMPA MAI (BUG-071): «se alla creazione di un ordine lo annullo anche, la comanda non deve uscire se e' abilitata la stampa automatica» (l'utente, 21/08/2026). L'annullo chiude anche la sessione di creazione, nello STESSO patch dello stato: senza, l'uscita dalla schermata toglieva il segno prima che l'annullo arrivasse, e in quel buco la coda vedeva un conto composto, aperto e da stampare. La domanda «questo lavoro e' annullato?» sta in una funzione pura sola (`lavoroAnnullato`) e la fanno tutti e due i posti che stampano: chi sceglie e chi mette l'inchiostro — il tasto «Comanda» a mano su un conto annullato faceva uscire l'aggregato di tutto il conto.
 
 **Dove**: `src/lib/printer.js (stampaQuestoTerminale, comandeDaStampare), src/pages/BartenderPage.jsx` · **Lo dimostrano**: `tests/unit/stampaComande.test.js`, `tests/unit/comandaAnnullata.test.js`
+
+#### REQ-STAMPA-018 — Se la stampante è viva lo dice lei, non l'SDK
+
+La stampante viene INTERROGATA da sé (`startMonitor` dell'SDK Epson, una domanda lunga ogni dieci secondi) e quello che risponde si ascolta: `onpoweroff` quando smette di rispondere, `onoffline` quando risponde ma non è in grado di stampare, `oncoveropen`, `onpaperend`, `ononline` quando torna. Prima di BUG-102 l'app non ascoltava nessuno di questi segnali: sapeva solo la risposta ai singoli invii.
+
+NON RISPONDE PIÙ = SI MOLLA IL COLLEGAMENTO, così la stampa dopo rifà la stretta di mano invece di parlare al vuoto. Carta finita, coperchio aperto e fuori linea NO: lì la stampante ci parla, il collegamento è buono, e buttarlo sarebbe una riconnessione inutile in mezzo al servizio. Si avvisa e basta. `isConnected()` VALE SOLO AL CONTRARIO. Quando dice di no la caduta è certa; quando dice di sì non prova niente, perché nel codice Epson risponde così anche mentre sta soltanto PROVANDO a riconnettersi. È il motivo per cui il pallino restava verde con la stampante muta.
+
+IL PALLINO DICE QUELLO CHE LA STAMPANTE HA RISPOSTO, non che in memoria esista un oggetto: `preparaStampante` riporta il guaio noto.
+
+LA RETE PER QUANDO IL MONITOR NON C'È (firmware vecchio, domanda lunga bloccata): tre invii di fila senza risposta valgono come «strada chiusa». Uno solo no — quello resta un «non lo sappiamo» (REQ-STAMPA-016). E NIENTE DI QUESTO PUÒ FERMARE UNA STAMPA: il monitor non passa dal collegamento delle stampe, quando fallisce non lo butta giù, non alza `onreceive` (quindi non sfasa il conto invii/risposte da cui dipende il registro), e nessun lavoro lo aspetta. Un firmware che non lo sostiene non impedisce di stampare.
+
+PRIMA DI STAMPARE SI GUARDA COM'È MESSO IL COLLEGAMENTO, e si guarda chiedendolo alla STAMPANTE. Il monitor da solo non basta per la stampa che conta: se il collegamento muore tre secondi prima della chiusura di cassa, dieci secondi non fanno in tempo — e la chiusura è proprio la stampa che arriva dopo il buco più lungo, perché durante il servizio le comande si susseguono e il collegamento resta caldo, mentre fra l'ultimo scontrino e la chiusura passano ore.
+
+IL SEGNALE COSTA ZERO. A ogni giro il monitor scrive sulla testina lo stato che la stampante ha risposto, e quando smette di rispondere ci accende dentro `ASB_NO_RESPONSE`. Leggerlo prima di stampare non aspetta niente e non aggiunge traffico, e non è un'opinione dell'SDK: è quello che ha detto lei, al massimo un giro fa. La costante si prende dall'oggetto, non scritta a mano.
+
+LA RETE DI RISERVA È IL TEMPO. Senza monitor (firmware che non lo sostiene, richiesta bloccata) quello stato non si aggiorna mai e il controllo tace: allora vale l'ultima volta che la stampante ha RISPOSTO, e oltre `FRESCHEZZA_COLLEGAMENTO` (due minuti) si riparte da zero comunque. Provato vuol dire una cosa sola — ha risposto a un invio — o una stretta di mano appena riuscita, che è di adesso. Un invio mandato e mai confermato NON è una prova: è il silenzio da cui nasce questo difetto.
+
+IN TUTTI E DUE I CASI SI FA QUELLO CHE FA «TEST STAMPA»: si butta il collegamento e se ne apre uno nuovo. È l'unico gesto che non chiede niente a nessuno. E LÌ SI CHIUDE, NON SI ABBANDONA. Di regola `scordaConnessione` non chiama `disconnect()` — ci si arriva quando il collegamento è appeso, e quella chiamata può appendersi a sua volta — ma qui il collegamento può benissimo essere sano, e abbandonarlo lascerebbe sulla stampante una sessione mezza aperta finché non scade da sé. Una alla volta non è un problema; ripetuta a ogni pausa sì, perché di sessioni CONTEMPORANEE l'apparecchio ne regge poche. Il numero di connessioni non è invece un argomento contro il rifarle una dopo l'altra: quelle restano una alla volta.
+
+PERCHÉ NON A OGNI STAMPA COMUNQUE: la connessione si tiene viva apposta — rifare la stretta di mano ogni volta faceva fallire la prima stampa quando l'eccezione del certificato era scaduta, cioè col cliente davanti — e ogni riconnessione azzera il conto degli invii senza risposta, che è la terza rete. Con lo stato letto e la finestra si riparte quando serve. La finestra è una costante da sola: a zero, si riparte da capo prima di ogni stampa.
+
+**Dove**: `src/lib/printer.js (ascoltaLaStampante, avviaBattito, preparaStampante, smettiDiAscoltare)` · **Lo dimostrano**: `tests/unit/stampanteCheNonRisponde.test.js`
 
 ### Vista cliente
 
@@ -1567,9 +2219,11 @@ Regole di accesso, App Check, e cosa protegge cosa.
 
 #### REQ-SIC-001 — Le regole del database seguono i ruoli
 
-Menù, impostazioni e ordini sono a lettura libera (servono al cliente); cassa, magazzino, gruppi, ore e fatture sono riservati al personale; le paghe e la gestione utenti all'admin. Nessuno può cancellare incassi o sessioni di cassa dall'app.
+Menù e impostazioni sono a lettura libera (servono al cliente); cassa, magazzino, gruppi, ore e fatture sono riservati al personale; le paghe e la gestione utenti all'admin. Nessuno può cancellare incassi o sessioni di cassa dall'app.
 
-**Dove**: `firestore.rules` · **Lo dimostrano**: `tests/unit/utenze.test.js`
+GLI ORDINI SONO IL CASO DELICATO, perché contengono dati personali e insieme devono restare raggiungibili da un cliente che non si è registrato. Le due cose stanno insieme separando i due mestieri che Firestore chiama entrambi «lettura»: UN conto di cui si conosce l'id si legge sempre — l'id è il lasciapassare, ed è così che funziona il link del proprio conto — mentre ELENCARNE tanti passa solo dove la domanda si dimostra sicura da sé: il personale, il cliente registrato sui conti del suo account, e le due liste del tabellone del menù. Da qui scende una cosa nel client: «i miei ordini» del cliente non registrato chiede i conti salvati sul telefono uno per id, non con una lista (BUG-093).
+
+**Dove**: `firestore.rules` · **Lo dimostrano**: `tests/unit/utenze.test.js`, `tests/unit/mieiOrdiniPerId.test.js`
 
 #### REQ-SIC-002 — App Check protegge la produzione senza chiudere fuori il locale
 
@@ -1617,7 +2271,17 @@ LE QUATTRO REGOLE che ne scendono: 1) niente `await` prima di mostrare l'esito d
 
 2) NON SI RILEGGE QUELLO CHE SI E' APPENA SCRITTO, si compone: la scrittura parte in sottofondo, quindi la rilettura prende la versione di prima. Si monta il risultato in memoria (`ordineDopo`) dal documento di partenza piu' la patch mandata; 3) se un dato serve e non c'e', si PRECARICA (progressivi.js), non lo si chiede in mezzo a un gesto; 4) le scritture partono in sottofondo (`bgWrite`), con l'indicatore di sincronizzazione a dire come sta andando. I TEST LO DEVONO DIMOSTRARE, non darlo per buono. Chi tocca queste schermate scrive un test che gira SENZA RETE: si mocka `firebase/firestore` in modo che ogni scrittura resti appesa per sempre e ogni lettura risponda con quello che c'era prima — che e' quello che fa davvero una cache mentre la scrittura e' in coda. NON si mocka `src/lib/api.js`: si proverebbe il mock invece del codice. Il modello da copiare e' tests/unit/giroInLocale.test.js. I test con la rete che risponde si fanno IN PIU', non al posto di quelli. E C'E' UNA GUARDIA NEL CODICE: un test legge api.js e boccia qualunque `return mapOrder(await leggiOrdine(...))`. Una regola scritta solo nella documentazione non ferma nessuno — questa e' tornata tre volte.
 
-**Dove**: `src/lib/api.js, src/lib/sync.js, tests/unit/giroInLocale.test.js, CLAUDE.md` · **Lo dimostrano**: `tests/unit/giroInLocale.test.js`, `tests/unit/incassoOffline.test.js`, `tests/unit/scritturaComande.test.js`
+**Dove**: `src/lib/api.js, src/lib/sync.js, tests/unit/giroInLocale.test.js, CLAUDE.md` · **Lo dimostrano**: `tests/unit/giroInLocale.test.js`, `tests/unit/incassoOffline.test.js`, `tests/unit/scritturaComande.test.js`, `tests/unit/codaRicordo.test.js`
+
+#### REQ-OFFLINE-007 — Il guscio dell'app e il logo non si aspettano dalla rete
+
+Il service worker tiene in cache quello che serve ad aprire l'app — la pagina, il manifest, l'icona — e da BUG-086 anche `logo.png`, che e' la risorsa piu' richiesta di tutte: sta in cima allo scontrino e al preconto, negli avvisi in pagina e nelle notifiche di sistema.
+
+PER IL LOGO SI GUARDA PRIMA LA CACHE, e questa e' la parte che conta. Tutto il resto e' servito «prima la rete, e la cache se la rete fallisce» — che va benissimo per una pagina, ma non protegge da una richiesta che resta APPESA: una fetch che non risolve e non rifiuta non fa scattare nessun ripiego, e chi la aspetta aspetta per sempre. La sera del 24/08 e' successo esattamente questo, e ad aspettare c'era la stampa dello scontrino (BUG-086): l'<img> del logo non ha fatto ne' onload ne' onerror, e il conto appena riscosso non e' uscito. Precaricarlo da solo non sarebbe bastato — la cache non la si sarebbe guardata mai. Il logo se lo puo' permettere perche' e' un'immagine ferma: la copia nuova si va a prendere lo stesso, in sottofondo, per la volta dopo, e un logo cambiato dalle impostazioni ha comunque un altro indirizzo.
+
+QUANDO LA LISTA CAMBIA, CAMBIA IL NOME DELLA CACHE (v3 → v4). Il service worker nuovo si installa, `skipWaiting` lo fa partire subito e `activate` butta le cache vecchie: chi ha l'app aperta con la versione di prima non perde niente, perche' quello che stava nella cache vecchia sta anche nella nuova. E se una risorsa della lista manca, l'installazione non si pianta: `addAll` e' tutto-o-niente, il suo errore si ingoia e le richieste passano dalla rete come prima.
+
+**Dove**: `public/sw.js` · **Lo dimostrano**: `tests/unit/serviceWorkerCache.test.js`
 
 ### Dati e ambienti
 
@@ -1634,46 +2298,6 @@ Si scarica in un file tutto quello che c'è nel database e lo si rimette da un f
 Gli script sanno rispecchiare un ambiente su un altro, migrare il solo catalogo rispettando lo storico di chi lo riceve, e ripristinare un backup. Tutti mostrano un'anteprima e scrivono solo con --apply; la produzione va indicata a mano.
 
 **Dove**: `scripts/specchia-db.js, scripts/ripristina-db.js, scripts/migra-in-produzione.js` · ⚠️ **Nessun test lo verifica.**
-
-### Integrazione SumUp
-
-Il dialogo con il terminale SumUp, dalle Cloud Functions.
-
-#### REQ-SUMUP-CONFIG-001 — Le functions SumUp sono no-op se non configurate
-
-Se SUMUP_VENDOR_ID o SUMUP_OUTLET_ID non sono impostati, tutte le callable (syncSumUpProducts, createSumUpSale, updateSumUpSaleStatus) devono ritornare un esito { skipped: true } senza effettuare alcuna chiamata di rete verso SumUp né scritture su Firestore.
-
-**Dove**: `functions/index.js isSumUpConfigured, functions/lib/sumup-service.js` · **Lo dimostrano**: `TC-SYNC-001`, `TC-SALE-001`, `TC-STATUS-001`
-
-#### REQ-SUMUP-SYNC-001 — Sincronizzazione catalogo SumUp → Firestore drinks
-
-syncSumUpProducts scarica il catalogo da GET /products e aggiorna la collezione `drinks`. I prodotti già presenti (identificati da sumup_product_id) vengono aggiornati; i nuovi vengono creati con un timestamp created_at. Ritorna { synced, total }.
-
-**Dove**: `functions/index.js syncSumUpProducts, functions/lib/sumup-service.js syncProducts` · **Lo dimostrano**: `TC-SYNC-002`, `TC-SYNC-003`, `TC-SYNC-004`, `tests/bdd/sync-products.test.js`
-
-#### REQ-SUMUP-SYNC-002 — Normalizzazione robusta della risposta prodotti SumUp
-
-La risposta di /products può essere un array diretto o un oggetto con chiave "products"/"items"; input nullo o non valido produce zero prodotti. Ogni prodotto viene mappato sui campi drink (name, price numerico, category, description, available) con fallback sui nomi di campo alternativi; i prodotti privi di id vengono saltati. available è true salvo p.active===false o p.available===false.
-
-**Dove**: `functions/lib/sumup-core.js extractProducts, mapProductToDrink` · **Lo dimostrano**: `TC-CORE-001`, `TC-CORE-002`, `TC-CORE-003`
-
-#### REQ-SUMUP-SALE-001 — Invio ordine a SumUp come External Sale
-
-createSumUpSale costruisce il payload External Sale dall'ordine (customer_name derivato dal tavolo, note, sale_items con product_id/quantity/unit_price e total_price arrotondato a 2 decimali) e lo invia in POST a /external_sales. Se la vendita ha un id e l'ordine ha un orderId, persiste sumup_sale_id sull'ordine Firestore. Ritorna { saleId }.
-
-**Dove**: `functions/index.js createSumUpSale, functions/lib/sumup-service.js createSale` · **Lo dimostrano**: `TC-SALE-002`, `TC-SALE-003`, `TC-CORE-004`, `tests/bdd/create-sale.test.js`, `tests/unit/sumup-core.test.js`
-
-#### REQ-SUMUP-STATUS-001 — Aggiornamento stato vendita su SumUp
-
-updateSumUpSaleStatus invia in PUT a /external_sales/{saleId}/status il nuovo stato. Se saleId è assente ritorna { skipped: true, reason } senza chiamare SumUp. Ritorna { updated: true } in caso di successo.
-
-**Dove**: `functions/index.js updateSumUpSaleStatus, functions/lib/sumup-service.js updateSaleStatus` · **Lo dimostrano**: `TC-STATUS-002`, `TC-STATUS-003`, `tests/bdd/update-sale-status.test.js`
-
-#### REQ-SUMUP-WEBHOOK-001 — Webhook SumUp → aggiornamento stato ordine Firestore
-
-sumupWebhook accetta solo richieste POST (altrimenti 405). Estrae sale_id (o id) e status dal corpo; senza sale_id risponde 400. Mappa lo stato SumUp su quello Tana Drink (ACCEPTED→in_preparazione, COMPLETED/CANCELLED→ritirato); stati non mappati rispondono 200 OK senza modifiche. Per stati mappati aggiorna lo status dell'ordine con sumup_sale_id corrispondente, rispondendo sempre 200 OK.
-
-**Dove**: `functions/index.js sumupWebhook, functions/lib/sumup-service.js handleWebhook` · **Lo dimostrano**: `TC-HOOK-001`, `TC-HOOK-002`, `TC-HOOK-003`, `TC-HOOK-004`, `TC-HOOK-005`, `tests/bdd/webhook.test.js`
 
 ### Interfaccia
 
@@ -2023,9 +2647,21 @@ PRIMA la stampante finta si accendeva solo dall'ambiente (dev, locale, emulatori
 
 ADESSO c'e' l'interruttore DEL TERMINALE, nella sezione Dev («Stampante simulata»): localStorage, vale solo per quel dispositivo, e vince sulla regola d'ambiente nei due versi — «qui simula» sul test, o «qui voglio la stampante vera» in locale. La sezione Dev esiste solo in locale e sul test (devToolsEnabled), quindi in produzione l'interruttore non ha una leva da nessuna parte.
 
-IL DEFAULT NON CAMBIA: sul test la finta resta spenta finche' qualcuno non la accende — il tablet del banco che prova la stampante vera non deve trovarsi facsimili a sorpresa.
+IL DEFAULT NON CAMBIA: sul test la finta resta spenta finche' qualcuno non la accende — il tablet del banco che prova la stampante vera non deve trovarsi facsimili a sorpresa. DAL 26/08 LA SEZIONE DEV FA LA LICENZA (REQ-LIC-001): il riquadro «Funzioni premium» ha DUE interruttori per modulo, che sono due domande diverse — «inclusa nella licenza» scrive `licenza.moduli` su settings/bar, cioè la stessa forma che avrà il documento della Fase 3, e «accesa» scrive il flag d'uso. È l'unico modo di provare un modulo non incluso finché un meccanismo di attivazione non esiste, ed è anche la prova generale del documento della licenza. Sta qui per la stessa ragione della stampante finta: gli strumenti di sviluppo esistono solo in locale e sul test, quindi in produzione la leva non c'è da nessuna parte. Differenza da tenere a mente: la stampante finta è del TERMINALE (localStorage), i moduli premium sono di TUTTO IL LOCALE (settings/bar).
 
 **Dove**: `src/lib/stampanteFinta.js, src/components/DevTools.jsx` · **Lo dimostrano**: `tests/unit/stampanteFinta.test.js`
+
+#### REQ-DEV-015 — Le regole Firestore hanno delle prove, e ogni prova è doppia
+
+Le regole di Firestore sono l'UNICA barriera fra i dati del locale e chiunque abbia letto apiKey e projectId dal bundle — che sono pubblici per disegno. Fino all'audit del 26/08/2026 non avevano un solo test: si leggevano e si sperava. L'audit stesso lo mette fra le cose da fare.
+
+ADESSO ci sono: girano contro l'emulatore Firestore con le regole VERE lette da firestore.rules, così una regola che cambia cambia anche quello che si prova.
+
+OGNI PROVA È DOPPIA, ed è il punto di questo requisito: che l'abuso sia bloccato conta quanto che l'uso legittimo passi. Una regola che chiude tutto è facile da scrivere e la sera manda a casa il locale — è già successo di sfiorarlo con BUG-091, dove la cura ovvia («solo lo staff scrive i contatori») spegneva la numerazione degli ordini che arrivano dal telefono del cliente, che non è autenticato.
+
+STANNO PER CONTO LORO, fuori da `npm test`: senza emulatore acceso non partirebbero e renderebbero rossa la CI per un motivo che non è un difetto. Si lanciano con `npm run test:regole`, dopo aver acceso gli emulatori (vedi docs/ambiente-locale.md). Per la stessa ragione non contano per la copertura: quello che misurano non è codice nostro.
+
+**Dove**: `tests/regole/, vitest.regole.config.mjs, firestore.rules` · **Lo dimostrano**: `tests/regole/counters.test.js`, `tests/regole/orders.test.js`
 
 ### STAT
 
@@ -2042,6 +2678,48 @@ SI TORNA CON «← Chiusure», in cima al dettaglio: una sola via d'uscita, e di
 LA CASSA ANCORA APERTA C'È, ed è la prima riga, con l'orario che dice «in corso» e i numeri di adesso: mentre si lavora è la serata che interessa di più, e senza di lei la prima sera del locale la lista sarebbe vuota. B) PER PERIODO: le pastiglie di sempre (7/10/20/30/60 e Personalizzato) MENO «🧾 Ultima chiusura» e la tendina delle serate, che ora vivono nella sottosezione A — lo stesso posto raggiunto in due modi prima o poi si contraddice. LOCAL-FIRST: la lista si costruisce da quello che la pagina ha già in mano (sessioni e ordini), senza una lettura in più e senza attese fra il tocco e la riga. Le serate più vecchie della finestra di ordini scaricata non si possono ricalcolare: per quelle si usano i numeri congelati nello `snapshot` della chiusura, che stanno già sulla sessione — una riga a zero si leggerebbe come «quella sera non ha incassato», che è un'altra cosa.
 
 **Dove**: `src/lib/serate.js, src/components/StatsTab.jsx, src/lib/sottosezioni.js` · **Lo dimostrano**: `tests/unit/serate.test.js`, `tests/component/StatsTab.test.jsx`
+
+### LIC
+
+#### REQ-LIC-001 — Le funzioni premium si accendono da un posto solo, e di partenza sono spente
+
+Decisione dell'utente del 26/08/2026, parole sue: «Facciamo che la conta di magazzino e le fatture (le due sezioni) diventano funzioni premium che si attivano all'occorrenza. Le chiamo premium perché in futuro diventerà multitenant; per il momento possiamo semplicemente disabilitarle dalle opzioni, e disabilitiamo le checkbox per attivarle scrivendo "funzione premium". Poi capiamo come fare a sbloccare gli switch».
+
+ANTICIPA LA FASE 3 del piano di sbrandizzazione (docs/piano-sbrandizzazione.md, «Licenza e moduli»): là il documento `settings/licenza` porta piano e moduli attivi, e le voci del gestionale compaiono solo dove il modulo è acceso, «estendendo lo schema già esistente di workflow_enabled». Qui nasce il meccanismo con le prime due funzioni; il documento della licenza arriverà dopo.
+
+RAFFINATO LO STESSO GIORNO, parole sue: «Ok dobbiamo riattivare lo scadenziario, ma lasciamolo sempre funzione premium: va abilitato lo switch e abilitata la funzione». Da lì nasce la distinzione qui sotto, che è quella che una licenza fa per mestiere.
+
+DUE DOMANDE, NON UNA: · INCLUSO — la licenza dice cosa il locale HA comprato; · ACCESO — l'impostazione dice se in questo momento lo USA. Un modulo lavora quando è incluso E acceso. Impastarle in un flag solo non permetterebbe di distinguere un locale che la funzione non ce l'ha da uno che ce l'ha e l'ha spenta — e sono due schermate diverse, una con l'interruttore bloccato e una con l'interruttore normale.
+
+PER LA TANA, OGGI: scadenzario INCLUSO (e quindi acceso, e col suo interruttore che si tocca), conta NON INCLUSA (interruttore spento e bloccato).
+
+UN POSTO SOLO CHE RISPONDE, `src/lib/licenza.js`: una tabella dei moduli e tre funzioni pure — `moduloIncluso`, `moduloAcceso` e `moduloAttivo`, che è l'AND delle prime due e l'unica che le schermate chiamano. Due interruttori sparsi diventano tre e poi cinque, e a quel punto per sapere cosa vede un locale bisogna leggersi mezza app. Aggiungere il prossimo modulo è una voce nella tabella: `id` (lo stesso della sezione che accende), `chiave` (il flag su settings/bar), nome e descrizione da mostrare.
+
+DOVE STA SCRITTO COSA È INCLUSO, oggi: nel campo `incluso` della tabella, cioè nel CODICE. Quello che un locale ha comprato non è una preferenza da pannello — lì si accende e si spegne quello che si ha, non si decide cosa si ha — e finché non esiste il documento della licenza, la licenza di questa installazione è la sua build. È lo stesso posto dove finirà la configurazione per cliente della Fase 2 (`clienti/<slug>/`). Dalla schermata normale delle impostazioni non è modificabile; dagli strumenti di sviluppo sì (REQ-DEV-014). L'INTERRUTTORE D'USO è un flag booleano su `settings/bar`, della stessa forma di `workflow_enabled`: `modulo_conta_enabled` e `modulo_scadenzario_enabled`, in DEFAULT_SETTINGS a `true`. Stessa cache delle altre impostazioni, quindi nessuna lettura nuova e niente da aspettare (local-first). Acceso di suo con l'idioma `!== false`: quello che il locale ha comprato funziona senza che nessuno lo debba andare ad accendere, e si spegne solo se qualcuno lo spegne davvero. La sicurezza sta tutta nell'altra domanda.
+
+COME SI AGGANCERÀ LA LICENZA VERA: `moduloIncluso` guarda PRIMA un campo `licenza.moduli` nello stato che riceve. Oggi non c'è e si ricade sulla tabella; il giorno che `settings/licenza` esiste, chi lo collega lo fa arrivare fin lì e la licenza vince — nessuna schermata cambia, perché nessuna schermata sa da dove viene la risposta. L'interruttore d'uso resta dov'è: è del locale, non della licenza — un locale che ha comprato lo scadenzario può volerlo spento a gennaio. Se la licenza c'è ma non nomina il modulo, il modulo NON è incluso: ricadere sulla tabella vorrebbe dire riaprirsi da soli un modulo che la licenza non dà. Una licenza a metà (piano scritto, elenco dei moduli no) invece non conta: è un caso di migrazione, non una decisione commerciale.
+
+NEL DUBBIO NON LAVORA — id sconosciuto, licenza che tace, modulo non incluso: una funzione a pagamento non si regala per una svista. E una sezione che compare per mezzo secondo e poi sparisce è peggio di una che non c'è: le schermate partono dalla cache, non dal vuoto. I MODULI DI OGGI SONO TRE, e vivono in tre posti diversi con lo STESSO filtro (`voceVisibile`) — è il motivo per cui l'id del modulo è l'id della sezione che accende: · `conta` — sottosezione del magazzino. Non inclusa. · `scadenzario` — sottosezione di «Fornitori» (REQ-MAG-028). INCLUSA. · `fatture` — la SEZIONE del gestionale «Fatture», cioè le fatture di cortesia al cliente (collezione `invoices`). Non inclusa. ⚠️ LE DUE FATTURE NON SONO LA STESSA COSA, e stanno una sotto l'altra nelle impostazioni: «Fatture ai clienti» sono soldi che ENTRANO (`invoices`, il documento che si dà a chi lo chiede), «Fatture ai fornitori» sono soldi che ESCONO (lo scadenzario, `supplier_invoices`). Hanno in comune solo la parola, e le etichette a schermo lo dicono senza doverle aprire.
+
+LE FATTURE AI CLIENTI PORTANO VIA ANCHE UN TASTO. Chiesto dall'utente il 26/08/2026: «Un'altra funzione premium è la sezione delle fatture, e insieme a quello va nascosto il tasto fattura nel pagamento dell'ordine». Col modulo spento sparisce la voce «📄 Fatture» dal menu e il tasto «📧 Invia fattura» dalla schermata di pagamento. Quel tasto è l'UNICA porta della modale della fattura (`showInvoice` lo accende solo lui), quindi togliendolo si chiude tutto il flusso — emissione, stampa e invio per email — senza lasciare in giro mezze strade.
+
+UN CONTO CHE UNA FATTURA CE L'HA GIÀ non la perde: `invoice_number` resta scritto sull'ordine e il documento resta nella collezione `invoices`. Col modulo spento non si vede — le uniche schermate che lo mostravano erano il ✓ sul tasto, l'avviso dentro la modale e la sezione Fatture, e sono tutte dietro il modulo — e torna a vedersi identico appena il modulo si riaccende. Nessuna scrittura, nessuna cancellazione. SEZIONI.JS LEGGE LA LICENZA, ed è il pezzo che la Fase 3 del piano di sbrandizzazione chiede a quel file. `vociPerRuolo(role, impostazioni)` e `sezioneConsentita(id, role, impostazioni)` fanno DUE domande che restano separate:
+
+CHI SEI (la funzione di `ruoli.js` sulla voce) e COSA HA IL LOCALE (`voceVisibile`). Una voce premium non c'è per nessuno, admin compreso; una voce di ruolo non c'è per chi non ha il ruolo. Le impostazioni arrivano da chi le ha già in cache (StaffDrawer e BartenderPage): nessuna lettura nuova. Se non sono ancora arrivate passa solo quello che è incluso di suo — meglio una voce che compare che una che lampeggia e sparisce.
+
+DOVE VIVONO, in breve: la CONTA nel magazzino, lo SCADENZARIO in «Fornitori», le FATTURE nel menu del gestionale.
+
+NEL MAGAZZINO la sezione Conta resta nell'unico elenco `INV_VIEWS` (l'ordine delle sezioni è uno solo) e si filtrano con `voceVisibile`. Una voce che rientra torna al SUO posto, perché l'elenco è quello e basta. La vista aperta si RICAVA dall'elenco filtrato: se un modulo si accende da un altro terminale mentre si sta guardando un'altra sezione, la voce nuova entra e nient'altro si muove; se a spegnersi è proprio la sezione aperta, si torna ai Prodotti invece di restare su un pannello che non è più in elenco. Vedi REQ-MAG-010.
+
+NELLE IMPOSTAZIONI le due voci NON spariscono: gruppo «🔒 Funzioni premium», suo, prima di «Sistema». La regola del momento d'uso (REQ-UI-025) chiede di raggruppare per «quando lo cerco», e qui il momento è «cosa ha questo locale, e cosa potrebbe avere» — che non è il momento in cui si conta il magazzino né quello in cui si registra una fattura, tanto più che a modulo spento quelle schermate non esistono e l'interruttore sarebbe da cercare dentro una sezione che non compare. Sono la prima famiglia di questo tipo e ne arriveranno altre (la Fase 3 elenca cinque pacchetti): un gruppo che cresce è meglio di cinque voci sparse. E non sta in «Sistema», che parla della macchina (backup, versione): la licenza è del locale. I TESTI SONO ASCIUTTI (DESIGN.md, guardrail 3): la didascalia dice cosa fa la funzione e che non è inclusa. Niente «Sblocca ora», niente toni pubblicitari.
+
+DUE RIGHE DIVERSE, E SI VEDE: · modulo NON INCLUSO — interruttore spento e BLOCCATO, che al tocco dice perché. `ToggleRow` ha una prop `motivo` che lo rende `aria-disabled` invece di `disabled`, con la stessa ragione dei metodi di pagamento non disponibili e del tasto «Acconto» che salderebbe il conto: `disabled` non fa nemmeno partire l'evento, e chi preme resta a premere un tasto morto. · modulo INCLUSO — interruttore NORMALE, che si accende e si spegne come ogni altra impostazione e salva sul documento del bar. Resta scritto che è una funzione premium, ma la didascalia dice «inclusa in questa installazione»: scrivere «non inclusa» su una funzione che il locale ha sarebbe falso.
+
+PER CAMBIARE LA LICENZA (cosa è incluso) ci sono gli strumenti di sviluppo (REQ-DEV-014, solo in locale e sul sito di test): scrivono `licenza.moduli` su settings/bar, cioè la stessa forma che avrà il documento della Fase 3 — è la sua prova generale. L'altra strada, equivalente, è scrivere il campo a mano da console o dall'emulatore. NON dalla schermata normale delle impostazioni: un meccanismo di vendita non esiste ancora, e inventarne uno adesso sarebbe da buttare.
+
+SPEGNERE NASCONDE, NON CANCELLA. Le conte e le fatture già scritte restano nelle loro collezioni (`stock_counts`, fatture fornitore): spegnere un modulo non tocca un documento. Caso spiacevole da sapere: una conta APERTA nel momento in cui il modulo si spegne resta aperta e non allineata — la si ritrova esattamente com'era riaccendendo il modulo, ma finché è spento nessuno la può chiudere. ⚠️ IL FLAG NASCONDE, NON PROTEGGE. Oggi c'è un locale solo e la distinzione è teorica; quando i locali saranno tanti il controllo vero va sul SERVER — Cloud Functions e regole Firestore — perché chiunque apra la console del browser può accendersi un modulo da sé. Lo dice anche il piano: «mai fidarsi del solo frontend per una funzione a pagamento».
+
+**Dove**: `src/lib/licenza.js, src/lib/sezioni.js, src/components/InventoryManager.jsx, src/components/FornitoriTab.jsx, src/components/PaymentScreen.jsx, src/components/SettingsTab.jsx, src/components/ToggleRow.jsx, src/components/DevTools.jsx` · **Lo dimostrano**: `tests/unit/licenza.test.js`, `tests/unit/sezioni.test.js`, `tests/component/InventoryManager.test.jsx`, `tests/component/FornitoriTab.test.jsx`, `tests/component/PaymentScreen.test.jsx`, `tests/component/SettingsTab.test.jsx`
 
 ## Lavori previsti
 
@@ -2197,56 +2875,6 @@ IL CONSUMO A SETTIMANA (REQ-MAG-024) l'app ora lo calcola, ma non serve a propor
 
 **Dove**: `src/lib/warehouse.js suggestedPackages, src/components/PurchaseOrdersPanel.jsx`
 
-#### REQ-MAG-025 — Ordini e fatture: una pagina sola, e una fattura paga un ordine
-
-Chiesto dall'utente il 19/08. Oggi ordini fornitore e documenti stanno dentro Magazzino, in due sottosezioni che non si parlano: si ordina di la', si segna la fattura di qua, e nessuno sa quale fattura paghi quale ordine. Devono diventare UNA PAGINA LORO, «Ordini e fatture», nel menu laterale e visibile SOLO ALL'ADMIN, con due sottosezioni: «Ordini» e «Fatture». Sono i soldi che escono dal locale, e non e' roba da turno.
-
-IL LEGAME, che e' il cuore della richiesta:
-
-UNA FATTURA PAGA UN ORDINE (e un ordine e' di UN fornitore solo). Dall'ordine si arriva alla sua fattura e viceversa; un ordine senza fattura si vede a colpo d'occhio (la merce e' arrivata ma il documento no), e una fattura senza ordine pure — sono le due cose che a fine mese fanno tornare o non tornare i conti con il commercialista.
-
-TRE LIVELLI, NON DUE (precisato dall'utente il 19/08). Non e' una fattura che copre piu' ordini: e' un GIRO D'ORDINI che ne contiene diversi, UNO PER FORNITORE, e ogni fornitore manda la SUA fattura. «Un giro di ordini, non un ordine. Sono piu' fatture perche' ci sono diversi fornitori» — parole sue. Quindi: giro -> N ordini (uno per fornitore) -> N fatture (una per ordine). Il legame fattura-ordine resta uno-a-uno; quello che sta sopra e' il giro, che tiene insieme la serata di ordinazione.
-
-LO DICONO ANCHE I FOGLI, e adesso si spiegano: in GEN ORD REC ogni foglio e' un giro e si chiama coi numeri dei documenti che lo compongono («1410+1438+AGO+PAD+PIC», «nova+ago+picc»), col fornitore scritto sull'ARTICOLO e non sull'ordine — un foglio solo, piu' fornitori dentro (REQ-MAG-023).
-
-COSA CAMBIA PER L'APP: oggi `purchase_orders` e' gia' UN ORDINE PER FORNITORE, quindi quel livello c'e' e non si tocca. Manca il giro sopra: si guarda il fabbisogno una volta sola e ne escono N ordini insieme, che poi vivono ognuno per conto suo (arriva, si carica, si fattura). Da decidere se il giro e' un dato scritto (una collezione sua, che tiene la data e i suoi ordini) o solo un modo di crearli in blocco: la prima strada permette di chiedersi «quanto e' costato il giro di martedi'», la seconda costa meno.
-
-IL CARICO AL RICEVIMENTO C'E' GIA' e non va rifatto: receivePurchaseOrder in api.js, quando l'ordine passa a «ricevuto», alza la giacenza riga per riga (confezioni x contenuto, o pezzi), aggiorna le bottiglie totali e scrive un movimento «ordine fornitore». Questa voce ci aggiunge il pezzo che manca.
-
-IL PRODOTTO NUOVO, che oggi si perde in silenzio. Quel ciclo salta le righe il cui articolo non esiste in anagrafica (`if (!s.exists()) continue`): se il fornitore manda una referenza nuova, la riga non carica niente e nessuno se ne accorge. Deve invece NASCERE il prodotto, inventariato con quello che l'ordine sa gia' (nome, fornitore, prezzo, confezione) e marcato come DA SISTEMARE — perche' quello che l'ordine non sa e' proprio cio' che serve al resto del sistema: la categoria (e quindi la macro d'acquisto), l'unita' di misura vera, la soglia di riordino.
-
-ATTENZIONE AL NOME: nel magazzino esiste gia' una lista «da sistemare», ma e' del travaso a pezzi (i prodotti che la migrazione non sa convertire da sola) ed e' una cosa diversa. O si riusa quella stessa strada — e allora si dice perche' le due situazioni sono la stessa — o il nuovo stato ha un nome suo. Due liste omonime che vogliono dire cose diverse, sulla stessa schermata, sono un guaio che si paga dopo.
-
-COME SI INCASTRA COL RESTO, ed e' la parte da non sbagliare: 1) MACRO-CATEGORIE. Un prodotto nuovo senza categoria non ha macro d'acquisto, quindi la sua spesa non compare in «Bilancio → Acquisti x Fatturato» (REQ-MAG-022): sparisce dai conti invece di risultare sbagliata, che e' peggio. Il prodotto da sistemare va quindi mostrato insieme alle categorie senza macro (REQ-UI-022): sono lo stesso buco visto da due lati. 2) SCARICO. La giacenza caricata da un ordine si scala con le regole di sempre — snapshot della ricetta, unita' base, scarico a «pronto»: qui non cambia niente, e non deve cambiare. 3) IVA. L'ordine porta il prezzo d'acquisto; l'IVA d'acquisto ha gia' il suo default (22%) e il campo per prodotto. Un prodotto nato da un ordine eredita il default finche' qualcuno non lo corregge.
-
-4) SPESE DEL MESE (REQ-CASSA-012): le fatture fornitore sono spesa registrata. Va deciso — e scritto — se entrano da sole nel netto del mese o se restano due elenchi separati, altrimenti la stessa uscita si conta due volte.
-
-ATTENZIONE, DUE «FATTURE»
-
-NEL CODICE: `supplier_invoices` sono i documenti dei FORNITORI (quello di cui parla questa voce), `invoices` sono le fatture di VENDITA ai clienti. Nomi vicini, mestieri opposti.
-
-TRE SOTTOSEZIONI, NON DUE (utente, 19/08): «Ordini», «Fatture» e «ALTRE SPESE», piu' un RIEPILOGO che le tiene insieme. La terza nasce da una domanda sua — «quelle spese da inserire a mano non sono gli ordini?» — e la risposta, misurata sui fogli, e' che in parte SI': la sua riga SPESE e' sempre piu' grande degli acquisti dello stesso mese (gen 2.380 contro 1.809, giu 12.726 contro 8.673), quindi contiene la merce PIU' altro, da 570 a 4.050 euro al mese.
-
-COSA C'E' IN QUELL'ALTRO, trovato il 19/08 e non piu' un'ipotesi: sta in FORNITORI REC.xlsx, foglio «TO BUY» — tavoli da esterno, sgabelli, divani, una tenda, uno scaffale IKEA, bicchieri di plastica in cinque misure. Colonne: articolo, quantita', prezzo, totale, DOVE si compra (Amazon, Bricoware, IKEA, Vente-Unique) e note. Totale del foglio 2.468,59.
-
-QUINDI SONO ARREDI, ATTREZZATURE E MATERIALE DI CONSUMO: roba che esce dal conto corrente e non entra in magazzino, e che nessun ordine fornitore intercettera' mai. Da qui la sottosezione, e le sue colonne sono quelle del foglio.
-
-IL FOGLIO PERO' E' UNA LISTA DELLA SPESA, non un registro: si chiama «da comprare» e diverse righe hanno prezzo zero, cioe' non ancora prezzate. Serve quindi sapere se una voce e' GIA' STATA COMPRATA: solo quelle comprate pesano sul netto del mese, le altre sono un promemoria. Senza questa distinzione un divano desiderato abbasserebbe l'utile di gennaio.
-
-IL RIEPILOGO, quarta voce del menu: mette insieme i tre elenchi in un totale per mese — merce (dalle fatture), altre spese, e quanto resta aperto (ordini senza fattura, fatture non pagate). E' il numero che poi Bilancio -> Mesi usa per il netto, e la ragione per cui sta QUI e non li': i soldi che escono si guardano dove si registrano.
-
-DECISIONI DEL 20/08 (l'utente, a voce sua), che AGGIORNANO il modello scritto sopra — dove si contraddicono, vince quanto segue: 1) L'ORDINE PUO' CONTENERE ITEM DI PIU' FORNITORI: «un ordine puo' contenere item da piu' fornitori, per questo deve essere possibile FILTRARE l'ordine per fornitori». Il giro e l'ordine collassano in una cosa sola: quello che sopra si chiamava «giro» E' l'ordine, e il livello per-fornitore diventa una VISTA (il filtro), non un documento. Le fatture restano piu' d'una — di norma una per fornitore coinvolto.
-
-2) LE FATTURE SI ALLEGANO ALL'ORDINE **PER FORNITORE** (precisato dall'utente subito dopo): «la vista degli ordini contiene piu' fornitori, ma la fattura e' collegata all'ordine PER IL FORNITORE, perche' e' il fornitore che rilascia la fattura». Quindi il legame della fattura non e' con l'ordine intero ma con LA FETTA di quel fornitore dentro l'ordine — la stessa fetta che il filtro mostra: filtro su Nova = le sue righe E la sua fattura. Un ordine con tre fornitori ha fino a tre fatture, ognuna agganciata alla sua fetta, e si vede a colpo d'occhio quale fetta e' ancora senza documento. Allegare = il documento vero (foto/PDF), non solo un numero. Serve lo Storage; da decidere in implementazione limite di peso e formati. 3) «ARRIVATO»
-
-LO DECIDE L'ADMIN: e' il suo gesto a segnare l'ordine arrivato, ed e' quel gesto che APRE la possibilita' di caricare l'inventario.
-
-4) IL CARICO NON E' AUTOMATICO: «e' il bartender che decide, quando l'ordine e' arrivato, SE e QUALI prodotti caricare in inventario». Riga per riga, piu' un tasto «CARICA TUTTI» quando l'ordine e' arrivato. Il receivePurchaseOrder di oggi (carica tutto in un colpo al ricevimento) va quindi spezzato in due: l'arrivo (admin) e il carico (bartender, selettivo o tutto).
-
-5) ASSORTIMENTO PRE-IMPOSTATO, opzionale: prima che l'ordine arrivi si puo' segnare, per ogni prodotto dell'ordine, il passaggio a «in assortimento» — e il cambio si applica quando l'ordine e' arrivato e il carico di quel prodotto e' stato fatto davvero. Serve a preparare il listino mentre la merce viaggia, senza che il cambio scatti prima che la merce esista.
-
-**Dove**: `src/components/PurchaseOrdersPanel.jsx, src/components/SupplierInvoicesPanel.jsx, src/components/InventoryManager.jsx, src/lib/api.js, src/lib/ruoli.js, src/components/StaffDrawer.jsx`
-
 #### REQ-MAG-026 — Gli ordini nascono dalle giacenze: chi e' in esaurimento entra da solo
 
 Chiesto dall'utente il 19/08: «gli ordini andrebbero creati dalle giacenze di magazzino. Se un articolo e' in esaurimento dovrebbe essere aggiunto automaticamente all'ordine per quel fornitore».
@@ -2357,7 +2985,15 @@ NON E' PRONTO DA LAVORARE, e l'utente l'ha detto chiaro il 19/08 dopo aver visto
 
 COSA ASPETTA, in una riga: la risposta di Flavio su cosa mette in quel numero. Non e' un dettaglio di implementazione: e' la differenza fra una schermata con due campi e una che deve raggruppare voci di natura diversa, e sbagliarla vuol dire rifarla.
 
-COSA SI PUO' FARE INTANTO, senza aspettare nessuno: la sottosezione «Altre spese» in Ordini e fatture (REQ-MAG-025) e il riepilogo. La forma minima — descrizione, importo, data, comprato si o no — regge qualunque risposta arrivi; quello che cambia e' se serve un modo di raggruppare, e quello si aggiunge dopo.
+COSA SI PUO' FARE INTANTO, senza aspettare nessuno: la sottosezione «Altre spese» in Ordini e fatture (REQ-MAG-025) e il riepilogo. La forma minima — descrizione, importo, data, comprato si o no — regge qualunque risposta arrivi; quello che cambia e' se serve un modo di raggruppare, e quello si aggiunge dopo. ⚠️ AGGIORNAMENTO 27/08/2026 (REQ-MAG-034):
+
+IL POSTO DOVE SI SCRIVONO C'È. «Altre spese» è la terza sottosezione di Fornitori, col riepilogo per mese accanto, esattamente dove questa voce diceva di metterle. La forma è quella minima che questa voce indicava — descrizione, importo, data, comprato sì o no — più le due colonne che il foglio «TO BUY» ha e che servono a ritrovare la stessa cosa: quantità e dove si compra.
+
+QUESTA VOCE RESTA APERTA, e per la ragione di sempre: manca il DATO, non il posto. La domanda a Flavio — cosa mette in quel numero — decide solo se serve un modo di RAGGRUPPARE le voci, e quello si aggiunge senza rifare niente. Nessuna categoria è stata inventata: i campi sono vuoti, senza esempi, apposta.
+
+QUELLO CHE RESTA DA FARE QUI È IL PONTE: Bilancio → Mesi deve leggere il totale delle altre spese del mese e sottrarlo nel netto, insieme agli stipendi e alle fatture fornitore. I numeri sono già calcolati e si prendono da `src/lib/spese.js` (`totaleSpeseDelMese`) e da `src/lib/riepilogoFornitori.js`: non c'è nessuna somma da riscrivere.
+
+LA COSA CHE QUESTA VOCE CHIEDEVA DI DIRE A SCHERMO È DETTA: che il numero dell'app vale MENO di quello dei fogli, perché lì le spese contengono anche la merce. Sta in testa al Riepilogo di Fornitori, dove i totali si confrontano.
 
 **Dove**: `src/lib/api.js (collezione `spese`, nuova), src/components/BilancioTab.jsx (nuovo)`
 
@@ -2469,8 +3105,10 @@ della correzione è il test citato nel requisito della sua area.
 | · | [BUG-035](#bug-035--nel-facsimile-dello-scontrino-lintestazione-non-è-centrata-come-sulla-carta) — Nel facsimile dello scontrino l'intestazione non è centrata come sulla carta | lieve | P3 |
 | 🔴 | [BUG-038](#bug-038--sulla-pwa-android-le-notifiche-arrivano-solo-accendendo-lo-schermo) — Sulla PWA Android le notifiche arrivano solo accendendo lo schermo | media | P2 |
 | 🔴 | [BUG-043](#bug-043--due-nomi-con-la-stessa-iniziale-e-in-legenda-ne-resta-uno-solo) — Due nomi con la stessa iniziale, e in legenda ne resta uno solo | lieve | P3 |
-| 🔴 | [BUG-076](#bug-076--con-lo-zoom-alto-la-finestrella-dello-sconto-esce-dallo-schermo-sopra-e-sotto) — Con lo zoom alto la finestrella dello sconto esce dallo schermo sopra e sotto | lieve | P3 |
-| 🔴 | [BUG-077](#bug-077--con-lo-zoom-alto-nel-conto-i-tasti-in-fondo-escono-dallo-schermo-e-non-si-scorre) — Con lo zoom alto, nel conto i tasti in fondo escono dallo schermo e non si scorre | media | P2 |
+| 🔴 | [BUG-090](#bug-090--il-repository-è-pubblico-e-contiene-vocali-e-foto-di-persone-vere) — Il repository è pubblico e contiene vocali e foto di persone vere | grave | P0 |
+| 🔴 | [BUG-092](#bug-092--app-check-è-inizializzato-sul-client-ma-non-imposto-da-nessuna-parte) — App Check è inizializzato sul client ma non imposto da nessuna parte | grave | P1 |
+| 🔴 | [BUG-097](#bug-097--il-conto-si-apre-senza-sapere-chi-lo-guarda-per-un-attimo-il-banco-vede-la-schermata-della-sala) — Il conto si apre senza sapere chi lo guarda: per un attimo il banco vede la schermata della sala | media | P2 |
+| · | [BUG-098](#bug-098--lo-scontrino-di-chiusura-cassa-spesso-non-esce-e-nessuno-se-ne-accorge) — Lo scontrino di chiusura cassa spesso non esce, e nessuno se ne accorge | media | P2 |
 
 🔴 succede **in produzione**, cioè al banco. `·` no. `?` non si sa ancora.
 
@@ -2528,29 +3166,63 @@ TRE STRADE, da pesare quando si lavora: due lettere quando la prima collide (Ma 
 
 **Dove**: `src/pages/BartenderPage.jsx (legenda), src/lib/presenza.js, src/lib/orderStatus.js (placedByLetter)`
 
-#### BUG-076 — Con lo zoom alto la finestrella dello sconto esce dallo schermo sopra e sotto
+#### BUG-090 — Il repository è pubblico e contiene vocali e foto di persone vere
 
-Trovato misurando BUG-075, non segnalato al banco: la registro perche' e' lo stesso guaio di fondo — una misura fissa dentro una pagina che lo zoom rimpicciolisce — ma la cura e' un'altra riga di CSS e tocca TUTTE le finestrelle di conferma dell'app, non solo lo sconto.
+Il repo redirect11/tana-drink è PUBBLICO, e in registrazioni/ ci sono 63 file — note vocali WhatsApp e foto dal 26/07 al 10/08/2026 — che, per stessa ammissione del .gitignore e di scripts/trascrivi-registrazioni.py, contengono i nomi dei clienti e le voci di chi lavora al banco. Sono dati personali (voce e immagine identificabili) pubblicati senza base giuridica: un problema di privacy prima ancora che di sicurezza. Il commit che li ha tolti (c002eb1, «fuori dal versionamento i vocali dal banco») li ha rimossi SOLO dal tip. Restano scaricabili da chiunque: dai tip dei rami remoti vivi release/1.3.0 e release/1.4.0 (63 file ciascuno), dalla storia raggiungibile di main e develop (i commit che li aggiungono — c89e4f5, fefa53a, 64573ad… — sono antenati del tip), e dai rami locali agents/configurazione-agenti e feature/riordino-css. Comportamento atteso: quei file non devono essere raggiungibili da un repository pubblico, né dal tip né dalla storia.
 
-COSA SUCCEDE. '.confirm-overlay' centra la finestrella ('align-items: center') dentro un velo fisso che non scorre. Quando la finestrella e' piu' alta dello schermo, centrare vuol dire tagliarla dai DUE lati: sopra sparisce il titolo, sotto il tasto che applica. Non c'e' modo di raggiungerli, perche' non scorre niente.
+COSA FARE (in quest'ordine): (1) cancellare sul server i rami release/1.3.0 e release/1.4.0 (e i locali citati, o riscriverli); (2) riscrivere la storia di tutti i rami con `git filter-repo --path registrazioni/ --invert-paths` (o BFG) e force-push; (3) aprire un ticket al GitHub Support per purgare gli oggetti dalle cache/reflog lato server — i commit restano raggiungibili per SHA anche dopo il force-push — e verificare che non esistano fork; (4) decidere se il repo debba restare pubblico. Non c'è un segreto da ruotare: è privacy di persone reali, ed è il finding più grave dell'audit.
 
-MISURATO IN CHROME (sconto del pagamento, 63 combinazioni di finestra e zoom): esce dallo schermo in 6, dal 120% su una finestra alta 500px in giu' fino al 160% su una alta 600px. Prima della cura di BUG-075 erano 11 — il minimo dei tasti che segue lo zoom ha gia' tolto meta' dei casi, ma non li chiude.
+**Dove**: `registrazioni/ (storia git e rami release/1.3.0, release/1.4.0), .gitignore, repository GitHub`
 
-COME SI SISTEMA (da fare): il velo deve poter scorrere e la finestrella fermarsi all'altezza dello schermo con dentro il suo scorrimento — 'overflow-y: auto' sul velo, 'align-items: safe center' perche' centrare non tagli in cima, e un tetto d'altezza sulla scatola. Vale per ogni '.confirm-box' dell'app, quindi va provato dove le finestrelle sono piu' lunghe (ripristino conto, scelta del buono), non solo qui.
+#### BUG-092 — App Check è inizializzato sul client ma non imposto da nessuna parte
 
-**Dove**: `src/index.css (.confirm-overlay, .confirm-box)`
+Il client registra App Check con reCAPTCHA v3 (firebaseClient.js), ma il backend non lo pretende mai: nessuna Cloud Function dichiara `enforceAppCheck: true` (OPTS è solo la region), l'enforcement non risulta acceso per Firestore/Storage, e se manca VITE_RECAPTCHA_SITE_KEY App Check si spegne in silenzio. Risultato: il token viene prodotto e allegato, ma le callable restano invocabili da qualunque client, anche fuori dall'app. È il moltiplicatore che rende sfruttabili i buchi da anonimo (BUG-091, BUG-093) e apre a spam/DoS/costo battendo createOrder o createPaymentCheckout in loop con la sola apiKey pubblica. È anche il sospetto già annotato per BUG-001 (il banner «Missing or insufficient permissions» in coda). Comportamento atteso: le operazioni riservate all'app passano solo da client legittimi con App Check valido. CURA: accendere l'enforcement in console per Firestore/Storage/Functions; aggiungere `enforceAppCheck: true` alle callable riservate allo staff (staffAdmin, sync/sale SumUp, pagamenti), lasciando fuori con grazia quelle pensate per il cliente anonimo con capability-token (checkout online); far fallire la build in produzione se manca VITE_RECAPTCHA_SITE_KEY, invece di spegnere App Check in silenzio.
 
-#### BUG-077 — Con lo zoom alto, nel conto i tasti in fondo escono dallo schermo e non si scorre
+**Dove**: `src/lib/firebaseClient.js (initializeAppCheck), functions/index.js (OPTS delle onCall), firestore.rules`
 
-Trovato misurando BUG-075, non segnalato al banco. Stessa causa di fondo — lo zoom rimpicciolisce l'altezza disponibile e le misure fisse no — ma un'altra schermata e un'altra struttura, quindi un lavoro a se'.
+#### BUG-097 — Il conto si apre senza sapere chi lo guarda: per un attimo il banco vede la schermata della sala
 
-COSA SUCCEDE. La schermata del conto e' alta quanto lo schermo ('calc(100dvh / var(--zoom, 1))') con 'overflow: hidden', e in fondo ha una pila di tasti che non si stringe. Quando la somma delle fasce fisse supera l'altezza, gli ultimi tasti finiscono FUORI dal riquadro e niente scorre per andarli a prendere: sono irraggiungibili, non solo scomodi. A scorrere e' la lista delle righe, che pero' e' sopra e non aiuta.
+Aprendo un conto, `ruolo` parte da `null` e diventa quello vero solo quando il token risponde (`getIdTokenResult`, una promessa). Nel mezzo `puoGestireComande(null)` e' falso, quindi al primo disegno la schermata si comporta come se a guardarla fosse la sala: i passi della preparazione non ci sono, «Annulla ordine» e' spento, e i tasti di divisione della comanda non compaiono. Un istante dopo arrivano tutti insieme. Al banco vuol dire una schermata che si assesta sotto le mani nel momento in cui ci si appoggia il dito — e col token scaduto o la rete lenta quel momento si allunga: si tocca «Annulla» e non risponde, si tocca di nuovo e intanto e' diventato attivo. Trovato mentre si ripulivano gli avvisi `act(...)` della suite (agosto 2026): erano proprio quei tre aggiornamenti che atterravano a test finito. I test adesso lo aspettano, quindi la schermata che verificano e' quella completa — ma il ritardo nel prodotto resta. Comportamento atteso: chi apre un conto vede subito la schermata del proprio ruolo. Il ruolo e' gia' noto altrove nell'app (il gestionale non si apre senza), e va tenuto da parte invece di richiederlo da capo a ogni montaggio — per esempio ricordandolo come si fa col numero di conto previsto (`progressivi.js`, «se un dato serve e non c'e', si precarica»).
 
-MISURATO IN CHROME (conto aperto, 63 combinazioni di finestra e zoom): 16 combinazioni con almeno un tasto fuori. Il primo a sparire e' «Annulla ordine», poi «Stato servizio», poi «Invia comanda» e «Pagamento». Su un portatile 1440x768 succede dal 160%; su una finestra alta 600px gia' dal 130%. Su schermi da 860px in su non succede mai fino al 160%.
+NON CORRETTO QUI: cambiarlo cambia cosa si vede al primo disegno, e questo giro era una pulizia degli avvisi, non un cambio di comportamento.
 
-DA DECIDERE: se il piede debba scorrere, se i tasti debbano andare a capo, o se le fasce fisse debbano seguire lo zoom come il tastierino del pagamento. La regola che non si tratta e' quella: nessun tasto finisce sotto o fuori senza un modo di arrivarci.
+**Dove**: `src/components/OrderPosDetail.jsx (effetto onAuthStateChanged, `ruolo`)`
 
-**Dove**: `src/components/OrderPosDetail.jsx (.posd-root, il piede del conto)`
+#### BUG-098 — Lo scontrino di chiusura cassa spesso non esce, e nessuno se ne accorge
+
+Segnalato da Flavio il 28/08/2026: «quando fanno la chiusura cassa, la stampante non stampa lo scontrino di chiusura molto spesso». I FATTI CHE HA DATO, e valgono piu' di qualunque lettura del codice: · durante la serata la stampante stampa SEMPRE — comande e scontrini escono anche nelle sere lente, con mezz'ora fra un ordine e l'altro; · la RISTAMPA della stessa chiusura, dalla lista delle serate, esce SUBITO; · quando non stampa NON compare nessun avviso; · la chiusura si fa dalla schermata della cassa (`CashFlow`), non dal riquadro della coda.
+
+COSA E' STATO ESCLUSO, con la verifica accanto, perche' il prossimo che ci mette mano non rifaccia la stessa strada: · NON e' la coda di stampa piantata: durante la serata stampa tutto; · NON e' la connessione morta per inattivita': stampa anche dopo mezz'ora di pausa, e il battito cardiaco c'e' anche in produzione; · NON e' un `await` che non torna: `closeCashSession` non restituisce niente, quindi la riga della stampa viene raggiunta; · NON e' una regressione: il codice della chiusura in produzione (1.5.5) e' IDENTICO a quello attuale, in tutte e due le schermate; · NON e' un interruttore che spegne la stampa: non esiste, e se manca l'IP della stampante il codice lancia un errore invece di tacere; · NON e' la schermata: i due test nuovi (`tests/component/ChiusuraCassaStampa.test.jsx`) dimostrano che la chiusura CHIEDE la stampa coi dati giusti e che un fallimento viene detto.
+
+RESTA QUINDI UN SOLO SPAZIO: la stampa parte, il codice la considera riuscita, e la carta non esce.
+
+LA CAUSA STRUTTURALE, che e' anche il motivo per cui il difetto e' difficile da inseguire:
+
+NON SAPPIAMO SE LA STAMPANTE HA STAMPATO. Il lavoro si considera finito quando `prn.send()` e' stato CHIAMATO, non quando la carta e' uscita. La stampante una risposta la manda — `onreceive`, con esito e codice: carta finita, coperchio aperto, fuori linea, tempo scaduto — ma nel codice quella risposta finisce in una riga di console, scollegata dal lavoro che l'ha causata. Non usiamo nessuno degli altri strumenti dell'SDK: ne' il monitoraggio di stato (`startMonitor`/`onstatuschange`), ne' il tempo massimo del dispositivo, ne' l'identificativo di lavoro sulla `send`.
+
+LA CURA, in due pezzi (com'e' stata scritta il 31/08; per il terzo pezzo previsto allora — il ritentativo automatico — vedi piu' sotto: e' stato tolto il giorno dopo):
+
+1) SAPERE COM'E' ANDATA: la risposta della stampante (`onreceive`) torna al foglio che l'ha causata invece di finire in console. La correlazione non ha bisogno di identificativi, che l'SDK non da': le risposte tornano nell'ordine degli invii, e si contano.
+
+2) LASCIARE TRACCIA: oggi una stampa fallita non lascia niente. L'avviso vive OTTO SECONDI in una striscia che compare insieme a quella verde «Cassa chiusa» — e con i toast che si accavallano (BUG-078) puo' passare inosservata — e la risposta della stampante finisce in una console che nessuno legge. Con una cassa che si chiude una volta a notte, cosi' si va per tentativi per settimane. Serve un registro delle stampe sul dispositivo: cosa, quando, esito.
+
+DA VERIFICARE AL BANCO, ed e' la domanda che dividerebbe in due il campo: alla prossima chiusura mancata, guardare il BASSO dello schermo per una decina di secondi. Se compare una striscia rossa, il testo dice gia' la causa e questo difetto si chiude in un pomeriggio. --- FATTO IL 31/08/2026 e RIVISTO IL 01/09/2026, sul ramo feature/lettura-ordini-ristretta. COM'E' ADESSO, in tre pezzi.
+
+1) LA RISPOSTA E' DIAGNOSTICA (REQ-STAMPA-016). La stampa si chiude sull'INVIO, come e' sempre stato: chi chiude cassa o batte una comanda ha il suo esito nell'istante in cui tocca. La risposta della stampante arriva DOPO e per conto suo, e serve solo a raccontare: aggiorna la voce gia' scritta nel registro. La correlazione non usa identificativi — le risposte tornano nell'ordine degli invii, e si contano — e para i due modi di sbagliare: la risposta di un foglio gia' passato (chi aspetta l'invio n scarta la risposta n-1) e quella che arriva da una connessione VECCHIA (si confronta anche l'oggetto stampante).
+
+2) SOLO GLI ERRORI FANNO RUMORE. Una risposta di errore manda un avviso, che si vede subito e resta nello storico della campanella: dice COSA non e' uscito e PERCHE' in parole da banco («Scontrino conto #42: la carta e' finita»), senza codici dell'SDK — quelli restano nel registro. Una risposta buona non dice niente a schermo. E lo stesso motivo non si ripete entro un minuto: con la stampante fuori linea falliscono dieci stampe di fila, e dieci strisce identiche sono peggio di una perche' si smette di leggerle.
+
+3) IL REGISTRO DELLE STAMPE (REQ-STAMPA-017), in Impostazioni → Stampante: cosa, quando, com'e' andata e il motivo, piu' lo stato della coda. Ogni stampa ci compare SUBITO come «inviata» e la voce si aggiorna dopo con l'esito vero — o resta «in attesa di risposta» se la stampante non parla mai, che e' un'informazione anche quella. Ultime 50 voci, niente dati personali, scritto di lato. Funziona identico con la stampante FINTA, che risponde come quella vera e sa fingere due guasti (carta finita, nessuna risposta) dal pannello Dev — cosi' la catena si prova senza andare al banco.
+
+IL RIPENSAMENTO DEL 01/09/2026, ed e' la cosa che serve fra sei mesi piu' della regola nuova. La prima stesura (31/08) aveva fatto una cosa diversa: aveva messo il lavoro ad ASPETTARE la risposta prima di chiudersi, con un ritentativo automatico e una memoria «questa stampante parla / non parla» per decidere quando valesse la pena aspettare. Sembrava prudente e non lo era: e' un `await` sulla stampante nel mezzo di un gesto, cioe' il divieto numero uno di questo progetto (CLAUDE.md, local-first). Al banco vuol dire che chi chiude cassa col locale pieno resta fermo davanti a una testina — la stessa cosa che non si fa aspettando Firestore. E tutta la macchina che ci stava intorno (attesa, ritentativo, contatori di silenzi, memoria della stampante muta) esisteva SOLO per rendere sopportabile quell'attesa: tolta l'attesa, e' stata tolta anche quella, perche' quello che non serve piu' resta li' a fare da trappola per chi legge.
+
+IL RITENTATIVO NON TORNA, ed e' una scelta, non una dimenticanza: senza attesa non c'e' piu' il momento in cui riprovare, la risposta e' solo diagnostica, e a ristampare e' una persona — che e' anche l'unico modo di non rischiare il doppio scontrino su una stampa che in realta' era uscita. Quello che resta e' il tempo massimo di 15 secondi sul lavoro impiccato (BUG-086): e' un'altra cosa, difende da un lavoro che non finisce, e li' la stampa RIFIUTA perche' il chiamante deve saperlo adesso.
+
+MITIGATO, NON CHIUSO, e la differenza e' importante: la causa vera non e' ancora DIMOSTRATA. Non sappiamo tuttora perche' proprio la chiusura di cassa, e non lo sapremo finche' non capitera' di nuovo al banco. Il registro delle stampe e l'avviso servono esattamente a questo: alla prossima chiusura mancata compare una striscia che dice cos'e' successo, e in Impostazioni → Stampante la riga dice se la stampante ha risposto di errore (e quale), se non ha risposto affatto, o se il lavoro non e' nemmeno partito. Da li' il difetto si chiude davvero. 06/09/2026 — UNA CAUSA CHE SPIEGHEREBBE TUTTO, e che nel frattempo e' stata trovata leggendo l'SDK per un'altra segnalazione (BUG-102): la vita del collegamento si chiedeva a `isConnected()`, che risponde di si' anche mentre l'SDK sta soltanto provando a riconnettersi. Un collegamento caduto restava quindi in memoria e ogni invio finiva nel vuoto, in silenzio. Perche' proprio la chiusura? Perche' e' la stampa che arriva dopo il buco piu' lungo senza stampare — durante il servizio le comande si susseguono e il collegamento resta caldo, mentre fra l'ultimo scontrino e la chiusura passano ore. E spiega anche perche' la RISTAMPA della stessa chiusura usciva subito: nel frattempo la stretta di mano era stata rifatta.
+
+NON SI CHIUDE LO STESSO. E' un'ipotesi che regge su tutti i fatti noti, non una prova: nessuno ha visto il registro di quella sera. La cura di BUG-102 e' in ogni caso quella che serve, e alla prossima chiusura mancata il registro dira' se era questa.
+
+**Dove**: `src/lib/printer.js (lavoroDiStampa, raccontaLaRisposta), src/lib/registroStampe.js, src/lib/notify.js, src/components/CashFlow.jsx`
 
 ## Non più valido
 
@@ -2559,3 +3231,9 @@ registro perché cancellarle vorrebbe dire riproporle fra sei mesi come idee
 nuove, ma **non sono specifica**: qui c'è solo il titolo.
 
 - `REQ-MENU-012` — In carta due tipi di voce: il prodotto e la ricetta
+- `REQ-SUMUP-CONFIG-001` — Le functions SumUp sono no-op se non configurate
+- `REQ-SUMUP-SYNC-001` — Sincronizzazione catalogo SumUp → Firestore drinks
+- `REQ-SUMUP-SYNC-002` — Normalizzazione robusta della risposta prodotti SumUp
+- `REQ-SUMUP-SALE-001` — Invio ordine a SumUp come External Sale
+- `REQ-SUMUP-STATUS-001` — Aggiornamento stato vendita su SumUp
+- `REQ-SUMUP-WEBHOOK-001` — Webhook SumUp → aggiornamento stato ordine Firestore

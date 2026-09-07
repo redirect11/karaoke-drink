@@ -134,11 +134,11 @@ import { ensureNotificationPermission, notify } from '../lib/notify.js'
 import { showToast } from '../lib/toast.js'
 import { beep, installAudioUnlock } from '../lib/beep.js'
 import { subscribePending, dismissPending, dismissBanner } from '../lib/pendingOrders.js'
-import { syncSumUpProducts, isSumUpEnabled } from '../lib/sumupApi.js'
 import { printComanda, printScontrino, loadPrinterSettings, reclaimReceiptPrint, releaseReceiptPrint, scontrinoGiaUscito, comandeDaStampare, claimComandaPrint, releaseComandaPrint } from '../lib/printer.js'
 import MenuManager from '../components/MenuManager.jsx'
 import PrinterSetup from '../components/PrinterSetup.jsx'
 import InventoryManager from '../components/InventoryManager.jsx'
+import FornitoriTab from '../components/FornitoriTab.jsx'
 import SettingsTab from '../components/SettingsTab.jsx'
 import PallinoStampante from '../components/PallinoStampante.jsx'
 import StatsTab from '../components/StatsTab.jsx'
@@ -199,6 +199,12 @@ export default function BartenderPage() {
   // "← Ordini" o il tasto indietro sembravano non fare niente — l'indirizzo
   // cambiava, la schermata no.
   const tabParam = params.get('tab')
+  // Le impostazioni del locale servono a sapere quali sezioni ESISTONO qui:
+  // le funzioni premium (REQ-LIC-001) tolgono voci a tutti, non a un ruolo.
+  // Dalla cache, come ovunque: nessuna lettura nuova, e nessuna sezione che
+  // lampeggia in attesa del server.
+  const [impostazioni, setImpostazioni] = useState(settingsIniziali)
+  useEffect(() => subscribeSettings(setImpostazioni, () => {}), [])
   useEffect(() => {
     setTab(tabParam || 'coda')
   }, [tabParam])
@@ -222,12 +228,12 @@ export default function BartenderPage() {
   // sopra. `replace`, non push: il tasto indietro deve uscire dal
   // gestionale, non rimbalzare su un indirizzo che non si può aprire.
   useEffect(() => {
-    if (!isGestore(role) || sezioneConsentita(tabParam, role)) return
+    if (!isGestore(role) || sezioneConsentita(tabParam, role, impostazioni)) return
     const next = new URLSearchParams(params)
     next.delete('tab')
     setParams(next, { replace: true })
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tabParam, role])
+  }, [tabParam, role, impostazioni])
 
   // L'elenco dello staff passa da una Cloud Function: lo si scalda appena si
   // entra nel gestionale, così quando si aprono i pannelli i nomi ci sono già
@@ -327,7 +333,7 @@ export default function BartenderPage() {
     ? tab === 'servizio'
       ? 'servizio'
       : 'coda'
-    : sezioneConsentita(tab, role)
+    : sezioneConsentita(tab, role, impostazioni)
       ? tab
       : 'coda'
 
@@ -368,6 +374,7 @@ export default function BartenderPage() {
         {tabEffettivo === 'bilancio' && <BilancioTab />}
         {tabEffettivo === 'menu' && <MenuTab />}
         {tabEffettivo === 'inventario' && <InventoryManager />}
+        {tabEffettivo === 'fornitori' && <FornitoriTab />}
         {(tabEffettivo === 'staff' || tabEffettivo === 'ore') && <StaffHoursTab />}
         {tabEffettivo === 'utenti' && <UtentiTab role={role} />}
         {/* I buoni VIP sono un pannello di "Utenti e ruoli": qui restano
@@ -384,60 +391,7 @@ export default function BartenderPage() {
 }
 
 function MenuTab() {
-  const [syncing, setSyncing] = useState(false)
-  const [syncResult, setSyncResult] = useState(null)
-
-  async function handleSync() {
-    setSyncing(true)
-    setSyncResult(null)
-    try {
-      const res = await syncSumUpProducts()
-      if (res.skipped) {
-        setSyncResult({ ok: false, msg: res.message || 'SumUp non abilitato.' })
-      } else {
-        setSyncResult({ ok: true, msg: `Sincronizzati ${res.synced} prodotti da SumUp POS Pro.` })
-      }
-    } catch (e) {
-      setSyncResult({ ok: false, msg: `Errore: ${e.message}` })
-    } finally {
-      setSyncing(false)
-    }
-  }
-
-  return (
-    <div>
-      {/* Box sync visibile solo con l'integrazione SumUp abilitata. */}
-      {isSumUpEnabled && (
-      <div className="card" style={{ marginBottom: 8 }}>
-        <div className="row between" style={{ alignItems: 'center' }}>
-          <div>
-            <strong>SumUp POS Pro</strong>
-            <div className="muted" style={{ fontSize: '0.85rem' }}>
-              Importa il catalogo drink direttamente da SumUp POS Pro.
-            </div>
-          </div>
-          <button
-            className="btn small"
-            disabled={syncing}
-            onClick={handleSync}
-            style={{ marginLeft: 12, flexShrink: 0 }}
-          >
-            {syncing ? 'Sync…' : '↻ Sync catalogo'}
-          </button>
-        </div>
-        {syncResult && (
-          <div
-            className={syncResult.ok ? '' : 'banner'}
-            style={syncResult.ok ? { marginTop: 8, color: 'var(--green, #4caf50)', fontSize: '0.9rem' } : { marginTop: 8 }}
-          >
-            {syncResult.msg}
-          </div>
-        )}
-      </div>
-      )}
-      <MenuManager />
-    </div>
-  )
+  return <MenuManager />
 }
 
 function LoginForm() {

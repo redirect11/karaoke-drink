@@ -34,6 +34,12 @@ Regole non negoziabili, per intero in [docs/gitflow.md](docs/gitflow.md).
   aspetta un'approvazione a mano su GitHub.
 - La versione `x.y.z` si tagga su `develop` subito prima del merge su
   `main`.
+- **Appena una versione esce, `package.json` sul ramo di lavoro torna
+  subito alla PROSSIMA col `-beta`** (1.5.5 uscita -> `1.5.6-beta`). E'
+  il primo commit della linea nuova, non una cosa da ricordarsi dopo:
+  senza, in locale e sul test si legge il numero di quella gia' uscita e
+  non si capisce piu' se quello che si ha davanti contiene le modifiche
+  di oggi.
 
 Per un agente che apre una pull request: la PR va **verso il
 `release/x.y.z` aperto** (o verso `develop` se non ce n'è uno), mai verso
@@ -222,12 +228,14 @@ il service account di runtime (`8401382511-compute@developer…`): serve
 cloudbuild, artifactregistry, run, eventarc, pubsub, serviceusage, storage.
 Richiede il piano Blaze, ma per un bar resta nel tier gratuito.
 
-**`functions/.env` è committato apposta**, con valori vuoti, ed è esentato
-nel `.gitignore`. Le Functions leggono `SUMUP_VENDOR_ID` e
-`SUMUP_OUTLET_ID` da `process.env`: senza quel file il deploy non
-interattivo si blocca a chiedere i valori da tastiera. Valori vuoti = SumUp
-spento. Per accenderlo davvero **non** si scrivono le credenziali lì:
-`firebase functions:secrets:set`, e lato sito `VITE_SUMUP_ENABLED=true`.
+**`functions/.env` è committato apposta**, ed è esentato nel `.gitignore`:
+è il posto dichiarato per la configurazione **non segreta** delle Functions,
+e serve a far passare il deploy non interattivo, che senza un valore — anche
+vuoto — per le variabili attese si blocca a chiederle da tastiera. Oggi non
+contiene nessuna variabile: le due che ci stavano (`SUMUP_VENDOR_ID`,
+`SUMUP_OUTLET_ID`) erano di **SumUp Cassa Pro**, rimossa il 26/08/2026. I
+segreti veri lì non ci vanno mai: `firebase functions:secrets:set` — è così
+che vive `SUMUP_API_KEY`, la chiave del **lettore**, che resta.
 
 **La bozza del POS non si perde mai.** Le righe non confermate sopravvivono
 all'uscita dalla schermata (chiave `new` in creazione, id ordine in

@@ -34,6 +34,10 @@ const sessioni = [
     opened_at: '2026-08-21T17:00:00.000Z',
     closed_at: '2026-08-22T00:30:00.000Z',
     snapshot: { incassato: 1240.5, nPagati: 31, byMethod: { contanti: 1240.5 } },
+    // Chi ha chiuso e quanto aveva contato: la ristampa deve riportarli
+    // sulla carta, non metterci chi sta ristampando adesso.
+    closed_by: { email: 'flavio@tana.it' },
+    counted_cash: 1200,
   },
   // Una serata più indietro: fra questa e quella del 21 resta scoperto il
   // 20, ed è il giorno su cui si prova la ricerca a vuoto.
@@ -53,6 +57,14 @@ vi.mock('../../src/lib/api.js', () => ({
   fetchInventoryItems: vi.fn(async () => []),
 }))
 vi.mock('../../src/lib/printer.js', () => ({ printChiusuraCassa: vi.fn(async () => {}) }))
+
+// Gli avvisi a schermo: la ristampa che non riesce deve dirlo, e per
+// vederlo bisogna guardare dove finisce.
+const avvisoErrore = vi.fn()
+vi.mock('../../src/lib/toast.js', () => ({
+  toastError: (...a) => avvisoErrore(...a),
+  toastSuccess: vi.fn(),
+}))
 
 const { default: CashSessionsList } = await import('../../src/components/CashSessionsList.jsx')
 
@@ -353,5 +365,77 @@ describe('le chiusure raggruppate per settimana e per mese', () => {
     render(<CashSessionsList />)
     await screen.findByText(/agosto 2026/)
     expect(gettone('Mese').className).toMatch(/\bactive\b/)
+  })
+})
+
+// ── LA RISTAMPA DELLA CHIUSURA (BUG-098) ─────────────────────────────
+//
+// «La ristampa della stessa chiusura, dalla lista delle serate, esce
+// subito» (Flavio, 28/08/2026): è il fatto che ha dato la direzione a
+// tutto il resto — la stessa carta, dagli stessi dati, dalla stessa
+// stampante, ma da un'altra strada. Ed era scoperta: il tasto c'era e
+// nessun test lo premeva.
+describe('la ristampa della chiusura, dalla lista delle serate', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+    // Il raggruppamento si ricorda su questo terminale: qui la lista deve
+    // essere quella delle SERATE, o la riga della chiusura non c'è.
+    localStorage.clear()
+  })
+
+  // Il tasto vive dentro il dettaglio della riga, che si apre toccandola.
+  const apriLaSerataChiusa = async (user) => {
+    const riga = (await screen.findByText(/1\.240,50/)).closest('.inv-row')
+    await user.click(riga.querySelector('button.inv-row-main'))
+    await waitFor(() => expect(riga.querySelector('.inv-row-dettaglio')).not.toBe(null))
+    return riga
+  }
+
+  it('ristampa la serata giusta, e chi l’aveva chiusa resta chi l’aveva chiusa', async () => {
+    const { printChiusuraCassa } = await import('../../src/lib/printer.js')
+    const user = userEvent.setup()
+    render(<CashSessionsList />)
+    await apriLaSerataChiusa(user)
+    await user.click(await screen.findByRole('button', { name: /Ristampa chiusura/i }))
+
+    await waitFor(() => expect(printChiusuraCassa).toHaveBeenCalledTimes(1))
+    const [snap, sessione, opzioni] = printChiusuraCassa.mock.calls[0]
+    expect(sessione.id).toBe('chiusa')
+    // IL FOGLIO E LO SCHERMO RACCONTANO LA STESSA SERATA. Con la riga
+    // aperta il riepilogo è quello RICALCOLATO dagli ordini — vedi il
+    // commento in CashSessionsList: le serate chiuse con una versione
+    // vecchia avevano le carte finite nel secchio dei contanti — e la
+    // ristampa parte da lì, non dallo snapshot vecchio. Qui gli ordini non
+    // ci sono, quindi il ricalcolo è a zero: quello che conta è che sia lo
+    // STESSO numero che si legge sulla riga.
+    expect(snap.incassato).toBe(0)
+    // Operatore e contante contato sono quelli di ALLORA: la chiusura è la
+    // fotografia di una serata finita, e chi ristampa oggi non ci entra.
+    expect(opzioni.by).toBe('flavio@tana.it')
+    expect(opzioni.countedCash).toBe(1200)
+  })
+
+  it('e se non esce, il banco lo viene a sapere', async () => {
+    const { printChiusuraCassa } = await import('../../src/lib/printer.js')
+    printChiusuraCassa.mockRejectedValueOnce(new Error('la carta è finita'))
+    const user = userEvent.setup()
+    render(<CashSessionsList />)
+    await apriLaSerataChiusa(user)
+    await user.click(await screen.findByRole('button', { name: /Ristampa chiusura/i }))
+
+    await waitFor(() => expect(avvisoErrore).toHaveBeenCalledTimes(1))
+    expect(String(avvisoErrore.mock.calls[0][0])).toMatch(/la carta è finita/)
+  })
+
+  it('la serata ANCORA APERTA non si ristampa: quel foglio non esiste', async () => {
+    // Lo snapshot nasce alla chiusura. Un tasto che stampasse una serata
+    // in corso farebbe uscire un foglio di chiusura di una cassa aperta,
+    // che in contabilità è peggio di nessun foglio.
+    const user = userEvent.setup()
+    render(<CashSessionsList />)
+    const riga = (await screen.findByText('in corso')).closest('.inv-row')
+    await user.click(riga.querySelector('button.inv-row-main'))
+    await waitFor(() => expect(riga.querySelector('.inv-row-dettaglio')).not.toBe(null))
+    expect(riga.querySelector('.inv-row-dettaglio').textContent).not.toMatch(/Ristampa/)
   })
 })

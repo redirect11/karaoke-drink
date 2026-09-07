@@ -68,9 +68,18 @@ describe('quando il locale non ha scelto niente', () => {
 
   it('e le parole di oggi', () => {
     const cfg = configStampa(undefined, 'comanda')
-    expect(cfg.testo('fascia')).toBe('DIRETTO')
     expect(cfg.testo('sottotitolo')).toBe('Il tuo menu')
     expect(cfg.testo('conteggio')).toBe('CONTATORIE')
+  })
+
+  // LA FASCIA NON HA PIÙ PAROLE DA SCRIVERE (BUG-089): dice quale ticket
+  // è, e quel contenuto viene dai dati. Un locale che aveva scritto la
+  // sua parola non trova niente di rotto — quel testo non viene più
+  // letto, e la fascia esce piena lo stesso.
+  it('la fascia non ha parole, e quelle salvate ieri non la rompono', () => {
+    expect(configStampa(undefined, 'comanda').testo('fascia')).toBe('')
+    const conVecchio = configStampa({ stampa_comanda: { testi: { fascia: 'CUCINA' } } }, 'comanda')
+    expect(conVecchio.mostra('fascia')).toBe(true)
   })
 
   // UN CAMPO CHE NESSUNO HA ELENCATO SI STAMPA. Se domani printer.js

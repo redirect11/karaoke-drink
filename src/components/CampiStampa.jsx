@@ -202,9 +202,9 @@ export function LogoStampe({ settings, onSave, role = null }) {
     <div className="card settings-section">
       <h3>Logo sulle stampe</h3>
       <p className="muted" style={{ margin: '0 0 12px', fontSize: '0.9rem' }}>
-        Il logo si stampa in bianco e nero, largo poco meno di metà carta. Scegli
-        su quali stampe farlo uscire: sulla comanda, al banco, è solo carta e
-        inchiostro.
+        Il logo si stampa in bianco e nero, largo poco meno di metà carta.
+        Scegli su quali stampe farlo uscire: di solito su quelle che restano
+        al cliente.
       </p>
 
       {TIPI_LOGO.map((tipo) => (

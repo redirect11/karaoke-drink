@@ -8,7 +8,7 @@
 // si accende la prima card trovata e ce la si porta sotto gli occhi.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import '@testing-library/jest-dom/vitest'
 
@@ -210,11 +210,14 @@ describe('la striscia delle tile', () => {
     expect(bordo(container, 'Mojito')).toBe('var(--line)')
   })
 
-  it('«scorte»: senza ricetta collegata non si inventa un allarme', () => {
+  it('«scorte»: senza ricetta collegata non si inventa un allarme', async () => {
     // Un drink senza ingredienti in magazzino non è «esaurito»: non lo
     // sappiamo, e col verde spento resta grigio.
     const { container } = mostra({ modoStriscia: 'scorte' })
-    expect(bordo(container, 'Mojito')).toBe('var(--line)')
+    // Con la striscia «scorte» la griglia va a prendersi il magazzino, e la
+    // risposta arriva dopo il primo disegno: si aspetta, se no si guarda la
+    // griglia di prima e l'aggiornamento cade fuori dal test.
+    await waitFor(() => expect(bordo(container, 'Mojito')).toBe('var(--line)'))
   })
 
   it('senza indicazioni resta il modo di sempre: il colore del prodotto', () => {
@@ -244,5 +247,44 @@ describe('la striscia delle tile', () => {
     const nastro = card.querySelector('.pos-tile-nastro')
     expect(nastro).toBeTruthy()
     expect(nastro.style.borderTopColor).not.toBe('var(--line)')
+  })
+})
+
+// ── CANCELLARE LA RICERCA CON UN TOCCO ───────────────────────────────
+//
+// Chiesto da Flavio il 03/09/2026, con la foto del campo cerchiato:
+// «nella selezione degli items di menu aggiungere qui il tastino di
+// cancellazione scrittura». La ✕ nativa dei campi `search` non c'è su tutte
+// le piattaforme, e dov'è è un bersaglio da mouse: qui si batte col dito,
+// di sera, con una mano occupata. Chi cerca un drink e non lo trova deve
+// poter ripartire senza cancellare lettera per lettera.
+describe('cancellare la ricerca', () => {
+  it('il tastino compare solo quando c’è qualcosa da cancellare', async () => {
+    const user = userEvent.setup()
+    mostra()
+    // A campo vuoto non c'è: un tasto che non fa niente è un tasto in più
+    // da capire.
+    expect(screen.queryByLabelText('Cancella la ricerca')).toBeNull()
+    await user.type(screen.getByLabelText('Cerca prodotto'), 'negro')
+    expect(screen.getByLabelText('Cancella la ricerca')).toBeInTheDocument()
+  })
+
+  it('svuota la ricerca e le card tornano tutte', async () => {
+    const user = userEvent.setup()
+    const { cards } = mostra()
+    await user.type(screen.getByLabelText('Cerca prodotto'), 'negro')
+    expect(cards()).toHaveLength(2)
+    await user.click(screen.getByLabelText('Cancella la ricerca'))
+    expect(screen.getByLabelText('Cerca prodotto')).toHaveValue('')
+    expect(cards()).toHaveLength(drinks.length)
+  })
+
+  it('e lascia il fuoco nel campo, perché il gesto dopo é riscrivere', async () => {
+    const user = userEvent.setup()
+    mostra()
+    const campo = screen.getByLabelText('Cerca prodotto')
+    await user.type(campo, 'negro')
+    await user.click(screen.getByLabelText('Cancella la ricerca'))
+    expect(document.activeElement).toBe(campo)
   })
 })

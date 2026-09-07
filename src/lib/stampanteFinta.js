@@ -46,6 +46,43 @@ export function forzaStampanteFinta(attiva) {
   }
 }
 
+// ── IL GUASTO FINTO (BUG-098) ────────────────────────────────────────
+//
+// La diagnostica della stampa — la risposta che arriva DOPO l'invio e
+// racconta com'è andata — è una catena lunga: risposta di errore, registro,
+// avviso a schermo. Senza un modo di romperla apposta, quella catena si
+// prova solo al banco con la carta finita in mano, che è esattamente il
+// motivo per cui BUG-098 è sopravvissuto tanto.
+//
+// La stampante finta sa quindi fingere due guasti:
+//   · `carta` — risponde di errore, come quando il rotolo è finito;
+//   · `muta` — la carta esce ma non conferma niente, che è il caso
+//     sospettato dietro la chiusura di cassa che non si vede uscire.
+//
+// NON PUÒ CAPITARE PER SBAGLIO IN PRODUZIONE: lo legge solo la stampante
+// FINTA, che in produzione non si accende, e la leva sta nel pannello Dev,
+// che esiste solo in locale e sul test (devToolsEnabled).
+const CHIAVE_GUASTO = 'tana_stampante_finta_guasto'
+export const GUASTI_FINTI = ['carta', 'muta']
+
+export function guastoFinto() {
+  try {
+    const v = localStorage.getItem(CHIAVE_GUASTO)
+    return GUASTI_FINTI.includes(v) ? v : null
+  } catch {
+    return null
+  }
+}
+
+export function impostaGuastoFinto(quale) {
+  try {
+    if (GUASTI_FINTI.includes(quale)) localStorage.setItem(CHIAVE_GUASTO, quale)
+    else localStorage.removeItem(CHIAVE_GUASTO)
+  } catch {
+    /* niente memoria: nessuna simulazione, che è il caso normale */
+  }
+}
+
 export function stampanteFintaAttiva(env = import.meta.env) {
   // La scelta del terminale vince su tutto: è chi sta provando a dire
   // «qui la stampante è finta» (o «voglio quella vera anche in locale»).
@@ -157,9 +194,21 @@ export function creaStampanteFinta(titolo = 'Stampa') {
     // per rimetterlo in cima al facsimile.
     addImageUrl: (url) => (pezzi.push({ tipo: 'logo', url }), finta),
     send: () => {
+      const guasto = guastoFinto()
+      // Carta finita: la testina non stampa niente e lo dice. Il facsimile
+      // non si apre, come non esce la carta.
+      if (guasto === 'carta') {
+        pezzi.length = 0
+        finta.onreceive?.({ success: false, code: 'ASB_NO_PAPER', status: 0 })
+        return finta
+      }
       const logo = pezzi.find((p) => p.tipo === 'logo')?.url || null
       mostra(componi(pezzi), titolo, logo)
       pezzi.length = 0
+      // Stampante muta: la carta esce e la conferma non arriva mai. È il
+      // caso peggiore da riconoscere, e il solo che questa simulazione
+      // riproduce facendo MENO, non di più.
+      if (guasto === 'muta') return finta
       // L'SDK vero avvisa così: qualcuno guarda `onreceive`.
       finta.onreceive?.({ success: true, code: '', status: 0 })
       return finta

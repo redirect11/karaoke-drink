@@ -24,6 +24,16 @@ const impostazioni = vi.hoisted(() => ({
   queue_view: 'tabs',
   service_mode: 'banco',
   cancel_phrase_default: 'bancone',
+  // I MODULI PREMIUM (REQ-LIC-001) come li scrive il documento del bar:
+  // qui ci sono solo gli interruttori D'USO, che dicono se il locale li sta
+  // usando. Cosa il locale HA lo dice la licenza (licenza.js), e per queste
+  // prove è quella vera: scadenzario incluso, conta no.
+  // Le chiavi stanno QUI e non solo nella prova che le cambia: l'assign del
+  // beforeEach aggiunge, non toglie, e un valore scritto da una prova
+  // resterebbe addosso a tutte quelle dopo.
+  modulo_conta_enabled: true,
+  modulo_scadenzario_enabled: true,
+  licenza: null,
 }))
 const IMPOSTAZIONI_BASE = { ...impostazioni }
 
@@ -60,7 +70,7 @@ vi.mock('../../src/components/ThemeSettings.jsx', () => ({
   TemaMenuClienti: () => <div>COLORI MENÙ CLIENTI</div>,
 }))
 
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter } from '../helpers/router.jsx'
 import SettingsTab from '../../src/components/SettingsTab.jsx'
 import { subscribeSottosezioni } from '../../src/lib/sottosezioni.js'
 import { useEffect, useState } from 'react'
@@ -148,6 +158,7 @@ describe('impostazioni a schede', () => {
       'Gruppi di ordini',
       'Clienti',
       'Stampante',
+      'Funzioni premium',
       'Sistema',
     ]) {
       expect(screen.getByRole('button', { name: new RegExp(voce) })).toBeInTheDocument()
@@ -327,5 +338,114 @@ describe('gli interruttori dei tasti di incasso stanno in Pagamenti', () => {
     await apriPagamenti(user)
     expect(screen.queryByText('Un tasto per incassare e servire insieme')).toBeNull()
     expect(screen.getByText('Un tasto per incassare senza stampare')).toBeInTheDocument()
+  })
+})
+
+// ── LE FUNZIONI PREMIUM ───────────────────────────────────
+// REQ-LIC-001. Le due funzioni che questa installazione non ha restano in
+// elenco: spente, non toccabili, e AL TOCCO DICONO PERCHÉ. Rimettendo il
+// difetto — `disabled` al posto di `aria-disabled` — la terza prova qui
+// sotto diventa rossa, perché il tocco non parte nemmeno.
+describe('le funzioni premium (REQ-LIC-001)', () => {
+  const apriPremium = async (user) => {
+    await user.click(screen.getByRole('button', { name: /Funzioni premium/ }))
+  }
+  const interruttoreDi = (etichetta) =>
+    screen.getByText(etichetta).closest('.toggle-row').querySelector('input[type="checkbox"]')
+
+  it('le due funzioni ci sono, e dicono cosa fanno e come sono messe', async () => {
+    const user = userEvent.setup()
+    mostra()
+    await apriPremium(user)
+    expect(screen.getByRole('heading', { name: 'Funzioni premium' })).toBeInTheDocument()
+    expect(screen.getByText('Conta di magazzino')).toBeInTheDocument()
+    expect(screen.getByText('Fatture ai fornitori')).toBeInTheDocument()
+    // Le due fatture stanno una sotto l'altra e sono mestieri opposti:
+    // l'etichetta deve dire di chi sono senza doverle aprire.
+    expect(screen.getByText('Fatture ai clienti')).toBeInTheDocument()
+    // Il registro è professionale: si dice cosa fa e com'è messa, niente
+    // toni da venditore (DESIGN.md, guardrail 3).
+    expect(screen.getAllByText(/Funzione premium: non inclusa\./).length).toBeGreaterThan(0)
+    expect(screen.getByText(/Funzione premium, inclusa in questa installazione\./)).toBeInTheDocument()
+    expect(screen.queryByText(/sblocca|acquista|scopri/i)).toBeNull()
+  })
+
+  it('quella NON INCLUSA è spenta e non si tocca', async () => {
+    const user = userEvent.setup()
+    mostra()
+    await apriPremium(user)
+    const interruttore = interruttoreDi('Conta di magazzino')
+    expect(interruttore).not.toBeChecked()
+    expect(interruttore).toHaveAttribute('aria-disabled', 'true')
+  })
+
+  it('e al tocco dice perché, invece di non fare niente', async () => {
+    // La ragione dei metodi di pagamento non disponibili: `disabled` non fa
+    // partire l'evento, e chi preme resta a premere un tasto morto.
+    const { subscribeToasts, dismissToast } = await import('../../src/lib/toast.js')
+    let visti = []
+    const stop = subscribeToasts((t) => {
+      visti = t
+    })
+    const user = userEvent.setup()
+    const { updateSettings } = await import('../../src/lib/api.js')
+    mostra()
+    await apriPremium(user)
+    // Le altre prove hanno già salvato roba: qui conta solo cosa succede
+    // DA questo tocco in poi.
+    updateSettings.mockClear()
+    await user.click(interruttoreDi('Conta di magazzino'))
+    expect(visti.some((t) => /premium/i.test(t.message))).toBe(true)
+    // E soprattutto: NON si è acceso niente.
+    expect(updateSettings).not.toHaveBeenCalled()
+    expect(interruttoreDi('Conta di magazzino')).not.toBeChecked()
+    visti.forEach((t) => dismissToast(t.id))
+    stop()
+  })
+
+  it('quella INCLUSA è accesa, si tocca, e si spegne davvero', async () => {
+    // Quello che il locale ha comprato lo accende e lo spegne come ogni
+    // altra impostazione: premium non vuol dire bloccato.
+    const user = userEvent.setup()
+    const { updateSettings } = await import('../../src/lib/api.js')
+    mostra()
+    await apriPremium(user)
+    const interruttore = interruttoreDi('Fatture ai fornitori')
+    expect(interruttore).toBeChecked()
+    expect(interruttore).not.toHaveAttribute('aria-disabled')
+    expect(interruttore).toBeEnabled()
+
+    updateSettings.mockClear()
+    await user.click(interruttore)
+    expect(updateSettings).toHaveBeenCalledWith({ modulo_scadenzario_enabled: false })
+  })
+
+  it('spenta a mano, resta toccabile: è inclusa, non è sparita', async () => {
+    impostazioni.modulo_scadenzario_enabled = false
+    const user = userEvent.setup()
+    const { updateSettings } = await import('../../src/lib/api.js')
+    mostra()
+    await apriPremium(user)
+    const interruttore = interruttoreDi('Fatture ai fornitori')
+    expect(interruttore).not.toBeChecked()
+    expect(interruttore).not.toHaveAttribute('aria-disabled')
+    expect(screen.getByText(/Funzione premium, inclusa in questa installazione\./)).toBeInTheDocument()
+
+    updateSettings.mockClear()
+    await user.click(interruttore)
+    expect(updateSettings).toHaveBeenCalledWith({ modulo_scadenzario_enabled: true })
+  })
+
+  it('la licenza che include la conta le sblocca l’interruttore', async () => {
+    // Il punto di innesto della Fase 3, visto dalla schermata: cambia il
+    // DATO, e la riga passa da bloccata a normale senza toccare il codice.
+    impostazioni.licenza = { moduli: { conta: true, scadenzario: true } }
+    const user = userEvent.setup()
+    mostra()
+    await apriPremium(user)
+    const interruttore = interruttoreDi('Conta di magazzino')
+    expect(interruttore).toBeChecked()
+    expect(interruttore).not.toHaveAttribute('aria-disabled')
+    expect(screen.getAllByText(/Funzione premium, inclusa in questa installazione\./)).toHaveLength(2)
   })
 })

@@ -1,7 +1,7 @@
 'use strict'
 
-// Mock minimale di Firestore per i test BDD delle functions SumUp.
-// Supporta solo il sottoinsieme di API usato da functions/lib/sumup-service.js:
+// Mock minimale di Firestore per i test BDD delle Cloud Functions.
+// Supporta solo il sottoinsieme di API usato da functions/lib/payment-service.js:
 //   db.collection(name)
 //     .where(field, op, value).limit(n).get() → { empty, docs: [{ id, ref, data() }] }
 //     .add(data) → ref

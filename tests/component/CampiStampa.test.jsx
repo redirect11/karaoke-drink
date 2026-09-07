@@ -47,7 +47,7 @@ describe('cosa si può togliere dallo scontrino', () => {
 
   it('di suo è tutto acceso: è la carta di oggi', () => {
     pannello('scontrino')
-    expect(screen.getByLabelText('Chi ha battuto il conto')).toBeChecked()
+    expect(screen.getByLabelText('Chi stampa lo scontrino')).toBeChecked()
     // Tranne la riga di saluto, che oggi non c'è.
     expect(screen.getByLabelText('Riga di saluto')).not.toBeChecked()
   })
@@ -55,7 +55,7 @@ describe('cosa si può togliere dallo scontrino', () => {
   it('spegnere un campo lo scrive nelle impostazioni del locale', async () => {
     const user = userEvent.setup()
     pannello('scontrino')
-    await user.click(screen.getByLabelText('Chi ha battuto il conto'))
+    await user.click(screen.getByLabelText('Chi stampa lo scontrino'))
     expect(salva).toHaveBeenCalledWith({
       stampa_scontrino: { campi: { operatore: false } },
     })
@@ -94,12 +94,17 @@ describe('i campi che sono puro testo', () => {
     expect(screen.getByLabelText('Cosa c’è scritto')).toBeInTheDocument()
   })
 
-  it('sulla comanda si cambiano le parole della fascia', () => {
+  // LA FASCIA NON HA PIÙ UNA CASELLA (BUG-089): dice quale ticket è
+  // («COMANDA 2 - ORDINE 28») e quel contenuto viene dai dati. Le righe
+  // di servizio, che sono etichette e non fatti, le parole ce l'hanno
+  // ancora.
+  it('la fascia si accende e si spegne, ma non si scrive', () => {
     pannello('comanda')
-    const casella = screen.getByLabelText('Cosa c’è scritto nella fascia')
-    expect(casella).toHaveValue('DIRETTO')
+    expect(screen.getByLabelText('Fascia nera in cima')).toBeChecked()
+    expect(screen.queryByLabelText('Cosa c’è scritto nella fascia')).toBeNull()
+    const casella = screen.getByLabelText('Come si chiama il reparto')
     fireEvent.change(casella, { target: { value: 'CUCINA' } })
-    expect(salva).toHaveBeenLastCalledWith({ stampa_comanda: { testi: { fascia: 'CUCINA' } } })
+    expect(salva).toHaveBeenLastCalledWith({ stampa_comanda: { testi: { reparto: 'CUCINA' } } })
   })
 })
 

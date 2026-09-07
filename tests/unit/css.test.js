@@ -1364,3 +1364,132 @@ describe('le righe delle liste sono un bersaglio da dito', () => {
     }
   })
 })
+
+// ── NEL CONTO NIENTE FINISCE FUORI DALLO SCHERMO (BUG-077) ───────────
+//
+// Lo zoom dell'app scala `#root`, quindi al 160% l'altezza disponibile in
+// pixel CSS è i due terzi. Le misure fisse non lo sanno, e chi non cede
+// spinge fuori chi viene dopo: i tasti in fondo al conto finivano sotto il
+// bordo del riquadro, con `overflow: hidden` sopra e niente da scorrere per
+// andarli a prendere. Irraggiungibili, non scomodi. Misurato in Chrome:
+// 40 combinazioni di finestra e zoom su 77.
+//
+// Jsdom non fa layout: qui si sorveglia dal foglio la manciata di righe che
+// tengono in piedi la cura. Sono quelle che, tolte, riportano il difetto —
+// provato togliendole una per una. La STRUTTURA su cui si appoggiano (gli
+// involucri nel componente) sta in tests/component/OrderPosDetail.test.jsx.
+describe('il conto si stringe, e quello che conta resta', () => {
+  const css = () => readFileSync(join(CARTELLA, 'index.css'), 'utf8')
+
+  function regola(nome) {
+    const testo = css().replace(/\/\*[\s\S]*?\*\//g, '')
+    const i = testo.indexOf(A_CAPO + nome + ' {')
+    expect(i, nome + ' non esiste piu’ nel foglio').toBeGreaterThan(-1)
+    return testo.slice(i, testo.indexOf('}', i))
+  }
+
+  // LA REGOLA, in una riga: qui dentro non cede mai la riga con «Invia
+  // comanda» e «Pagamento». Tutto il resto ha un pavimento e poi scorre.
+  it('la riga con «Invia comanda» e «Pagamento» non si stringe mai', () => {
+    expect(
+      regola('.posd-comanda-foot .posd-foot-azioni .grid-2'),
+      'i due gesti della serata hanno ricominciato a cedere'
+    ).toMatch(/flex-shrink:\s*0/)
+  })
+
+  it('il piede puo’ stringersi, e `min-height: 0` e’ la riga che glielo permette', () => {
+    // Su `auto` varrebbe il minimo di CONTENUTO, e per un flex annidato
+    // Chrome lo calcola sommando le altezze piene dei figli: il piede non
+    // cedeva di un pixel e i tasti restavano fuori dal riquadro.
+    const r = regola('.posd-comanda-foot')
+    expect(r, 'il piede e’ tornato una fascia rigida').not.toMatch(/flex-shrink:\s*0/)
+    expect(r, 'senza min-height: 0 il piede non cede').toMatch(/min-height:\s*0/)
+    // L'ultima rete: se anche i pavimenti non bastassero, a scorrere è il
+    // piede — sempre meglio che veder sparire un tasto.
+    expect(r, 'il piede puo’ tornare a sbordare invece di scorrere').toMatch(
+      /overflow:\s*hidden auto/
+    )
+  })
+
+  it('testata, numeri e tasti secondari hanno un pavimento e poi scorrono', () => {
+    for (const [nome, pavimento] of [
+      ['.posd-testa', /min-height:\s*var\(--riga-lista\)/],
+      ['.posd-foot-info', /min-height:\s*[\d.]+em/],
+      ['.posd-foot-secondarie', /min-height:\s*var\(--riga-lista\)/],
+    ]) {
+      const r = regola(nome)
+      expect(r, nome + ' non ha piu’ un pavimento: puo’ schiacciarsi a zero').toMatch(pavimento)
+      expect(r, nome + ' non scorre piu’: quello che avanza sparisce').toMatch(
+        /overflow:\s*hidden auto/
+      )
+    }
+  })
+
+  it('i due tasti secondari sono alti una `--riga-lista`, non 44px secchi', () => {
+    // 44px diviso lo zoom: il bersaglio è una misura FISICA (DESIGN.md,
+    // guardrail 2). Al 160% 44px CSS sarebbero 70px veri, garanzia
+    // stravinta che intanto ruba l'altezza che serve ai tasti stessi. Così
+    // il tasto è alto quanto il pavimento del suo contenitore, e scorrendo
+    // se ne vede sempre uno intero, mai mezzo.
+    expect(regola('.posd-foot-secondarie .btn')).toMatch(/min-height:\s*var\(--riga-lista\)/)
+  })
+
+  it('sul telefono l’altezza del pannello e la riga dei tre gesti seguono lo zoom', () => {
+    // `50dvh` dentro `#root` scalato vale mezzo schermo in pixel CSS, che
+    // al 160% sono otto decimi di schermo veri: il pannello sfondava il
+    // corpo e il suo piede finiva sotto il bordo.
+    const testo = css().replace(/\/\*[\s\S]*?\*\//g, '')
+    expect(testo, 'l’altezza del pannello del telefono non segue piu’ lo zoom').toMatch(
+      /height:\s*calc\(\s*var\(--pos-comanda-h[^)]*\)\s*\/\s*var\(--zoom,\s*1\)\s*\)/
+    )
+    expect(
+      regola('.posd-foot-telefono .btn'),
+      'i tre gesti del telefono sono tornati a 52px secchi'
+    ).toMatch(/min-height:\s*calc\(\s*52px\s*\/\s*var\(--zoom,\s*1\)\s*\)/)
+    expect(
+      regola('.posd-foot-telefono'),
+      'la riga dei tre gesti si stringe invece di restare intera'
+    ).toMatch(/flex-shrink:\s*0/)
+  })
+})
+
+// ── LE FINESTRELLE DI CONFERMA NON SI TAGLIANO (BUG-076) ─────────────
+//
+// Centrare una cosa più alta dello schermo vuol dire tagliarla dai DUE
+// lati: sopra spariva il titolo, sotto il tasto che applica, e il velo è
+// fisso — non c'era niente da scorrere per arrivarci. Misurato in Chrome:
+// 4 combinazioni su 77 sul portatile, 22 su 77 sul telefono. Vale per
+// TUTTE le `.confirm-box` dell'app — sconto, buono, ripristino conto,
+// apertura e chiusura cassa, prodotto libero — quindi la cura è una sola
+// e sta qui, non in una schermata.
+describe('le finestrelle di conferma stanno nello schermo', () => {
+  const css = () => readFileSync(join(CARTELLA, 'index.css'), 'utf8')
+
+  function regola(nome) {
+    const testo = css().replace(/\/\*[\s\S]*?\*\//g, '')
+    const i = testo.indexOf(A_CAPO + nome + ' {')
+    expect(i, nome + ' non esiste piu’ nel foglio').toBeGreaterThan(-1)
+    return testo.slice(i, testo.indexOf('}', i))
+  }
+
+  it('centrare non taglia piu’ dalla cima', () => {
+    // `safe center`: quando la scatola non ci sta, il troppo esce solo di
+    // sotto — dove il velo scorre. Con `center` secco usciva anche da
+    // sopra, e sopra non si scorre mai: spariva il titolo.
+    const r = regola('.confirm-overlay')
+    expect(r, 'il velo e’ tornato a centrare in modo secco').toMatch(
+      /align-items:\s*safe center/
+    )
+    expect(r, 'il velo non scorre piu’').toMatch(/overflow-y:\s*auto/)
+  })
+
+  it('la finestrella non e’ mai piu’ alta dello schermo, e dentro scorre lei', () => {
+    const r = regola('.confirm-box')
+    expect(r, 'la finestrella puo’ tornare piu’ alta dello schermo').toMatch(
+      /max-height:\s*calc\(\s*100dvh\s*\/\s*var\(--zoom,\s*1\)/
+    )
+    expect(r, 'quello che avanza nella finestrella non si puo’ piu’ raggiungere').toMatch(
+      /overflow-y:\s*auto/
+    )
+  })
+})

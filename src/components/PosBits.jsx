@@ -27,6 +27,8 @@ export function DrinkTile({
   acceso = false, // acceso dalla ricerca: è la card che si sta cercando
 }) {
   const inCart = qty > 0
+  // Il colore degli altri tre lati: acceso quando la tile è nel conto.
+  const bordo = inCart ? 'rgba(var(--accent-rgb, 180, 120, 60), 0.7)' : 'var(--line)'
 
   return (
     <div
@@ -40,9 +42,19 @@ export function DrinkTile({
         inCart ? ' in-carrello' : ''
       }`}
       style={{
-        border: inCart
-          ? '2px solid rgba(var(--accent-rgb, 180, 120, 60), 0.7)'
-          : '1px solid var(--line)',
+        // IL COLORE DEI TRE LATI, UNO PER UNO — niente `border:` né
+        // `borderColor:`. Le scorciatoie riscrivono anche il lato sinistro,
+        // e qui sotto quel lato lo ricoloriamo apposta: messe insieme,
+        // quale delle due vince dipende dall'ordine in cui React applica le
+        // proprietà, cioè da cosa era cambiato nel disegno di prima. Il
+        // risultato è una striscia che ogni tanto torna grigia riscrivendo
+        // la tile — React lo segnala apposta, ed è la stessa trappola per
+        // qualunque coppia scorciatoia/lato singolo.
+        borderWidth: inCart ? '2px' : '1px',
+        borderStyle: 'solid',
+        borderTopColor: bordo,
+        borderRightColor: bordo,
+        borderBottomColor: bordo,
         // La striscia a sinistra col colore del prodotto: lo stesso segno
         // delle card della coda e del menù (il CSS la ispessisce).
         borderLeftColor: striscia || color || 'var(--line)',

@@ -44,6 +44,19 @@ export function hhmm(iso) {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`
 }
 
+// "GG/MM HH:MM" da un istante ISO: come si legge la riga di uno storico.
+// Niente anno, niente secondi e niente fuso — chi guarda uno storico vuole
+// sapere «quando», non un timestamp. Stava dentro la lista ordini ed è venuta
+// qui quando anche lo scadenzario ha avuto la sua storia da leggere
+// (REQ-MAG-041): due copie della stessa data prima o poi si scrivono in due
+// modi diversi.
+export function giornoEOra(iso) {
+  const t = Date.parse(iso)
+  if (!Number.isFinite(t)) return '—'
+  const d = new Date(t)
+  return `${String(d.getDate()).padStart(2, '0')}/${String(d.getMonth() + 1).padStart(2, '0')} ${hhmm(iso)}`
+}
+
 // Confronto ore EFFETTIVE vs PROGRAMMATE per una lista di voci giorno.
 // entries: [{ hours, kind: 'effettivo'|'programmato' }]. Ritorna i due
 // totali e lo scarto (effettivo − programmato).

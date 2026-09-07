@@ -31,6 +31,7 @@ export default function MacroCategoryManager({
   aggiornaCategoria,
   creaCategoria,
   macroDiVendita = null,
+  prodottiDaCompletare = [],
 }) {
   const [name, setName] = useState('')
   const [busy, setBusy] = useState(false)
@@ -160,6 +161,26 @@ export default function MacroCategoryManager({
         <div style={{ marginTop: 10, borderTop: '1px solid var(--line)', paddingTop: 8 }}>
           <span className="muted small">Categorie senza macro: </span>
           <span className="small">{unassigned.map((c) => c.name).join(', ')}</span>
+        </div>
+      )}
+
+      {/* GLI STESSI CONTI, L'ALTRO BUCO (REQ-MAG-032). Un prodotto nato da
+          una consegna non ha categoria, quindi non ha macro d'acquisto: la
+          sua spesa non compare in «Acquisti × Fatturato» invece di risultare
+          sbagliata, che è peggio. Sta accanto alle categorie senza macro
+          perché è la stessa mancanza vista dall'altro lato, e si guardano
+          nello stesso momento. */}
+      {prodottiDaCompletare.length > 0 && (
+        <div style={{ marginTop: 10, borderTop: '1px solid var(--line)', paddingTop: 8 }}>
+          <span className="muted small">
+            Prodotti con la scheda da completare, senza categoria:{' '}
+          </span>
+          <span className="small">{prodottiDaCompletare.map((p) => p.name).join(', ')}</span>
+          <p className="muted small" style={{ margin: '4px 0 0' }}>
+            Sono arrivati con una consegna e in anagrafica non c'erano. Finché
+            restano senza categoria, quello che si spende per loro non entra
+            nei conti degli acquisti: si aprono dai <strong>Prodotti</strong>.
+          </p>
         </div>
       )}
     </div>

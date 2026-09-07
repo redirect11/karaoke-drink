@@ -17,7 +17,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter } from '../helpers/router.jsx'
 import '@testing-library/jest-dom/vitest'
 
 // Chi è collegato: lo decide ogni test prima di montare.
@@ -352,7 +352,13 @@ describe('le novità dopo un aggiornamento', () => {
     expect(localStorage.getItem('tana:novita:vista')).not.toBe('build-vecchia')
     unmount()
     apri('/menu')
-    expect(screen.queryByRole('dialog', { name: 'Novità di questa versione' })).toBeNull()
+    // Il box non torna, e non torna nemmeno DOPO che la seconda apertura ha
+    // finito di caricarsi (note e stato degli avvisi arrivano da letture
+    // asincrone). Verificarlo subito e basta significava dire «non c'e'»
+    // quando semplicemente non era ancora arrivato niente.
+    await waitFor(() =>
+      expect(screen.queryByRole('dialog', { name: 'Novità di questa versione' })).toBeNull()
+    )
   })
 
   // Del box, dopo averlo chiuso, non resterebbe niente: l'avviso si registra

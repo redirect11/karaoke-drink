@@ -20,6 +20,13 @@ import ThemeSettings, { TemaMenuClienti } from './ThemeSettings.jsx'
 import PrinterSetup from './PrinterSetup.jsx'
 import StampaAutomatica from './StampaAutomatica.jsx'
 import ToggleRow from './ToggleRow.jsx'
+import {
+  MOTIVO_PREMIUM,
+  chiaveModulo,
+  moduliPremium,
+  moduloAttivo,
+  moduloIncluso,
+} from '../lib/licenza.js'
 import CampiStampa, { LogoStampe } from './CampiStampa.jsx'
 
 import BackupPanel from './BackupPanel.jsx'
@@ -1037,6 +1044,12 @@ export default function SettingsTab({ role = null }) {
       nodo: <InfoTab />,
     },
     {
+      id: 'funzioni-premium',
+      icona: '🔒',
+      label: 'Funzioni premium',
+      nodo: <FunzioniPremium settings={settings} onSave={save} />,
+    },
+    {
       id: 'annullamenti',
       icona: '✖️',
       label: 'Annullamenti',
@@ -1124,6 +1137,7 @@ export default function SettingsTab({ role = null }) {
     'logo-stampe': 'stampante',
     backup: 'sistema',
     informazioni: 'sistema',
+    'funzioni-premium': 'premium',
   }
   const GRUPPI = [
     { id: 'aspetto', icona: '🎨', label: 'Aspetto' },
@@ -1137,6 +1151,18 @@ export default function SettingsTab({ role = null }) {
     { id: 'gruppi', icona: '👥', label: 'Gruppi di ordini' },
     { id: 'clienti', icona: '🙋', label: 'Clienti' },
     { id: 'stampante', icona: '🖨️', label: 'Stampante' },
+    // UN GRUPPO SUO, e non una voce infilata nei gruppi delle schermate che
+    // le funzioni accendono. La regola del momento d'uso (REQ-UI-025) dice
+    // di raggruppare per «quando lo cerco»: qui il momento è «cosa ha questo
+    // locale, e cosa potrebbe avere», che non è il momento in cui si conta
+    // il magazzino né quello in cui si registra una fattura — tanto più che
+    // a modulo spento quelle schermate non ci sono, e cercare l'interruttore
+    // dentro la sezione che non compare sarebbe una caccia. Sono la prima
+    // famiglia di questo tipo e ne arriveranno altre (Fase 3 del piano ne
+    // elenca cinque pacchetti): un gruppo che cresce è meglio di cinque voci
+    // sparse. E non sta in «Sistema», che parla di questa installazione
+    // (backup, versione): la licenza è del locale, non della macchina.
+    { id: 'premium', icona: '🔒', label: 'Funzioni premium' },
     { id: 'sistema', icona: '💾', label: 'Sistema' },
   ]
   // Compat coi collegamenti vecchi (?sezione=coperto): l'id di un riquadro
@@ -1452,5 +1478,47 @@ function AmountInput({ value, min, max, step, onCommit }) {
       onBlur={commit}
       onKeyDown={(e) => e.key === 'Enter' && e.target.blur()}
     />
+  )
+}
+
+// ── LE FUNZIONI PREMIUM ───────────────────────────────────
+// Cosa ha questo locale, e cosa potrebbe avere. Anche quelle che NON ha
+// restano in elenco APPOSTA (decisione dell'utente, 26/08/2026): sparite
+// del tutto, nessuno saprebbe che esistono, e chi le ha viste una volta si
+// chiederebbe dove sono finite.
+//
+// DUE RIGHE DIVERSE, e lo si vede (lib/licenza.js):
+// · modulo NON INCLUSO — interruttore spento e bloccato, che al tocco dice
+//   perché. Cosa il locale ha comprato non si decide da qui.
+// · modulo INCLUSO — interruttore NORMALE: si accende e si spegne come
+//   ogni altra impostazione. Resta scritto che è una funzione premium, ma
+//   «non inclusa» su una funzione che il locale ha sarebbe falso.
+function FunzioniPremium({ settings, onSave }) {
+  return (
+    <div className="card settings-section">
+      <h3>Funzioni premium</h3>
+      <p className="muted" style={{ margin: '0 0 10px', fontSize: '0.85rem' }}>
+        Funzioni che fanno parte della licenza dell’installazione. Quelle
+        incluse si accendono e si spengono da qui; le altre sono elencate per
+        sapere che esistono e cosa fanno.
+      </p>
+      {moduliPremium().map((m) => {
+        const incluso = moduloIncluso(settings, m.id)
+        return (
+          <ToggleRow
+            key={m.id}
+            label={m.label}
+            desc={`${m.descrizione} ${
+              incluso
+                ? 'Funzione premium, inclusa in questa installazione.'
+                : 'Funzione premium: non inclusa.'
+            }`}
+            checked={moduloAttivo(settings, m.id)}
+            motivo={incluso ? undefined : MOTIVO_PREMIUM}
+            onChange={(v) => onSave({ [chiaveModulo(m.id)]: v })}
+          />
+        )
+      })}
+    </div>
   )
 }

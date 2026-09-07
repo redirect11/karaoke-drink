@@ -7,7 +7,7 @@
 // mezzo da sé. Chi tocca vede un tasto che non fa nulla, e pensa sia rotto.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { render, screen, waitFor } from '@testing-library/react'
 import '@testing-library/jest-dom/vitest'
 
 let staff = []
@@ -43,7 +43,11 @@ describe('il pannello «chiama lo staff»', () => {
 
   it('dove compare da sé resta muto: una card vuota fissa sarebbe rumore', async () => {
     const { container } = render(<StaffCallList />)
-    await vi.waitFor(() => expect(container.querySelector('.card')).toBeNull())
+    // `waitFor` di Testing Library, non quello di vitest: e' l'unico che
+    // fa atterrare l'elenco dello staff DENTRO il giro di disegno. Con
+    // l'altro la lettura finiva a test concluso, e la verifica «non c'e'
+    // niente» era vera solo perche' non era ancora arrivato niente.
+    await waitFor(() => expect(container.querySelector('.card')).toBeNull())
   })
 
   it('con qualcuno da chiamare mostra l’elenco, non il messaggio', async () => {

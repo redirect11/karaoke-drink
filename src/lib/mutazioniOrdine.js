@@ -62,7 +62,7 @@ const MAX_CONTI = 50
 // serata su una versione che non esiste da nessuna parte. Due secondi sono
 // venti volte il tempo che ci mette la cache: nel caso normale scade la
 // memoria di un conto che nessuno sta più toccando.
-const VITA_MEMORIA = 2000
+export const VITA_MEMORIA = 2000
 
 function nodo(orderId) {
   let n = catene.get(orderId)

@@ -679,7 +679,8 @@ a.btn.block {
    (1,02:1). Un elenco solo, così la prossima non nasce già rotta. */
 .pill.pronto,
 .pill.live,
-.pill.chiuso {
+.pill.chiuso,
+.pill.ordinato {
   background: rgba(46, 204, 113, 0.22);
   color: #9ff5c0;
 }
@@ -2859,6 +2860,388 @@ body.bar-wide .app {
   }
 }
 
+/* ── NUOVO ORDINE: UNA TABELLA SOLA, E L'ORDINE DI FIANCO (REQ-MAG-036) ──
+   La schermata di prima aveva due elenchi — il catalogo sopra, l'ordine
+   sotto — ed è stata bocciata: «non mi piace LA DOPPIA LISTA e quei box sono
+   POSTICCI», «è SCOMODISSIMO l'ordine in basso. Dobbiamo metterlo affianco»
+   (l'utente, 27/08/2026). Qui la tabella è una sola e l'ordine le sta
+   accanto, già diviso per fornitore.
+   A decidere quando le colonne diventano una è il CONTENITORE, non la
+   finestra: col menu agganciato questa sezione ha 200-250px in meno, e una
+   media query sulla finestra spezzerebbe la tabella proprio lì. */
+.ordine-composizione {
+  container-type: inline-size;
+}
+/* ── I MODELLI D'ORDINE (REQ-MAG-039) ─────────────────────────
+   Una riga sola sopra i filtri: la tendina dei modelli coi suoi tre gesti a
+   sinistra, il salvataggio di quello che si sta componendo a destra. È la
+   stessa famiglia dei comandi di una lista (DESIGN.md): `btn ghost small`
+   che vanno a capo invece di stringersi, così a 360px si legge ancora. */
+.modelli-ordine {
+  margin-top: 8px;
+}
+.modelli-riga {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.modelli-riga + .modelli-riga {
+  margin-top: 8px;
+}
+.modelli-riga > .grow {
+  flex: 1;
+}
+/* Cosa è stato ripreso e cosa no: una superficie minore dentro la sezione,
+   come l'ordine in composizione — non una card dentro la card. */
+.modelli-esito {
+  background: var(--tile-bg);
+  border: 1px solid var(--line);
+  border-radius: var(--raggio-card);
+  padding: 8px 10px;
+  margin-top: 8px;
+}
+.modelli-avvisi {
+  margin: 4px 0 0;
+  padding-left: 18px;
+}
+.ordine-filtri {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: flex-end;
+}
+.ordine-filtri > span {
+  min-width: 180px;
+}
+.ordine-due-colonne {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(240px, 320px);
+  gap: 12px;
+  align-items: start;
+  margin-top: 10px;
+}
+/* Il nome del selettore è doppio apposta: `.inv-list` è dichiarata più sotto
+   e porta `overflow: hidden`, e a parità di peso vince l'ultima letta — con
+   un `.ordine-tabella` da solo la tabella non scorrerebbe affatto. */
+/* L'INTESTAZIONE RESTA IN ALTO. «Voglio l'header della tabella fisso in
+   alto, coi titoli delle colonne che posso usare per ordinare»: a scorrere è
+   la tabella, che ha una barra sua — con seicento righe un'intestazione che
+   se ne va lascia chi guarda a indovinare cos'è la terza colonna.
+   La cella della spunta e quella del tasto che apre seguono lo zoom: sono
+   bersagli, e a zoom alto devono restare larghi quanto prima davvero. */
+.inv-list.ordine-tabella {
+  --inv-cols: calc(38px / var(--zoom, 1)) minmax(120px, 1.8fr) minmax(104px, 1fr)
+    minmax(120px, 1.2fr) 74px 68px 92px calc(38px / var(--zoom, 1));
+  max-height: min(62vh, 680px);
+  overflow-y: auto;
+}
+.ordine-tabella .inv-thead {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+/* IL TOCCO SULLA RIGA AGGIUNGE E TOGLIE (REQ-MAG-036): «in pratica basta che
+   tocco la riga». Il dito ha tutta la riga come bersaglio; i campi che si
+   scrivono e il tasto che apre restano esclusi, e si riprendono il cursore
+   loro. La riga non è un tasto — a portare ruolo e stato è la casella, che
+   resta al suo posto e si preme con lo spazio. */
+.ordine-tabella .inv-row-main {
+  cursor: pointer;
+}
+.ordine-tabella .inv-row-main input,
+.ordine-tabella .inv-row-main select,
+.ordine-tabella .inv-row-main button {
+  cursor: auto;
+}
+/* Quello che è già nell'ordine si riconosce senza rileggere la casella:
+   componendo si scorrono decine di righe, e la spunta da sola è un segno
+   piccolo in fondo a sinistra. */
+.ordine-tabella .inv-row.ordine-riga-scelta {
+  background: color-mix(in srgb, var(--accent) 8%, transparent);
+}
+/* COLLI E PEZZI (REQ-MAG-040): sotto il prezzo del pezzo c'è la cifra del
+   collo, sotto i colli i pezzi che ne escono. Sono la seconda riga di una
+   cella, non una colonna in più: le colonne sono già otto. */
+.ordine-prezzo,
+.ordine-quanti {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: 2px;
+  min-width: 0;
+  text-align: right;
+}
+.ordine-collo {
+  display: block;
+  font-size: 0.72rem;
+  line-height: 1.15;
+  opacity: 0.75;
+  white-space: nowrap;
+}
+/* Un prezzo che non si può ricavare — un listino al litro su un prodotto che
+   non dice quanto contiene — non mostra un numero inventato: mostra che c'è
+   da sistemare qualcosa, e il perché per esteso nella scheda che si apre. */
+.ordine-prezzo-guasto {
+  color: var(--warn);
+  opacity: 1;
+}
+.ordine-tabella input,
+.ordine-tabella select {
+  min-height: var(--riga-lista);
+  padding: 4px 8px;
+  font-size: 0.9rem;
+}
+.ordine-tabella input[type='number'] {
+  text-align: right;
+}
+.ordine-spunta {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: var(--riga-lista);
+  margin: 0;
+  cursor: pointer;
+}
+.ordine-spunta input {
+  width: calc(20px / var(--zoom, 1));
+  height: calc(20px / var(--zoom, 1));
+  min-height: 0;
+  padding: 0;
+}
+.ordine-scorta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.ordine-apri {
+  min-width: 0;
+  padding: 4px 6px;
+}
+.ordine-conta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin: 6px 0 0;
+}
+.ordine-campi-scheda {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+.ordine-campi-scheda > span {
+  min-width: 96px;
+}
+.ordine-campi-scheda > span.grow {
+  flex: 1;
+  min-width: 160px;
+}
+/* Il nome del fornitore accanto al prodotto serve solo quando la sua colonna
+   non c'è più: due righe dello stesso Campari, senza, sarebbero identiche. */
+.ordine-nome-fornitore {
+  display: none;
+}
+/* L'ORDINE IN COMPOSIZIONE. È una superficie minore dentro la sezione, non
+   una card dentro la card: fondo `--tile-bg` e bordo `--line`, come le altre
+   tessere (DESIGN.md). Resta in vista mentre la tabella scorre — è il punto
+   di tutta la richiesta. */
+.ordine-carrello {
+  background: var(--tile-bg);
+  border: 1px solid var(--line);
+  border-radius: var(--raggio-card);
+  padding: 12px;
+  position: sticky;
+  top: 8px;
+  max-height: min(72vh, 760px);
+  overflow-y: auto;
+}
+/* La striscia del fornitore, come nello storico: lì lo stesso prodotto
+   compare una volta per fornitore, e senza il colore due righe con lo stesso
+   nome si leggono soltanto arrivando in fondo alla riga. */
+.ordine-gruppo {
+  border-left: 4px solid var(--line);
+  padding: 6px 0 6px 8px;
+  margin-top: 8px;
+}
+.ordine-gruppo-riga {
+  align-items: center;
+  gap: 6px;
+}
+.ordine-totale {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--line);
+}
+/* ── IL RIEPILOGO PER FORNITORE (REQ-MAG-037) ─────────────────
+   Tabelle a scomparsa, una per fornitore, una sotto l'altra: si tocca il
+   nome e si apre quella del fornitore. La riga di testa non è una griglia di
+   colonne come la tabella della composizione — sono un nome, un totale e un
+   gesto — quindi non eredita `--inv-cols`. */
+.ordine-riepilogo .inv-list {
+  margin-top: 10px;
+}
+.riepilogo-testa {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+/* IL BERSAGLIO CHE APRE È IL NOME, alto quanto una riga di lista: si prende
+   con le mani occupate, non con un triangolino da venti pixel. La misura
+   segue lo zoom, se no a zoom alto il bersaglio resta grande sullo schermo ma
+   piccolo sotto il dito (DESIGN.md). */
+.riepilogo-nome {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 2px;
+  min-width: 0;
+  min-height: calc(44px / var(--zoom, 1));
+  padding: 4px 8px;
+  text-align: left;
+}
+.riepilogo-tabella {
+  --inv-cols: minmax(120px, 2fr) 56px 78px 88px calc(38px / var(--zoom, 1));
+  margin-top: 6px;
+}
+/* LE RIGHE DI UN ORDINE MANDATO, nello storico: ognuna col suo gesto per
+   toglierla dall'ordine, quindi non più un elenco separato da virgole. */
+.ordine-righe-storico {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px 10px;
+  margin-top: 2px;
+}
+.ordine-riga-storico {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+/* ── LISTA ORDINI (REQ-MAG-038) ──────────────────────────────────────
+   La riga di testa non è una griglia di colonne: sono un nome, gli stati e
+   i gesti, e su un telefono vanno a capo invece di stringersi fino a non
+   leggersi più. */
+.ordine-riga .inv-row-main {
+  align-items: center;
+  gap: 8px;
+}
+.ordine-stati {
+  flex-wrap: wrap;
+  align-items: center;
+}
+/* Ogni blocco del dettaglio è separato da un filo, non da un riquadro: sono
+   quattro cose che si leggono una dopo l'altra — documento, prospetto,
+   righe aperte, storia — e quattro card dentro una card sarebbero scatole
+   dentro scatole. */
+.ordine-blocco {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--bordo);
+}
+.ordine-blocco:first-child {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: none;
+}
+.ordine-prospetto {
+  --inv-cols: minmax(120px, 2fr) 78px 78px 84px 92px;
+  margin-top: 6px;
+}
+.ordine-scarti {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-top: 2px;
+}
+.ordine-storia {
+  margin: 4px 0 0;
+  padding-left: 16px;
+  font-size: 0.82rem;
+  line-height: 1.5;
+}
+
+/* L'IMPORTO DI UNA NOTA DI CREDITO (BUG-100). «Il colore deve apparire in un
+   altro colore, preferibilmente verde» (Flavio, 03/09/2026): sono soldi che
+   tornano indietro, e il verde è quello che questa app usa già per il «è
+   fatto». Non è il verde pieno dei tasti — è inchiostro su fondo, quindi
+   segue --testo-verde, che ha la sua variante chiara come --testo-rosso e
+   --testo-ambra. Il colore però non basta e non è mai solo: il meno davanti
+   alla cifra lo mette `importoLeggibile`, perché una schermata si guarda
+   anche di sera, di fretta, e un numero colorato resta un numero che si
+   somma. */
+.importo-nota-credito {
+  color: var(--testo-verde);
+  font-weight: 600;
+}
+
+/* GLI STATI DELL'ORDINE FORNITORE. La bozza è l'unico che non fa niente e
+   il colore lo dice: neutra, come una cosa messa da parte. Il richiesto è
+   l'ambra dell'attesa — la stessa della comanda ricevuta — e il consegnato
+   il verde del «è fatto», che questa app usa già per la stessa idea. Il
+   chiuso è neutro e non verde: è archiviato, non riuscito. */
+.pill.stato-bozza,
+.pill.stato-chiuso {
+  background: rgba(255, 255, 255, 0.12);
+  color: var(--muted);
+}
+.pill.stato-richiesto {
+  background: rgba(243, 156, 18, 0.2);
+  color: #ffd591;
+}
+.pill.stato-consegnato {
+  background: rgba(46, 204, 113, 0.22);
+  color: #9ff5c0;
+}
+@container (max-width: 900px) {
+  .ordine-due-colonne {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .ordine-carrello {
+    position: static;
+    max-height: none;
+  }
+}
+/* Stretto si tolgono i due numeri — €/pz e totale — che restano nella scheda
+   della riga: la domanda, lì, è cosa manca e quanti pezzi servono. */
+@container (max-width: 760px) {
+  .inv-list.ordine-tabella {
+    --inv-cols: calc(38px / var(--zoom, 1)) minmax(110px, 1.8fr) minmax(96px, 1fr)
+      minmax(110px, 1.2fr) 68px calc(38px / var(--zoom, 1));
+  }
+  .ordine-tabella .inv-thead > :nth-child(5),
+  .ordine-tabella .inv-row-main > :nth-child(5),
+  .ordine-tabella .inv-thead > :nth-child(7),
+  .ordine-tabella .inv-row-main > :nth-child(7) {
+    display: none;
+  }
+}
+/* Sul telefono se ne va anche la tendina del fornitore, e il suo nome torna
+   accanto al prodotto: si sceglie chi ci vende aprendo la riga. */
+@container (max-width: 520px) {
+  .inv-list.ordine-tabella {
+    --inv-cols: calc(34px / var(--zoom, 1)) minmax(90px, 1.6fr) minmax(88px, 1fr) 56px
+      calc(34px / var(--zoom, 1));
+  }
+  .ordine-tabella .inv-thead,
+  .ordine-tabella .inv-row-main {
+    gap: 6px;
+  }
+  .ordine-tabella .inv-thead > :nth-child(4),
+  .ordine-tabella .inv-row-main > :nth-child(4) {
+    display: none;
+  }
+  .ordine-nome-fornitore {
+    display: block;
+  }
+}
+
 /* ── Inventario in LISTA condensata ── */
 .inv-list {
   display: flex;
@@ -3007,6 +3390,36 @@ body.bar-wide .app {
 :root[data-luma='light'] .inv-row.open .inv-row-main { background: rgba(0, 0, 0, 0.03); }
 .admin-card.off .grid-card-main {
   opacity: 0.55;
+}
+/* FUORI MENU SI DEVE VEDERE DA LONTANO. Chiesto da Flavio il 03/09/2026,
+   guardando la schermata del menu: «l'unica cosa che cambia è che la scritta
+   da nera diventa grigia, e nei non disponibili si vede poco. Per farla più
+   impattante metterei la scritta bianca e il fondo della card in grigio
+   scuro». Aveva ragione: la differenza era la sola trasparenza al 55%, che
+   di sera, su un monitor storto e con centinaia di card in griglia, non si
+   legge — e un drink spento scambiato per acceso è un drink promesso a un
+   cliente e mai fatto.
+   Vale SOLO per la gestione del menu (`.menu-card`), dove la domanda è
+   «cosa c'è e cosa no»: le altre schede amministrative continuano a
+   sbiadire, che lì basta.
+   La striscia colorata a sinistra resta: dice un'altra cosa (il colore al
+   banco) e sul fondo scuro si vede meglio di prima. */
+.menu-card.off {
+  background: #3a3a3a;
+  border-color: #3a3a3a;
+}
+/* Niente trasparenza: il contrasto lo fa il fondo, e sbiadire sopra al
+   grigio scuro riporterebbe il testo dov'era. */
+.menu-card.off .grid-card-main {
+  opacity: 1;
+  color: #fff;
+}
+.menu-card.off .grid-card-main .muted,
+.menu-card.off .grid-card-tot {
+  color: rgba(255, 255, 255, 0.82);
+}
+.menu-card.off .grid-card-toggle {
+  color: #fff;
 }
 /* Striscia sinistra per lo stato scorte (come le card ordini). */
 .admin-card.ass-assortimento { border-left: 4px solid var(--line); }
@@ -3729,10 +4142,29 @@ body.drawer-open .status-bell-float { display: none; }
   text-align: right;
 }
 
-/* Conferma in-app (sostituisce window.confirm) */
+/* Conferma in-app (sostituisce window.confirm)
+
+   CENTRARE UNA COSA PIÙ ALTA DELLO SCHERMO VUOL DIRE TAGLIARLA DAI DUE
+   LATI (BUG-076). Il velo è fisso e non scorre: quando la finestrella non
+   ci stava — schermo basso, o zoom alto, che rimpicciolisce l'altezza
+   mentre le misure della scatola restano quelle — spariva il titolo sopra
+   e il tasto che applica sotto, e non c'era modo di arrivarci. Misurato in
+   Chrome su 77 combinazioni di finestra e zoom: 4 con la finestrella
+   tagliata. Vale per TUTTE le `.confirm-box` dell'app, non per una sola.
+   Due reti, e servono tutte e due:
+   1) la scatola non è mai più alta dello schermo e dentro scorre lei —
+      è lo scorrimento giusto, quello che tiene il velo fermo;
+   2) `safe center` + velo scorrevole per le finestrelle che si mettono un
+      `max-height` per conto loro in `vh` (che dentro `#root` scalato NON
+      segue lo zoom): con `center` secco il troppo esce anche DA SOPRA,
+      dove non si scorre; con `safe` esce solo di sotto, e di sotto il
+      velo scorre. */
 .confirm-overlay {
-  align-items: center;
-  padding: 24px;
+  align-items: safe center;
+  /* 16 e non 24: il cuscino attorno al velo è altezza in meno per la
+     finestrella, e ogni pixel qui è un pixel che NON si deve scorrere. */
+  padding: 16px;
+  overflow-y: auto;
 }
 
 .confirm-box {
@@ -3743,6 +4175,10 @@ body.drawer-open .status-bell-float { display: none; }
   width: 100%;
   max-width: 420px;
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.55);
+  /* 100dvh diviso lo zoom, meno la barra di sistema e i due cuscini del
+     velo: l'idioma delle altezze a tutto schermo (vedi `.posd-root`). */
+  max-height: calc(100dvh / var(--zoom, 1) - var(--safe-top) - 32px);
+  overflow-y: auto;
 }
 
 .btn.danger {
@@ -3944,6 +4380,14 @@ body.drawer-open .status-bell-float { display: none; }
 }
 
 .toggle:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* Spento ma TOCCABILE: si vede come uno disabilitato, ma l'evento parte e
+   al tocco arriva la spiegazione (ToggleRow, prop `motivo`). Stesso modo
+   dei metodi di pagamento non disponibili in .payscreen-method.spento. */
+.toggle.spento {
   opacity: 0.4;
   cursor: not-allowed;
 }
@@ -4470,10 +4914,55 @@ body.fullbleed,
 .posd-list .qty {
   gap: 0.4em;
 }
+/* ─── LA COLONNA DEL CONTO SI STRINGE, E QUELLO CHE CONTA RESTA ───────
+   LO ZOOM RIMPICCIOLISCE L'ALTEZZA, LE MISURE FISSE NO (BUG-077). La
+   colonna era tre fasce che non cedevano — testata, lista, piede — per
+   circa 500px CSS sempre uguali, mentre lo spazio è 100dvh/zoom: al 160%
+   su una finestra bassa non ci stanno, e siccome `.posd-body` taglia
+   (overflow: hidden) i tasti in fondo finivano FUORI, senza niente da
+   scorrere per andarli a prendere. Misurato in Chrome su 77 combinazioni
+   di finestra e zoom: 40 con almeno un tasto perso.
+   LA REGOLA È UNA SOLA: qui dentro non cede mai la riga con «Invia
+   comanda» e «Pagamento». Tutto il resto ha un pavimento — una riga da
+   44px VERI dove si preme (`--riga-lista`, che segue lo zoom), una riga
+   di testo dove si legge — e sotto quel pavimento scorre invece di
+   sparire. Chi cede per primo: la lista delle righe (`flex: 1`, quindi
+   restituisce lo spazio libero prima di tutti), poi la testata, poi i
+   numeri del piede, e per ultimi i due tasti secondari. */
+.posd-testa {
+  padding: 8px 12px 0;
+  /* Cede quattro volte più in fretta del piede: là sotto ci sono i tasti,
+     qui il nome del conto e comandi che stanno anche nel menu «⋯». */
+  flex: 0 4 auto;
+  min-height: var(--riga-lista);
+  overflow: hidden auto;
+}
+/* Quello che si LEGGE nel piede: subtotale, supplementi, totale, incassi.
+   Sono numeri, non bersagli: il pavimento è una riga di testo, non 44px. */
+.posd-foot-info {
+  display: flex;
+  flex-direction: column;
+  /* Lo stesso respiro che il piede dà alle sue fasce, e continua a seguire
+     la maniglia che lo scala: `inherit` invece di ricopiare il calc. */
+  gap: inherit;
+  flex: 0 6 auto;
+  min-height: 1.6em;
+  overflow: hidden auto;
+}
 /* Footer dell'ordine, ridimensionabile: la scala (--foot-scale) guida la
    dimensione del font, e tasti/prezzi la seguono perché espressi in em. */
 .posd-comanda-foot {
-  flex-shrink: 0;
+  /* SI STRINGE, e `min-height: 0` è la riga che glielo permette davvero:
+     lasciata su `auto` varrebbe il minimo di CONTENUTO, e per un flex
+     annidato Chrome lo calcola sommando le altezze piene dei figli — il
+     piede non cedeva di un pixel e i tasti restavano fuori (misurato).
+     A tenere in piedi la fascia sono i pavimenti dei suoi pezzi, non il
+     suo; e se anche quelli non bastassero — finestre più basse di
+     qualunque schermo vero — a scorrere è il piede stesso, che è sempre
+     meglio che veder sparire un tasto. */
+  flex-shrink: 1;
+  min-height: 0;
+  overflow: hidden auto;
   /* Poco sopra: quello che separa il piede da quello che c'e' sopra e' il
      bordo, non un cuscino. Il respiro che conta e' fra i TASTI (il `gap`
      qui sotto), non fra il bordo e la maniglia. */
@@ -4500,8 +4989,38 @@ body.fullbleed,
   gap: calc(10px * var(--foot-scale, 1));
   margin-top: calc(4px * var(--foot-scale, 1));
 }
+/* LA RIGA CHE NON CEDE MAI: i due gesti della serata. Qualunque finestra,
+   qualunque zoom, stanno lì e per intero — è il punto fermo su cui si
+   appoggia tutto il resto della regola qui sopra. */
 .posd-comanda-foot .posd-foot-azioni .grid-2 {
   gap: calc(10px * var(--foot-scale, 1));
+  flex-shrink: 0;
+}
+/* I due secondari — «Stato servizio» e «Annulla ordine» — servono, ma non
+   cento volte a sera: quando l'altezza non basta per tutti sono loro a
+   scorrere. Il pavimento è un bersaglio intero, così ce n'è sempre almeno
+   uno premibile e da lì si arriva all'altro. */
+.posd-foot-secondarie {
+  display: flex;
+  flex-direction: column;
+  gap: calc(10px * var(--foot-scale, 1));
+  flex: 0 1 auto;
+  min-height: var(--riga-lista);
+  overflow: hidden auto;
+}
+/* Alti ESATTAMENTE una `--riga-lista`, cioè 44px veri sotto il dito a
+   qualunque zoom (DESIGN.md, guardrail 2: chi lo trova non lo «corregga»
+   in 44px secchi — al 160% sarebbero 70px veri rubati all'altezza). Così
+   il pavimento qui sopra è alto quanto UN TASTO: quando si scorre se ne
+   vede sempre uno intero, mai mezzo. Flex e `gap` come i tasti del
+   telefono qui sotto: senza, l'icona si appiccica alla parola. */
+.posd-foot-secondarie .btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: var(--riga-lista);
+  padding-block: 0;
 }
 /* La domanda su dove vanno le righe nuove (servizio spento): staccata dai
    tasti sotto da una riga sottile, cosi' si legge come una domanda e non
@@ -4679,8 +5198,14 @@ body.fullbleed,
        quanto il suo contenuto: con poche righe tirare la maniglia in su non
        faceva niente — si alzava solo il tetto, e sembrava che funzionasse
        solo per rimpicciolire. Ora l'altezza è quella scelta, e la lista
-       dentro scorre o lascia spazio vuoto. */
-    height: var(--pos-comanda-h, 46dvh);
+       dentro scorre o lascia spazio vuoto.
+       DIVISA PER LO ZOOM, come `.posd-root` (BUG-077): dentro `#root`
+       scalato, `50dvh` vale mezzo schermo in pixel CSS, che allo zoom del
+       160% sono OTTO DECIMI di schermo veri — il pannello sfondava il
+       corpo e il suo piede finiva sotto il bordo. Diviso, la maniglia
+       continua a promettere quello che dice: mezzo schermo è mezzo
+       schermo, a qualunque ingrandimento. */
+    height: calc(var(--pos-comanda-h, 46dvh) / var(--zoom, 1));
     max-height: none;
     border-left: none;
     border-top: 1px solid rgba(255, 255, 255, 0.12);
@@ -5253,6 +5778,11 @@ body.fullbleed,
      accanto, come --line e --strip-spenta. */
   --testo-rosso: #ff8a80;
   --testo-ambra: #ffd54f;
+  /* Il verde dei soldi che tornano indietro: una nota di credito scala una
+     spesa (BUG-100). Sta con gli altri due inchiostri di stato e non con
+     --ok, che e' un FONDO: qui e' testo, e --ok su fondo scuro sarebbe la
+     stessa illeggibilita' gia' vista sul chiaro. */
+  --testo-verde: #7ee2a8;
 }
 :root[data-luma='light'] {
   --line: rgba(0, 0, 0, 0.14);
@@ -5260,6 +5790,7 @@ body.fullbleed,
   --velo-superficie: none;
   --testo-rosso: #b02a37;
   --testo-ambra: #7a5c00;
+  --testo-verde: #12653d;
 }
 :root[data-luma='light'] .pill.aperto {
   background: rgba(46, 204, 113, 0.2);
@@ -5278,12 +5809,25 @@ body.fullbleed,
 }
 :root[data-luma='light'] .pill.pronto,
 :root[data-luma='light'] .pill.live,
-:root[data-luma='light'] .pill.chiuso {
+:root[data-luma='light'] .pill.chiuso,
+:root[data-luma='light'] .pill.ordinato {
   background: rgba(46, 204, 113, 0.18);
   color: #157347;
 }
 :root[data-luma='light'] .pill.ritirato {
   background: rgba(0, 0, 0, 0.08);
+}
+:root[data-luma='light'] .pill.stato-bozza,
+:root[data-luma='light'] .pill.stato-chiuso {
+  background: rgba(0, 0, 0, 0.08);
+}
+:root[data-luma='light'] .pill.stato-richiesto {
+  background: rgba(243, 156, 18, 0.18);
+  color: #8a5200;
+}
+:root[data-luma='light'] .pill.stato-consegnato {
+  background: rgba(46, 204, 113, 0.18);
+  color: #157347;
 }
 :root[data-luma='light'] .pill.pagato {
   background: rgba(180, 130, 20, 0.15);
@@ -6162,6 +6706,9 @@ body:has(.overlay) .zoom-control {
      le tre colonne restano uguali e si stringono davvero. */
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
+  /* Non si stringe col piede (BUG-077): sul telefono è l'ultima riga e
+     sotto non c'è altro che possa cedere al posto suo. */
+  flex-shrink: 0;
 }
 .posd-foot-telefono .btn {
   display: inline-flex;
@@ -6169,7 +6716,11 @@ body:has(.overlay) .zoom-control {
   justify-content: center;
   gap: 6px;
   min-width: 0;
-  min-height: 52px;
+  /* 52px VERI sotto il pollice, non 52px CSS: diviso lo zoom la riga resta
+     grande uguale in centimetri e smette di rubare l'altezza che serve alla
+     lista (BUG-077, stesso idioma di BUG-075 — non «correggerlo» in 52px
+     secchi). */
+  min-height: calc(52px / var(--zoom, 1));
   padding: 0.6em 0.3em;
   /* Cresce con la maniglia: è il senso di quella maniglia. Quando le
      parole non ci stanno più, in JS restano le sole icone (soloIcone). */

@@ -738,3 +738,22 @@ export function motivoAnnullo(comanda, order) {
     order?.workflow_status === ORDER_STATUSES.ANNULLATO
   return contoMorto ? MOTIVO_ANNULLO.CONTO : MOTIVO_ANNULLO.MANO
 }
+
+// ── CHE NUMERO HA QUESTA COMANDA DENTRO IL SUO CONTO ─────────────────
+//
+// «Comanda 2» è come la chiamano il banco e lo schermo (la corsia, il
+// dettaglio del conto), e dal 25/08/2026 anche la fascia nera del ticket
+// (REQ-STAMPA-014). Il numero è `seq`, assegnato quando la comanda nasce.
+//
+// TORNA null QUANDO NON SI SA, e succede in due casi veri: un documento
+// vecchio senza `seq` — e allora vale la posizione nell'elenco, che è
+// l'ordine in cui sono state battute — e il TICKET UNITO, che di comande
+// ne contiene tutte e quindi non è nessuna. In quei casi chi stampa
+// scrive solo il numero del conto invece di inventarsi un «Comanda
+// undefined».
+export function numeroComanda(order, comanda) {
+  if (!comanda) return null
+  if (Number(comanda.seq) > 0) return Number(comanda.seq)
+  const posto = (order?.comande || []).findIndex((c) => c && c.id === comanda.id)
+  return posto >= 0 ? posto + 1 : null
+}

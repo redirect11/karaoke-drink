@@ -1,122 +1,121 @@
-# Firebase Functions — Integrazione SumUp POS Pro
+# Firebase Functions
 
-Documentazione delle Cloud Functions di Tana Drink dedicate a **SumUp POS
-Pro** (sistema Goodtill), usate come proxy server-side: le credenziali API
-non vengono mai esposte al client.
-
-> Nota: da quando è nato questo documento le functions sono cresciute —
-> pagamenti (checkout e lettore Solo), notifiche push sui trigger degli
-> ordini, gestione utenze (`staffAdmin`), chiusura automatica dei conti
-> pagati. La mappa completa e aggiornata è il wiring in
-> [functions/index.js](../functions/index.js); qui sotto resta il
-> dettaglio del blocco SumUp POS Pro.
+Le Cloud Functions di Tana Drink. Fanno tre mestieri: **incassare** (SumUp,
+lettore e checkout online), **avvisare** (notifiche push a cliente e
+personale) e **amministrare** (account dello staff, numerazione dei conti).
 
 - **Regione**: `europe-west1`
-- **Runtime**: Node.js 20
-- **Codice**: [functions/index.js](../functions/index.js) (wiring) →
-  [functions/lib/sumup-service.js](../functions/lib/sumup-service.js) (servizio) +
-  [functions/lib/sumup-core.js](../functions/lib/sumup-core.js) (logica pura)
+- **Runtime**: Node.js 20 · Gen2 (girano su Cloud Run)
+- **Codice**: [functions/index.js](../functions/index.js) è solo il *wiring*
+  (registrazione degli handler, lettura dei parametri, `fetch` reale, accesso
+  a Firestore). La logica sta nei moduli di `functions/lib/`, puri e
+  testabili senza emulatori.
 - **Requisiti**: [requirements/requirements.yaml](../requirements/requirements.yaml)
-- **Test**: [tests/unit/](../tests/unit/) (unit) + [tests/bdd/](../tests/bdd/) (BDD)
+- **Test**: [tests/unit/](../tests/unit/) e [tests/bdd/](../tests/bdd/)
+
+> **SumUp Cassa Pro non c'è più.** Fino al 26/08/2026 qui viveva anche una
+> seconda integrazione SumUp — *POS Pro* / Goodtill, *External Sales* — che
+> ricopiava ogni vendita nel loro registratore di cassa: quattro functions
+> (`syncSumUpProducts`, `createSumUpSale`, `updateSumUpSaleStatus`,
+> `sumupWebhook`) e due moduli. Non è mai stata accesa ed è stata rimossa su
+> decisione dell'utente. **Da non confondere col lettore**: incassare col POS
+> SumUp è l'altra integrazione, quella descritta qui sotto, e funziona.
 
 ## Architettura
 
-`index.js` contiene solo il "wiring" Firebase (registrazione handler, lettura dei
-parametri, `fetch` reale, accesso Firestore). La logica è separata in due moduli
-testabili senza emulatori:
+| Modulo | Responsabilità |
+| --- | --- |
+| `lib/payment-core.js` | Logica pura dei pagamenti (parsing dei webhook, decisioni di stato) |
+| `lib/payment-service.js` | Orchestrazione pagamenti (Firestore + chiamate SumUp) |
+| `lib/push-core.js` | Decide *cosa* notificare e *a chi* (puro) |
+| `lib/staff-service.js` | Account dello staff e ruoli (custom claim) |
+| `lib/numerazione.js` | Numero del conto, e cosa fare dei duplicati |
 
-| Modulo | Responsabilità | Dipendenze |
-| --- | --- | --- |
-| `lib/sumup-core.js` | Trasformazioni pure (mapping, parsing, payload) | nessuna |
-| `lib/sumup-service.js` | Orchestrazione (Firestore + chiamate SumUp) | iniettate via `deps` |
-
-Le dipendenze (`db`, `sumupFetch`, `isConfigured`, `serverTimestamp`) sono iniettate
-in `index.js` e sostituite da mock nei test.
+Le dipendenze (`db`, `fetch`, `isConfigured`, `serverTimestamp`…) sono
+iniettate in `index.js` e sostituite da mock nei test.
 
 ## Configurazione
 
-Le functions sono **no-op** finché non sono configurate (vedi `REQ-SUMUP-CONFIG-001`).
-Imposta i secret prima del deploy:
-
-```bash
-firebase functions:secrets:set SUMUP_VENDOR_ID
-firebase functions:secrets:set SUMUP_OUTLET_ID
-```
-
 | Variabile | Tipo | Default | Descrizione |
 | --- | --- | --- | --- |
-| `SUMUP_VENDOR_ID` | param/secret | `''` | Vendor-Id SumUp (richiesto via `pos.support.uk.ie@sumup.com`) |
-| `SUMUP_OUTLET_ID` | param/secret | `''` | Outlet-Id del punto vendita |
-| `SUMUP_API_BASE` | env | `https://api.thegoodtill.com/api` | URL base API (da confermare con SumUp) |
+| `SUMUP_API_KEY` | **secret** | — | Chiave API SumUp per i pagamenti |
+| `SUMUP_MERCHANT_CODE` | env | `''` | Codice esercente (non è un segreto) |
+| `SUMUP_PAYMENTS_BASE` | env | `https://api.sumup.com` | URL base dell'API pagamenti |
+| `SUMUP_AFFILIATE_KEY` | env | `''` | Chiave affiliazione per il lettore Solo |
+| `SUMUP_AFFILIATE_APP_ID` | env | `it.latanadelconiglio.drink` | Id applicativo per l'affiliazione |
 
-> Il deploy delle functions nel workflow CI è disattivato di default ed è gated dalla
-> variabile di repository `DEPLOY_FUNCTIONS` (vedi
+Il segreto si imposta così, e **non** finisce nel repo:
+
+```bash
+firebase functions:secrets:set SUMUP_API_KEY
+```
+
+I pagamenti sono **no-op** finché `SUMUP_API_KEY` e `SUMUP_MERCHANT_CODE` non
+ci sono entrambi: `isConfigured()` risponde `false` e non parte nessuna
+chiamata di rete.
+
+[`functions/.env`](../functions/.env) è committato apposta (ed esentato nel
+`.gitignore`): è il posto dichiarato per la configurazione **non segreta**, e
+serve a non far bloccare il deploy non interattivo, che senza un valore —
+anche vuoto — per le variabili attese si mette a chiederle da tastiera.
+
+> Il deploy delle functions nel workflow CI è disattivato di default ed è gated
+> dalla variabile di repository `DEPLOY_FUNCTIONS` (vedi
 > [.github/workflows/firebase-hosting.yml](../.github/workflows/firebase-hosting.yml)).
 > Richiede la Cloud Build API attiva sul progetto.
 
 ---
 
-## Funzioni
+## Pagamenti — checkout online
 
-### `syncSumUpProducts` — callable
+### `createPaymentCheckout` — callable
 
-Sincronizza il catalogo prodotti SumUp nella collezione Firestore `drinks`.
+Apre un checkout SumUp per un conto. Chiamabile anche da un cliente anonimo:
+l'id dell'ordine fa da *capability token*, come per la pagina pubblica
+dell'ordine.
 
-- **Tipo**: `onCall` (HTTPS callable)
-- **Input**: nessuno
-- **Output**: `{ synced: number, total: number }` oppure `{ skipped: true, message }`
-- **Side effects**: legge `GET /products` da SumUp; crea/aggiorna documenti in `drinks`
-- **Comportamento**:
-  - Se non configurato → `{ skipped: true }`, nessuna chiamata di rete.
-  - Normalizza la risposta (array diretto o `{ products }` / `{ items }`).
-  - Per ogni prodotto con id: aggiorna quello esistente (per `sumup_product_id`) o
-    ne crea uno nuovo con `created_at`. I prodotti senza id vengono saltati.
-- **Requisiti**: `REQ-SUMUP-SYNC-001`, `REQ-SUMUP-SYNC-002`, `REQ-SUMUP-CONFIG-001`
+### `getPaymentStatus` — callable
 
-### `createSumUpSale` — callable
+Chiede a SumUp com'è finito un checkout e riporta l'esito sull'ordine. Lo
+stato **si rilegge sempre dall'API**: quello che dice il browser non basta.
 
-Invia un ordine Tana Drink a SumUp POS Pro come *External Sale*.
+### `paymentWebhook` — HTTP
 
-- **Tipo**: `onCall`
-- **Input**: `{ orderId, tableLabel, note, items: [{ sumup_product_id, name, qty, unit_price }] }`
-- **Output**: `{ saleId: string | null }` oppure `{ skipped: true }`
-- **Side effects**: `POST /external_sales`; se la vendita ha un id, scrive
-  `sumup_sale_id` sull'ordine Firestore (`orders/{orderId}`)
-- **Note**: `customer_name` = `Tavolo {tableLabel}` o `Cliente`; `total_price`
-  arrotondato a 2 decimali.
-- **Requisiti**: `REQ-SUMUP-SALE-001`, `REQ-SUMUP-CONFIG-001`
+Riceve gli esiti (checkout online e `return_url` del lettore) e smista per
+forma del payload. L'esito viene **sempre ri-verificato via API SumUp**,
+quindi un payload malformato è innocuo — ed è per questo che non serve una
+firma. Risponde sempre `200`: un errore farebbe ritentare SumUp per un'ora.
 
-### `updateSumUpSaleStatus` — callable
+### `autoAdvancePaid` — trigger su `orders/{orderId}`
 
-Aggiorna lo stato di una vendita su SumUp POS Pro.
+Cintura lato server: un ordine ritirato **e** pagato — in qualunque ordine
+succedano le due cose — si chiude da solo.
 
-- **Tipo**: `onCall`
-- **Input**: `{ saleId, status }`
-- **Output**: `{ updated: true }` oppure `{ skipped: true, reason? }`
-- **Side effects**: `PUT /external_sales/{saleId}/status`
-- **Note**: senza `saleId` non chiama SumUp e ritorna `{ skipped: true }`.
-- **Requisiti**: `REQ-SUMUP-STATUS-001`, `REQ-SUMUP-CONFIG-001`
+## Pagamenti — lettore SumUp Solo
 
-### `sumupWebhook` — HTTP
+`pairSumUpReader` e `unpairSumUpReader` accoppiano (e staccano) il lettore al
+locale; `readerCheckout` gli manda l'importo da riscuotere e
+`readerTerminate` annulla la richiesta in corso.
 
-Riceve gli aggiornamenti di stato dal Back Office SumUp e aggiorna l'ordine Firestore
-corrispondente (riflesso in tempo reale sul cliente).
+## Pagamenti di gruppo
 
-- **Tipo**: `onRequest` (HTTP), `cors: false`
-- **URL**: `https://europe-west1-<project-id>.cloudfunctions.net/sumupWebhook`
-- **Input**: corpo JSON `{ sale_id | id, status }`
-- **Output**: `200 OK` / `400 Missing sale_id` / `405 Method Not Allowed`
-- **Mappatura stati**:
+`createGroupCheckout`, `getGroupPaymentStatus` e `groupReaderCheckout`: gli
+stessi tre gesti quando a pagare è un gruppo di conti insieme.
 
-  | Stato SumUp | Stato Tana Drink |
-  | --- | --- |
-  | `ACCEPTED` | `in_preparazione` |
-  | `COMPLETED` | `ritirato` |
-  | `CANCELLED` | `ritirato` |
-  | altri (es. `CREATED`) | ignorato (200 OK) |
+## Notifiche push
 
-- **Side effects**: aggiorna `status` dell'ordine con `sumup_sale_id` corrispondente.
-- **Requisiti**: `REQ-SUMUP-WEBHOOK-001`
+- `notifyOrderUpdate` — trigger su `orders/{orderId}`: avvisa il **cliente**
+  quando il drink è pronto o l'ordine è annullato.
+- `notifyNewOrder` — trigger su `orders/{orderId}`: avvisa il **personale** di
+  un ordine appena arrivato.
+- `notifyStaffCall` — trigger su `staff_calls/{callId}`: la chiamata al tavolo.
+
+## Amministrazione
+
+- `staffAdmin` — callable (solo bartender): crea, elenca, modifica ed elimina
+  gli account dello staff col loro ruolo (custom claim).
+- `risolviNumeroDuplicato` — trigger su `orders/{orderId}`: se due conti
+  nascono con lo stesso numero, ne riassegna uno.
 
 ---
 
@@ -146,8 +145,7 @@ npm run test:watch    # modalità watch
 npm run test:coverage # con coverage su functions/lib
 ```
 
-- **Unit** ([tests/unit/sumup-core.test.js](../tests/unit/sumup-core.test.js)):
-  testano la logica pura (mapping, payload, parsing).
+- **Unit** ([tests/unit/](../tests/unit/)): la logica pura (decisioni, parsing, payload).
 - **BDD** ([tests/bdd/](../tests/bdd/)): scenari Given/When/Then per ciascuna function,
   con Firestore in-memory ([tests/helpers/fakeFirestore.js](../tests/helpers/fakeFirestore.js))
   e `fetch` SumUp mockato. Ogni test è tracciato da un ID `TC-*` referenziato nei requisiti.

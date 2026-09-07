@@ -57,15 +57,25 @@ const conto = (n, items) => ({
   order_items: items.map((i) => ({ ...i, unit_price: 10 })),
 })
 
+// UN DATO CHE ESPLODE QUANDO LO SI LEGGE. Qui c'era una riga senza nome:
+// `item.name.toUpperCase()` saltava, e il ticket si fermava a metà
+// builder. Da BUG-086 una riga senza nome non ferma più niente — esce
+// «(SENZA NOME)» e la carta esce lo stesso — quindi per tenere in piedi
+// QUESTA prova, che è sul residuo e non sul nome, il guasto si mette con
+// un campo che non si lascia nemmeno scrivere — un oggetto senza
+// prototipo, su cui `String(...)` esplode: sta per qualunque cosa possa
+// andare storta a metà ticket, oggi o fra sei mesi.
+const rigaChePlode = () => ({ qty: 1, name: Object.create(null) })
+
 describe('una stampa che si ferma a metà non sporca quella dopo', () => {
   it('IL DIFETTO: due conti diversi finivano sullo stesso ticket', async () => {
     const { printComanda } = await import('../../src/lib/printer.js')
-    // Conto 1: la seconda riga non ha nome. Il ticket è già cominciato — la
+    // Conto 1: la seconda riga è storta. Il ticket è già cominciato — la
     // prima riga è nel builder — e lì salta tutto. È il dato storto di una
     // sera qualunque; quello che conta è che la stampa si interrompa DOPO
     // aver scritto qualcosa.
     await expect(
-      printComanda(conto(1, [{ qty: 1, name: 'Mojito' }, { qty: 1 }]))
+      printComanda(conto(1, [{ qty: 1, name: 'Mojito' }, rigaChePlode()]))
     ).rejects.toThrow()
     expect(finestre).toHaveLength(0) // niente è uscito, giusto così
 
@@ -83,13 +93,57 @@ describe('una stampa che si ferma a metà non sporca quella dopo', () => {
     const { printComanda } = await import('../../src/lib/printer.js')
     // Quando una comanda non esce, la coda libera la pretesa e al prossimo
     // snapshot ci riprova: il residuo si sommava a ogni tentativo.
-    const storto = conto(1, [{ qty: 1, name: 'Mojito' }, { qty: 1 }])
+    const storto = conto(1, [{ qty: 1, name: 'Mojito' }, rigaChePlode()])
     for (let giro = 0; giro < 3; giro++) {
       await expect(printComanda(storto)).rejects.toThrow()
     }
     await printComanda(conto(2, [{ qty: 1, name: 'Negroni' }]))
     expect(finestre).toHaveLength(1)
     expect(carta()[0].match(/MOJITO/g)).toBe(null)
+  })
+})
+
+// ── UN DOCUMENTO STORTO NON SI MANGIA IL TICKET (BUG-086) ────────────
+//
+// `item.name.toUpperCase()`, senza difesa: una riga senza nome — un
+// ordine vecchio, una scrittura arrivata a metà — faceva saltare la
+// comanda, e l'auto-stampa ci riprovava a ogni snapshot senza uscire mai.
+// Al banco è un giro di lavoro che non arriva e nessuno che sappia
+// perché. Due funzioni più sotto, l'ordine al fornitore la difesa ce
+// l'aveva già: era in un posto solo.
+//
+// La regola adesso è una per tutte le stampe: la carta ESCE, e si vede
+// cos'è storto.
+describe('le righe con i dati mancanti', () => {
+  it('la comanda esce lo stesso, e dice quale riga non ha nome', async () => {
+    const { printComanda } = await import('../../src/lib/printer.js')
+    await printComanda(conto(1, [{ qty: 2, name: 'Mojito' }, { qty: 1 }]))
+    expect(finestre).toHaveLength(1)
+    const foglio = carta()[0]
+    expect(foglio).toMatch(/M ?O ?J ?I ?T ?O/)
+    expect(foglio).toMatch(/\( ?S ?E ?N ?Z ?A ? ?N ?O ?M ?E ?\)/)
+  })
+
+  it('e lo scontrino non stampa più «undefined» né «NaN€»', async () => {
+    const { printScontrino } = await import('../../src/lib/printer.js')
+    const stampa = printScontrino({
+      id: 'o7',
+      daily_number: 7,
+      total: 10,
+      created_at: '2026-08-24T21:00:00.000Z',
+      // Una riga senza nome e senza prezzo: capita sui documenti vecchi.
+      order_items: [{ qty: 1 }],
+    })
+    // Il logo non arriva (qui non arriva mai): si dice subito, se no la
+    // prova sta ferma i tre secondi del tempo massimo.
+    for (let i = 0; i < 4; i++) await Promise.resolve()
+    immaginiInVolo.forEach((i) => i.onerror?.(new Error('niente logo')))
+    await stampa
+    const foglio = carta()[0]
+    expect(foglio).not.toContain('undefined')
+    expect(foglio).not.toContain('NaN')
+    expect(foglio).toContain('(senza nome)')
+    expect(foglio).toContain('0.00€')
   })
 })
 
@@ -178,8 +232,10 @@ describe('un lavoro di stampa contiene un ordine solo', () => {
     expect(foglio).toMatch(/3\s+M ?O ?J ?I ?T ?O/)
     expect(foglio).toContain('SPRITZ')
     expect(foglio).not.toContain('NEGRONI') // annullata: lavoro buttato
-    // Un'intestazione sola, cioè un conto solo.
-    expect(foglio.match(/D ?I ?R ?E ?T ?T ?O/g)).toHaveLength(1)
+    // Un'intestazione sola, cioè un conto solo. Dal 25/08 la fascia dice
+    // il conto invece di «DIRETTO» (BUG-089); sul ticket unito, che non è
+    // nessuna comanda in particolare, dice solo quello.
+    expect(foglio.match(/O ?R ?D ?I ?N ?E/g)).toHaveLength(1)
   })
 
   it('e prende un ORDINE, non una lista: non c’è modo di passargliene due', async () => {

@@ -74,6 +74,30 @@ sotto i 44px si sbaglia. Si **toglie**, in quest'ordine:
 
   Nel menu compaiono le sezioni della **pagina aperta**: sono le uniche che
   si conoscono senza esserci passati.
+- **Quando un gruppo di sottosezioni diventa una pagina sua** (regola
+  aggiunta il 26/08/2026, lavorando su «Fornitori»): quando risponde a una
+  DOMANDA DIVERSA da quella della pagina che lo ospita. Non conta quante
+  sono né quanto sono grosse — conta che chi le cerca le cerchi per un altro
+  motivo.
+
+  Il caso: Magazzino risponde a «cosa ho sullo scaffale», e ci teneva dentro
+  Ordini, Scadenzario e Fornitori, che rispondono a «con chi lavoro e quanto
+  gli devo». Stavano lì per contiguità (parlano tutti di prodotti), e chi
+  cercava una fattura passava da una schermata di giacenze. Adesso sono la
+  pagina «🏭 Fornitori», con le sue tre sottosezioni.
+
+  Il segnale che il gruppo è maturo, in pratica: **le sue voci non
+  compaiono mai nella stessa frase** delle altre («guarda quanto gin è
+  rimasto» / «guarda se abbiamo pagato Nova»), e spesso **le vede un ruolo
+  diverso** — che è quello che è successo qui, dove il trasloco ha portato
+  con sé il vincolo `isAdmin` che il magazzino non aveva.
+
+  Traslocare costa poco se il meccanismo è quello di sempre: una voce in
+  `NAV_GESTIONALE` (`src/lib/sezioni.js`), un componente contenitore fatto
+  come `CassaTab.jsx` — elenco `SEZIONI` più un ramo per voce — e i pannelli
+  che si spostano interi. Chi trasloca guarda anche i **vecchi indirizzi**
+  (`VECCHI_INDIRIZZI` in `sezioni.js`): una pagina che sparisce ne lascia in
+  giro, una sottosezione no, perché le sottosezioni non stanno nell'URL.
 - **Dentro una sottosezione, lista e dettaglio non sono un terzo livello di
   menu.** Una sottosezione può essere fatta di una lista che si apre su un
   dettaglio — le chiusure di cassa in Statistiche → Per serata: si tocca una

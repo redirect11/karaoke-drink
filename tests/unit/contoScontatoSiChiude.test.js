@@ -32,11 +32,6 @@ vi.mock('../../src/lib/firebaseClient.js', () => ({
   functions: {},
   storage: {},
 }))
-vi.mock('../../src/lib/sumupApi.js', () => ({
-  createSumUpSale: vi.fn(),
-  updateSumUpSaleStatus: vi.fn(),
-  toSumUpStatus: vi.fn(),
-}))
 
 // La cache non si aggiorna da sola: risponde sempre col documento com'era
 // prima del gesto. Chi rilegge, qui, rilegge il passato.

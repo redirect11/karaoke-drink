@@ -34,11 +34,6 @@ vi.mock('../../src/lib/firebaseClient.js', () => ({
   functions: {},
   storage: {},
 }))
-vi.mock('../../src/lib/sumupApi.js', () => ({
-  createSumUpSale: vi.fn(),
-  updateSumUpSaleStatus: vi.fn(),
-  toSumUpStatus: vi.fn(),
-}))
 
 // LA CACHE NON SI AGGIORNA DA SOLA. Risponde sempre con `stato.ordine`,
 // cioè il documento com'era prima del gesto: è la fotografia di quel

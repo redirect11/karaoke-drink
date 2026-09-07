@@ -14,7 +14,6 @@ import {
   giorniDiConta,
   consumoSettimanale,
   purchaseOrderTotals,
-  invoiceTotals,
   consumptionDiff,
 } from '../../src/lib/warehouse.js'
 
@@ -181,21 +180,10 @@ describe('consumptionDiff (modifica ordine con scorte già scalate)', () => {
   })
 })
 
-describe('invoiceTotals', () => {
-  const invoices = [
-    { supplier_id: 'nova', supplier_name: 'NOVA', amount: 100, paid: false },
-    { supplier_id: 'nova', supplier_name: 'NOVA', amount: 50, paid: false },
-    { supplier_id: 'mar', supplier_name: 'MAR', amount: 30, paid: false },
-    { supplier_id: 'nova', supplier_name: 'NOVA', amount: 999, paid: true },
-  ]
-  it('totale da pagare, pagato e ripartizione per fornitore', () => {
-    const t = invoiceTotals(invoices)
-    expect(t.unpaid).toBe(180)
-    expect(t.paid).toBe(999)
-    expect(t.bySupplier[0]).toMatchObject({ supplier_id: 'nova', unpaid: 150, count: 2 })
-    expect(t.bySupplier[1]).toMatchObject({ supplier_id: 'mar', unpaid: 30 })
-  })
-})
+// `invoiceTotals` non sta piu' qui: e' passato in src/lib/fatture.js con
+// BUG-100, perche' da quando una nota di credito sottrae i totali devono
+// conoscere i tipi di documento. Le sue prove stanno in
+// tests/unit/fatture.test.js, insieme al segno.
 
 describe('suggestedPackages (riordino GENERATORE ORDINI)', () => {
   it('sotto soglia: riporta a 2x la soglia in confezioni (minimo 1)', () => {

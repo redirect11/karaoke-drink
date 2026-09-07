@@ -14,7 +14,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, within } from '@testing-library/react'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter } from '../helpers/router.jsx'
 import '@testing-library/jest-dom/vitest'
 
 vi.mock('react-router-dom', async (orig) => {
@@ -92,10 +92,6 @@ vi.mock('../../src/lib/printer.js', () => ({
 vi.mock('../../src/lib/paymentsApi.js', () => ({
   readerCheckout: vi.fn(async () => ({})),
   readerTerminate: vi.fn(async () => {}),
-}))
-vi.mock('../../src/lib/sumupApi.js', () => ({
-  syncSumUpProducts: vi.fn(async () => ({ synced: 0 })),
-  isSumUpEnabled: false,
 }))
 vi.mock('../../src/lib/staffApi.js', () => ({ preloadStaff: vi.fn() }))
 vi.mock('../../src/lib/pendingOrders.js', () => ({

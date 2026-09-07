@@ -29,7 +29,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { act, render, screen, within, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter } from '../helpers/router.jsx'
 import '@testing-library/jest-dom/vitest'
 
 // Dove si va toccando una card: la spia dice se si apre il conto giusto.
@@ -161,10 +161,6 @@ vi.mock('../../src/lib/printer.js', () => ({
 vi.mock('../../src/lib/paymentsApi.js', () => ({
   readerCheckout: vi.fn(async () => ({})),
   readerTerminate: vi.fn(async () => {}),
-}))
-vi.mock('../../src/lib/sumupApi.js', () => ({
-  syncSumUpProducts: vi.fn(async () => ({ synced: 0 })),
-  isSumUpEnabled: false,
 }))
 vi.mock('../../src/lib/staffApi.js', () => ({ preloadStaff: vi.fn() }))
 // Il perché la cassa non si può chiudere esce come avviso al tocco

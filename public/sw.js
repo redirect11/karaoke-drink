@@ -1,12 +1,29 @@
 // Service worker minimale per la PWA.
 // Fornisce un cache di base e gestisce i click sulle notifiche.
-const CACHE = 'tana-drink-v3'
+const CACHE = 'tana-drink-v4'
 
+// IL LOGO STA IN CIMA ALLA LISTA PERCHÉ LA STAMPA LO ASPETTA (BUG-086).
+// `logo.png` è la risorsa più richiesta dell'app — scontrino, preconto,
+// avvisi in pagina, notifiche di sistema — ed era l'unica di quelle fisse
+// che qui dentro non c'era: la si andava a prendere in rete a ogni giro.
+// La sera del 24/08 quella richiesta è rimasta appesa (rete che c'è ma non
+// risponde) e con lei si è fermato lo scontrino di un conto appena
+// riscosso.
+const PRECARICATE = ['./', './index.html', './favicon.svg', './manifest.webmanifest', './logo.png']
+
+// La lista cambia, e con lei il nome della cache (v3 → v4): un service
+// worker nuovo si installa, `skipWaiting` lo fa partire subito e
+// `activate` butta le cache vecchie. Chi ha l'app aperta con la versione
+// di prima non perde niente — le pagine restano servite finché non si
+// ricaricano, e tutto quello che sta in v3 sta anche in v4 (più il logo).
 self.addEventListener('install', (event) => {
   self.skipWaiting()
   event.waitUntil(
     caches.open(CACHE).then((cache) =>
-      cache.addAll(['./', './index.html', './favicon.svg', './manifest.webmanifest'])
+      // `addAll` è tutto-o-niente: se una sola risorsa manca non si
+      // precarica NULLA. L'errore si ingoia — il service worker si
+      // installa lo stesso e le richieste passano dalla rete come prima.
+      cache.addAll(PRECARICATE)
     ).catch(() => {})
   )
 })
@@ -20,6 +37,29 @@ self.addEventListener('activate', (event) => {
   self.clients.claim()
 })
 
+// PRIMA LA CACHE, SOLO PER IL LOGO. Precaricarlo non basta: qui sotto si
+// va in rete PER PRIMA COSA e la cache si guarda solo quando la rete
+// FALLISCE — e una richiesta che resta appesa non fallisce mai, quindi
+// nessuno arriva mai alla copia salvata. È il difetto del 24/08: la rete
+// non ha detto né sì né no, e la stampa dello scontrino è rimasta lì.
+// Per il logo la rete esce dal percorso: si risponde con la copia che c'è
+// e si va a riprendere quella nuova in sottofondo, per la volta dopo. Il
+// logo può permetterselo perché è un'immagine ferma — cambiarlo cambia
+// l'indirizzo (le impostazioni del locale) o passa da una versione nuova
+// dell'app, che rifà la cache.
+const PRIMA_LA_CACHE = /\/logo\.png$/
+
+function dallaRete(request) {
+  return fetch(request)
+    .then((res) => {
+      if (res.ok && res.type === 'basic') {
+        const copy = res.clone()
+        caches.open(CACHE).then((c) => c.put(request, copy)).catch(() => {})
+      }
+      return res
+    })
+}
+
 // Network-first per le richieste same-origin, con fallback alla cache.
 // IMPORTANTE: mai intercettare richieste cross-origin (Firestore/API in
 // streaming): metterle in cache corrompe il protocollo realtime.
@@ -28,15 +68,21 @@ self.addEventListener('fetch', (event) => {
   if (request.method !== 'GET') return
   const url = new URL(request.url)
   if (url.origin !== self.location.origin) return
-  event.respondWith(
-    fetch(request)
-      .then((res) => {
-        if (res.ok && res.type === 'basic') {
-          const copy = res.clone()
-          caches.open(CACHE).then((c) => c.put(request, copy)).catch(() => {})
-        }
-        return res
+  if (PRIMA_LA_CACHE.test(url.pathname)) {
+    event.respondWith(
+      caches.match(request).then((inCache) => {
+        const inArrivo = dallaRete(request)
+        if (!inCache) return inArrivo
+        // La copia nuova aggiorna la cache quando arriva; se non arriva,
+        // pazienza — quello che serviva è già stato dato.
+        inArrivo.catch(() => {})
+        return inCache
       })
+    )
+    return
+  }
+  event.respondWith(
+    dallaRete(request)
       .catch(() =>
         caches.match(request).then((r) => {
           if (r) return r

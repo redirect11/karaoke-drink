@@ -18,6 +18,7 @@ import { allServed } from '../lib/comande.js'
 import { activeVouchers } from '../lib/vouchers.js'
 import { printScontrino, printScontrinoAcconto, printFattura, loadPrinterSettings, aliquotaScontrino, claimReceiptPrint, reclaimReceiptPrint, releaseReceiptPrint, scontrinoGiaUscito } from '../lib/printer.js'
 import { accontoDaStampare, tastoAcconto } from '../lib/scontrinoAcconto.js'
+import { moduloAttivo } from '../lib/licenza.js'
 import { showToast, toastError } from '../lib/toast.js'
 import {
   remainingItems,
@@ -325,6 +326,8 @@ export default function PaymentScreen({ order: orderProp, settings, onClose, onP
   // dove capita spesso che lo scontrino di cortesia non lo voglia nessuno:
   // un tasto in più qui vale solo se quel caso è la normalità del locale.
   const riscuotiSenzaStampa = settings?.riscuoti_senza_stampa === true
+  // La fattura di cortesia al cliente: funzione premium (lib/licenza.js).
+  const fattureOn = moduloAttivo(settings, 'fatture')
   const due = orderDue(order)
   // Sconto più grande del conto: capita solo con la strategia "avvisa"
   // (Impostazioni → Sconto e righe del conto), quando si sconta e poi si
@@ -1199,7 +1202,13 @@ export default function PaymentScreen({ order: orderProp, settings, onClose, onP
             </div>
           )}
 
-          {/* Come nel POS: Codice Lotteria · Preconto · Invia fattura */}
+          {/* Come nel POS: Codice Lotteria · Preconto · Invia fattura.
+              LA FATTURA È UNA FUNZIONE PREMIUM (REQ-LIC-001): dove il
+              modulo non lavora il tasto non c'è, ed è l'unica porta della
+              modale più in basso — `showInvoice` lo accende solo questo.
+              Il numero di una fattura già emessa NON si tocca: resta
+              sull'ordine e nella sua collezione, e torna a vedersi il
+              giorno che il modulo si riaccende. */}
           <div style={{ display: 'flex', gap: 6, marginTop: 8, flexShrink: 0 }}>
             <button className="btn ghost small grow" onClick={() => setShowLottery(true)}>
               🎟 Codice Lotteria{order.lottery_code ? ' ✓' : ''}
@@ -1210,9 +1219,11 @@ export default function PaymentScreen({ order: orderProp, settings, onClose, onP
             >
               🖨 Preconto
             </button>
-            <button className="btn ghost small grow" onClick={() => setShowInvoice(true)}>
-              📧 Invia fattura{order.invoice_number ? ' ✓' : ''}
-            </button>
+            {fattureOn && (
+              <button className="btn ghost small grow" onClick={() => setShowInvoice(true)}>
+                📧 Invia fattura{order.invoice_number ? ' ✓' : ''}
+              </button>
+            )}
           </div>
         </div>
 

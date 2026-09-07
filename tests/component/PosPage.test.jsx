@@ -8,7 +8,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { StrictMode } from 'react'
 import { render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter } from '../helpers/router.jsx'
 
 // Spia sulla navigazione: serve a verificare che "← Ordini" riporti davvero
 // alla coda, non solo che non esploda.
@@ -129,14 +129,24 @@ import {
 } from '../../src/lib/api.js'
 import { printComanda } from '../../src/lib/printer.js'
 
-function mount() {
+// LA CASSA SI APRE IN DUE TEMPI. Al primo disegno il numero del conto
+// ancora non c'e' — si scrive «#…» — e insieme a lui stanno arrivando gli
+// ultimi prodotti battuti. Aspettare che il numero vero sia a schermo e'
+// aspettare la cassa pronta, quella che vede chi ci lavora: senza, i test
+// asserivano su mezza schermata e i due aggiornamenti cadevano fuori dal
+// test, che e' quello che React segnala con l'avviso «act».
+const cassaPronta = () => screen.findAllByText('#9')
+
+async function mount() {
   // Il carrello persiste in localStorage: pulito per ogni test.
   localStorage.clear()
-  return render(
+  const utils = render(
     <MemoryRouter>
       <PosPage />
     </MemoryRouter>
   )
+  await cassaPronta()
+  return utils
 }
 
 beforeEach(() => {
@@ -144,8 +154,8 @@ beforeEach(() => {
 })
 
 describe('cassa: layout identico al dettaglio ordine', () => {
-  it('categorie a sinistra, griglia al centro, ORDINE a destra', () => {
-    mount()
+  it('categorie a sinistra, griglia al centro, ORDINE a destra', async () => {
+    await mount()
     expect(screen.getByRole('button', { name: 'Cocktail' })).toBeInTheDocument()
     expect(screen.getByText('Gin Tonic')).toBeInTheDocument()
     // La testata porta il PROGRESSIVO previsto, mai una parola al suo posto:
@@ -159,7 +169,7 @@ describe('cassa: layout identico al dettaglio ordine', () => {
 
   it('tap sulla griglia → riga a destra con +/− e totale live', async () => {
     const user = userEvent.setup()
-    mount()
+    await mount()
     await user.click(screen.getByText('Mojito'))
     await user.click(screen.getAllByText('Mojito')[0])
     expect(screen.getAllByText('2').length).toBeGreaterThan(0)
@@ -170,7 +180,7 @@ describe('cassa: layout identico al dettaglio ordine', () => {
 describe('creazione: ordine creato al primo item, nome chiesto alla chiusura', () => {
   it('aggiungere un item CREA subito l’ordine (createOrder) con quegli item', async () => {
     const user = userEvent.setup()
-    mount()
+    await mount()
     await user.click(screen.getByText('Mojito'))
     // l'ordine si crea da solo poco dopo l'aggiunta (senza cliccare Conferma)
     await waitFor(() => expect(createOrder).toHaveBeenCalledTimes(1))
@@ -181,7 +191,7 @@ describe('creazione: ordine creato al primo item, nome chiesto alla chiusura', (
 
   it('alla chiusura di un ordine appena creato chiede il nome e lo salva', async () => {
     const user = userEvent.setup()
-    mount()
+    await mount()
     await user.click(screen.getByText('Mojito'))
     await user.click(screen.getByRole('button', { name: /Torna agli ordini/ }))
     await waitFor(() => expect(createOrder).toHaveBeenCalledTimes(1))
@@ -193,7 +203,7 @@ describe('creazione: ordine creato al primo item, nome chiesto alla chiusura', (
 
   it('chiusura senza nome: nessun nome salvato (resta il progressivo)', async () => {
     const user = userEvent.setup()
-    mount()
+    await mount()
     await user.click(screen.getByText('Mojito'))
     await user.click(screen.getByRole('button', { name: /Torna agli ordini/ }))
     await waitFor(() => expect(createOrder).toHaveBeenCalledTimes(1))
@@ -208,7 +218,7 @@ describe('pagamento diretto dal POS', () => {
     const user = userEvent.setup()
     // server lento: la creazione non risolve mai, la UI non deve aspettarla
     createOrder.mockImplementationOnce(() => new Promise(() => {}))
-    mount()
+    await mount()
     await user.click(screen.getByText('Mojito'))
     await user.click(screen.getByRole('button', { name: /Pagamento/ }))
     // schermata aperta all'istante sull'ordine LOCALE (totale già giusto)
@@ -221,7 +231,7 @@ describe('pagamento diretto dal POS', () => {
     // Anche col pagamento diretto il conto nasce da fare: chi lo batte non
     // ha ancora versato niente, e chi prepara lo prende quando comincia.
     const user = userEvent.setup()
-    mount()
+    await mount()
     await user.click(screen.getByText('Mojito'))
     await user.click(screen.getByRole('button', { name: /Pagamento/ }))
     await waitFor(() => expect(createOrder).toHaveBeenCalledTimes(1))
@@ -234,7 +244,7 @@ describe('pagamento diretto dal POS', () => {
 describe('ricerca prodotti', () => {
   it('la barra di ricerca filtra la griglia prodotti', async () => {
     const user = userEvent.setup()
-    mount()
+    await mount()
     await user.type(screen.getByLabelText('Cerca prodotto'), 'gin')
     expect(screen.getByText('Gin Tonic')).toBeInTheDocument()
     expect(screen.queryByText('Mojito')).not.toBeInTheDocument()
@@ -242,18 +252,20 @@ describe('ricerca prodotti', () => {
 })
 
 describe('conto di gruppo dal POS', () => {
-  const mountGroup = (id) => {
+  const mountGroup = async (id) => {
     localStorage.clear()
-    return render(
+    const utils = render(
       <MemoryRouter initialEntries={[`/pos?group=${id}`]}>
         <PosPage />
       </MemoryRouter>
     )
+    await cassaPronta()
+    return utils
   }
 
   it('mostra il gruppo e ci associa l’ordine creato', async () => {
     const user = userEvent.setup()
-    mountGroup('g1')
+    await mountGroup('g1')
     expect(screen.getByText(/Tavolo 4/)).toBeInTheDocument()
     await user.click(screen.getByText('Mojito'))
     await waitFor(() => expect(createOrder).toHaveBeenCalledTimes(1))
@@ -262,14 +274,14 @@ describe('conto di gruppo dal POS', () => {
     expect(arg.group_name_snapshot).toBe('Tavolo 4')
   })
 
-  it('un gruppo CONTENITORE non può avere ordini diretti: avvisa', () => {
-    mountGroup('g2')
+  it('un gruppo CONTENITORE non può avere ordini diretti: avvisa', async () => {
+    await mountGroup('g2')
     expect(screen.getByText(/contiene altri gruppi/)).toBeInTheDocument()
   })
 
   it('si può associare un gruppo anche senza arrivarci dal gruppo', async () => {
     const user = userEvent.setup()
-    mount() // POS normale, nessun ?group=
+    await mount() // POS normale, nessun ?group=
     await user.click(screen.getByRole('button', { name: /Associa a gruppo/ }))
     await user.click(screen.getByRole('button', { name: /Tavolo 4/ }))
     await user.click(screen.getByText('Mojito'))
@@ -279,7 +291,7 @@ describe('conto di gruppo dal POS', () => {
 
   it('un gruppo CONTENITORE non è fra quelli scegliibili', async () => {
     const user = userEvent.setup()
-    mount()
+    await mount()
     await user.click(screen.getByRole('button', { name: /Associa a gruppo/ }))
     expect(screen.getByRole('button', { name: /Tavolo 4/ })).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: /Compleanno/ })).not.toBeInTheDocument()
@@ -287,7 +299,7 @@ describe('conto di gruppo dal POS', () => {
 
   it('senza gruppo l’ordine non ne porta nessuno', async () => {
     const user = userEvent.setup()
-    mount()
+    await mount()
     await user.click(screen.getByText('Mojito'))
     await waitFor(() => expect(createOrder).toHaveBeenCalledTimes(1))
     expect(createOrder.mock.calls[0][0].group_id).toBeNull()
@@ -295,17 +307,19 @@ describe('conto di gruppo dal POS', () => {
 })
 
 describe('gestione preparazione opzionale', () => {
-  const mountConWorkflow = (on) => {
+  const mountConWorkflow = async (on) => {
     localStorage.clear()
     subscribeSettings.mockImplementation((cb) => {
       cb({ order_group_default: 'uniti', workflow_enabled: on, service_mode: 'banco' })
       return () => {}
     })
-    return render(
+    const utils = render(
       <MemoryRouter>
         <PosPage />
       </MemoryRouter>
     )
+    await cassaPronta()
+    return utils
   }
 
   // Nasceva «in preparazione»: l'idea era che chi lo batte al banco lo stia
@@ -314,7 +328,7 @@ describe('gestione preparazione opzionale', () => {
   // compariva «Al banco». È «Lo preparo io» a dire quando si comincia.
   it('ATTIVA: l’ordine nasce «ricevuto», da fare', async () => {
     const user = userEvent.setup()
-    mountConWorkflow(true)
+    await mountConWorkflow(true)
     await user.click(screen.getByText('Mojito'))
     await waitFor(() => expect(createOrder).toHaveBeenCalledTimes(1))
     expect(createOrder.mock.calls[0][0].status).toBe('ricevuto')
@@ -322,7 +336,7 @@ describe('gestione preparazione opzionale', () => {
 
   it('SPENTA: l’ordine nasce e resta "ricevuto"', async () => {
     const user = userEvent.setup()
-    mountConWorkflow(false)
+    await mountConWorkflow(false)
     await user.click(screen.getByText('Mojito'))
     await waitFor(() => expect(createOrder).toHaveBeenCalledTimes(1))
     expect(createOrder.mock.calls[0][0].status).toBe('ricevuto')
@@ -330,7 +344,7 @@ describe('gestione preparazione opzionale', () => {
 
   it('il POS eredita la modalità di consegna del locale', async () => {
     const user = userEvent.setup()
-    mountConWorkflow(true)
+    await mountConWorkflow(true)
     await user.click(screen.getByText('Mojito'))
     await waitFor(() => expect(createOrder).toHaveBeenCalledTimes(1))
     expect(createOrder.mock.calls[0][0].service_mode).toBe('banco')
@@ -341,12 +355,15 @@ describe('gestione preparazione opzionale', () => {
 // creato un conto e lasciato lì, premendo la freccia non si tornava alla
 // lista degli ordini.
 describe('uscita dal POS', () => {
-  const mount = () =>
-    render(
+  const mount = async () => {
+    const utils = render(
       <MemoryRouter initialEntries={['/pos']}>
         <PosPage />
       </MemoryRouter>
     )
+    await cassaPronta()
+    return utils
+  }
 
   beforeEach(() => {
     vi.clearAllMocks()
@@ -355,14 +372,14 @@ describe('uscita dal POS', () => {
 
   it('senza niente in bozza torna subito alla coda', async () => {
     const user = userEvent.setup()
-    mount()
+    await mount()
     await user.click(screen.getByRole('button', { name: /Torna agli ordini/ }))
     expect(navigateSpy).toHaveBeenCalledWith('/bar')
   })
 
   it('col conto appena creato: dopo il nome torna alla coda', async () => {
     const user = userEvent.setup()
-    mount()
+    await mount()
     await user.click(screen.getByText('Mojito'))
     await user.click(screen.getByRole('button', { name: /Torna agli ordini/ }))
     await waitFor(() => expect(createOrder).toHaveBeenCalledTimes(1))
@@ -373,7 +390,7 @@ describe('uscita dal POS', () => {
 
   it('e anche scegliendo di non dare un nome', async () => {
     const user = userEvent.setup()
-    mount()
+    await mount()
     await user.click(screen.getByText('Mojito'))
     await user.click(screen.getByRole('button', { name: /Torna agli ordini/ }))
     await waitFor(() => expect(createOrder).toHaveBeenCalledTimes(1))
@@ -414,6 +431,9 @@ describe('testata del nuovo ordine', () => {
     )
     // Subito, senza aspettare la lettura del contatore.
     expect(screen.getAllByText('#9').length).toBeGreaterThan(0)
+    // …e poi la lettura arriva lo stesso: si aspetta qui, se no atterra a
+    // test finito.
+    await cassaPronta()
   })
 })
 
@@ -485,7 +505,7 @@ describe('uscire dal conto non aspetta il server', () => {
     const user = userEvent.setup()
     // La creazione non risponde: prima bastava a tenere fermo tutto.
     createOrder.mockImplementationOnce(() => new Promise(() => {}))
-    mount()
+    await mount()
     await user.click(screen.getByText('Mojito'))
     await user.click(screen.getByRole('button', { name: /Torna agli ordini/ }))
     expect(await screen.findByLabelText('Nome')).toBeInTheDocument()
@@ -503,7 +523,7 @@ describe('la bozza si consuma quando le righe partono', () => {
     const user = userEvent.setup()
     // La creazione non risponde: la copia salvata deve sparire lo stesso.
     createOrder.mockImplementationOnce(() => new Promise(() => {}))
-    mount()
+    await mount()
     await user.click(screen.getByText('Mojito'))
     await waitFor(() => expect(createOrder).toHaveBeenCalledTimes(1), { timeout: 2000 })
     expect(localStorage.getItem('tana:draft:new')).toBeNull()
@@ -512,7 +532,7 @@ describe('la bozza si consuma quando le righe partono', () => {
   it('ma a schermo le righe restano: la pagina non deve sembrare resettata', async () => {
     const user = userEvent.setup()
     createOrder.mockImplementationOnce(() => new Promise(() => {}))
-    mount()
+    await mount()
     await user.click(screen.getByText('Mojito'))
     await waitFor(() => expect(createOrder).toHaveBeenCalledTimes(1), { timeout: 2000 })
     // La riga del conto è ancora lì, col suo prezzo.
@@ -522,7 +542,7 @@ describe('la bozza si consuma quando le righe partono', () => {
   it('mandando le righe in pagamento, idem', async () => {
     const user = userEvent.setup()
     createOrder.mockImplementationOnce(() => new Promise(() => {}))
-    mount()
+    await mount()
     await user.click(screen.getByText('Mojito'))
     await user.click(screen.getByRole('button', { name: /Pagamento/ }))
     await waitFor(() => expect(localStorage.getItem('tana:draft:new')).toBeNull())
@@ -536,7 +556,7 @@ describe('la bozza si consuma quando le righe partono', () => {
 describe('annullare un conto appena battuto', () => {
   it('crea il conto e lo annulla: nella lista annullati ci deve essere', async () => {
     const user = userEvent.setup()
-    mount()
+    await mount()
     await user.click(screen.getByText('Mojito'))
     await user.click(screen.getByRole('button', { name: /Annulla ordine/ }))
     // Nel box di conferma, il tasto che conferma davvero.
@@ -562,7 +582,7 @@ describe('annullare un conto in creazione', () => {
 
   it('senza righe è acceso, e riporta in coda senza chiedere niente', async () => {
     const user = userEvent.setup()
-    mount()
+    await mount()
     await waitFor(() => expect(tastiAnnulla().length).toBeGreaterThan(0))
     tastiAnnulla().forEach((b) => expect(b).not.toBeDisabled())
     await user.click(tastiAnnulla()[0])
@@ -573,7 +593,7 @@ describe('annullare un conto in creazione', () => {
 
   it('con le righe battute resta acceso e chiede conferma', async () => {
     const user = userEvent.setup()
-    mount()
+    await mount()
     await user.click(screen.getByText('Mojito'))
     tastiAnnulla().forEach((b) => expect(b).not.toBeDisabled())
     await user.click(tastiAnnulla()[0])
@@ -634,7 +654,7 @@ describe('il pagamento mentre il server tace (BUG-017)', () => {
     const user = userEvent.setup()
     // Il server non risponde MAI: il pagamento non deve accorgersene.
     createOrder.mockImplementationOnce(() => new Promise(() => {}))
-    mount()
+    await mount()
     await user.click(screen.getAllByText('Mojito')[0])
     await user.click(screen.getAllByText('Gin Tonic')[0])
     await user.click(screen.getAllByRole('button', { name: /Pagamento/ })[0])
@@ -655,7 +675,7 @@ describe('il pagamento mentre il server tace (BUG-017)', () => {
           rispondeIlServer = () => res(ordineDaParams(params))
         })
     )
-    mount()
+    await mount()
     // Si battono Mojito e Gin Tonic e si apre subito il pagamento.
     await user.click(screen.getAllByText('Mojito')[0])
     await user.click(screen.getAllByText('Gin Tonic')[0])
@@ -702,7 +722,7 @@ describe('il pagamento mentre il server tace (BUG-017)', () => {
           rispondeIlServer = () => res(ordineDaParams(params))
         })
     )
-    const { unmount } = mount()
+    const { unmount } = await mount()
     await user.click(screen.getAllByText('Mojito')[0])
     // L'auto-creazione parte col prezzo di listino (7 €)…
     await waitFor(() => expect(createOrder).toHaveBeenCalledTimes(1), { timeout: 2000 })
@@ -759,7 +779,7 @@ describe('in sviluppo (StrictMode) la creazione funziona come al banco', () => {
 describe('battere ancora dopo aver chiuso il pagamento (server già risposto)', () => {
   it('le righe aggiunte dopo si ritrovano riaprendo il pagamento', async () => {
     const user = userEvent.setup()
-    mount()
+    await mount()
     await user.click(screen.getByText('Mojito'))
     await user.click(screen.getAllByRole('button', { name: /Paga/ })[0])
     await screen.findByRole('dialog', { name: /Pagamento/ })

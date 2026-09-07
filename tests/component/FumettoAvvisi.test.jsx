@@ -6,7 +6,7 @@
 // avvisi, perché chi lo tocca vuole vedere cos'è successo.
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
-import { render, screen, cleanup, waitFor } from '@testing-library/react'
+import { act, render, screen, cleanup, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import '@testing-library/jest-dom/vitest'
 import FumettoAvvisi from '../../src/components/FumettoAvvisi.jsx'
@@ -23,7 +23,11 @@ describe('il fumetto degli avvisi', () => {
 
   it('compare quando arriva un avviso', async () => {
     render(<FumettoAvvisi />)
-    annunciaFumetto({ title: 'Nuovo ordine #7', body: '2 prodotti' })
+    // L'annuncio non e' un gesto sulla pagina: e' un evento sparato da
+    // fuori (notify.js), e il fumetto ci si ridisegna sopra. `act` e' il
+    // modo con cui si dichiara «questo aggiorna lo stato»: senza, la
+    // schermata si aggiorna fuori dal giro e il test guarda quella di prima.
+    act(() => annunciaFumetto({ title: 'Nuovo ordine #7', body: '2 prodotti' }))
     expect(await screen.findByText('Nuovo ordine #7')).toBeInTheDocument()
     expect(screen.getByText('2 prodotti')).toBeInTheDocument()
   })
@@ -32,7 +36,7 @@ describe('il fumetto degli avvisi', () => {
     const user = userEvent.setup()
     const apri = vi.fn()
     render(<FumettoAvvisi onApri={apri} />)
-    annunciaFumetto({ title: 'Nuovo ordine #8' })
+    act(() => annunciaFumetto({ title: 'Nuovo ordine #8' }))
     await user.click(await screen.findByText('Nuovo ordine #8'))
     expect(apri).toHaveBeenCalled()
     await waitFor(() => expect(screen.queryByText('Nuovo ordine #8')).toBeNull())
@@ -41,10 +45,12 @@ describe('il fumetto degli avvisi', () => {
   it('sparisce da sé: è un richiamo, non una cosa da chiudere', async () => {
     vi.useFakeTimers()
     render(<FumettoAvvisi />)
-    annunciaFumetto({ title: 'Nuovo ordine #9' })
-    await vi.advanceTimersByTimeAsync(0)
+    act(() => annunciaFumetto({ title: 'Nuovo ordine #9' }))
+    await act(() => vi.advanceTimersByTimeAsync(0))
     expect(screen.getByText('Nuovo ordine #9')).toBeInTheDocument()
-    await vi.advanceTimersByTimeAsync(9000)
+    // Far scorrere l'orologio fa sparire il fumetto: e' un aggiornamento
+    // di stato come un altro, e va dichiarato.
+    await act(() => vi.advanceTimersByTimeAsync(9000))
     expect(screen.queryByText('Nuovo ordine #9')).toBeNull()
   })
 })

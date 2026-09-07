@@ -11,7 +11,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { MemoryRouter } from 'react-router-dom'
+import { MemoryRouter } from '../helpers/router.jsx'
 import '@testing-library/jest-dom/vitest'
 
 const ORDINE = {
@@ -22,8 +22,12 @@ const ORDINE = {
   customer_name: 'Luigi',
   items: [{ drink_id: 'd1', name: 'Negroni', qty: 1, price: 8 }],
   // Come lo restituisce mapOrder: le righe normalizzate stanno in
-  // order_items, ed è quello che la vista cliente somma.
-  order_items: [{ drink_id: 'd1', name: 'Negroni', qty: 1, unit_price: 8 }],
+  // order_items, ed è quello che la vista cliente somma. L'id della riga
+  // c'è davvero — mapOrder lo assegna a ognuna (`<ordine>-<posizione>`)
+  // ed è la chiave con cui React le distingue in lista. Senza, il finto
+  // ordine era più povero di uno vero e a ogni giro di test compariva
+  // l'avviso sulle chiavi mancanti.
+  order_items: [{ id: 'o1-0', drink_id: 'd1', name: 'Negroni', qty: 1, unit_price: 8 }],
   comande: [{ id: 'c1', seq: 1, status: 'ricevuto', items: [] }],
   total: 8,
   payments: [],
@@ -210,9 +214,15 @@ describe('la vista da girare al cliente', () => {
   it('niente riquadro «Il tuo numero»: quello è scritto per chi ordina', async () => {
     ruoloCorrente = 'staff'
     apri('?cliente=1')
-    await waitFor(() => expect(screen.queryByTestId('pos')).toBeNull())
+    // SI ASPETTA QUELLO CHE DEVE ESSERCI, non quello che non deve.
+    // Aspettare un'ASSENZA come segnale di «ha finito di caricare» non
+    // funziona: all'inizio non c'e' ancora niente, quindi l'attesa passa
+    // SUBITO e le prove sotto girano su una schermata a meta'. Questo test
+    // faceva rosso una volta su tre. Il conto disegnato, invece, c'e' solo
+    // a dati arrivati: da li' in poi le assenze si possono affermare.
+    expect(await screen.findByText(/Ordine #7/)).toBeInTheDocument()
+    expect(screen.queryByTestId('pos')).toBeNull()
     expect(screen.queryByText('Il tuo numero')).toBeNull()
-    expect(screen.getByText(/Ordine #7/)).toBeInTheDocument()
   })
 
   it('«Modifica» riporta al conto', async () => {

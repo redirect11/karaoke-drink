@@ -168,7 +168,14 @@ describe('la carta che esce dal banco', () => {
   })
 
   // IL TICKET DI QUATTRO JEFFERSON SEPARATI: una riga sola, e «CL: 4».
-  const QUATTRO_UGUALI = `          D I R E T T O     2 3 : 3 0
+  //
+  // La fascia è cambiata il 25/08/2026 (BUG-089): diceva «DIRETTO» su ogni
+  // ticket, adesso dice quale ticket è — «COMANDA 1 - ORDINE 7» — con
+  // l'ora scesa sotto, dentro lo stesso nero, perché accanto non ci sta.
+  // Dal conteggio in giù la carta è identica: qui si guarda
+  // l'accorpamento delle righe, e quello non si è mosso.
+  const QUATTRO_UGUALI = `    C O M A N D A   1   -   O R D I N E   7
+                   2 3 : 3 0
 CONTATORIE                                 CL: 4
 BAR                                      Vendeur
                     A n n a
@@ -195,7 +202,8 @@ BAR                                      Vendeur
     await printer.printComanda(
       conto([riga(), riga({ note: 'poco ghiaccio' }), riga({ note: 'poco ghiaccio' }), riga()])
     )
-    expect(nudo(carta())).toBe(`          D I R E T T O     2 3 : 3 0
+    expect(nudo(carta())).toBe(`    C O M A N D A   1   -   O R D I N E   7
+                   2 3 : 3 0
 CONTATORIE                                 CL: 4
 BAR                                      Vendeur
                     A n n a
@@ -223,7 +231,8 @@ BAR                                      Vendeur
         { id: 'c2', status: 'ricevuto', items: [riga(), riga()] },
       ],
     })
-    expect(nudo(carta())).toBe(`          D I R E T T O     2 3 : 3 0
+    expect(nudo(carta())).toBe(`                O R D I N E   7
+                   2 3 : 3 0
 CONTATORIE                                 CL: 4
 BAR                                      Vendeur
                     A n n a

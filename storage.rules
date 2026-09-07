@@ -3,6 +3,14 @@ rules_version = '2';
 // Regole Firebase Storage per Tana Drink.
 service firebase.storage {
   match /b/{bucket}/o {
+    // Il ruolo vive nei custom claims del token, come in firestore.rules:
+    // 'admin' e 'bartender' sono il backoffice, tutto il resto è cliente.
+    function isBartender() {
+      return request.auth != null
+        && 'role' in request.auth.token
+        && request.auth.token.role in ['admin', 'bartender'];
+    }
+
     // Foto dei drink: lettura pubblica (mostrate nel menù cliente),
     // scrittura/eliminazione solo da utenti autenticati (backoffice bartender).
     match /drinks/{file} {
@@ -13,6 +21,31 @@ service firebase.storage {
       allow create, update: if request.auth != null
                             && request.resource.size < 5 * 1024 * 1024
                             && request.resource.contentType.matches('image/.*');
+    }
+
+    // Allegati dei documenti fornitore (scadenzario, REQ-MAG-033): la foto o
+    // il PDF della fattura. NON SONO ROBA PUBBLICA come le foto dei drink:
+    // sono documenti contabili del locale, e il permesso è lo stesso che
+    // hanno le fatture in Firestore — `supplier_invoices` è riservata al
+    // bartender/admin, e la carta di quel documento non può essere più
+    // aperta del documento stesso. Una cartella per fattura, così il file si
+    // sa sempre di chi è.
+    //
+    // ATTENZIONE, e va saputo: l'app apre l'allegato con il download URL
+    // (`getDownloadURL`), che porta un token e vale per chiunque ce l'abbia.
+    // Quel link però sta scritto SOLO dentro il documento della fattura, che
+    // queste regole e quelle di Firestore proteggono: per averlo bisogna già
+    // poter leggere la fattura. Sostituire o togliere l'allegato cancella il
+    // file, e con lui il token.
+    match /fatture/{invoiceId}/{file} {
+      allow read, delete: if isBartender();
+      // 8 MB: lo stesso numero di PESO_MASSIMO in src/lib/allegati.js, dove
+      // è spiegato il perché. QUI c'è il limite vero — quello nell'app serve
+      // a dirlo prima, invece di far fallire un caricamento già partito.
+      allow create, update: if isBartender()
+                            && request.resource.size < 8 * 1024 * 1024
+                            && (request.resource.contentType.matches('image/.*')
+                                || request.resource.contentType == 'application/pdf');
     }
 
     // Tutto il resto è negato di default.

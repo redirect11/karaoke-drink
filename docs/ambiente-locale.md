@@ -244,6 +244,26 @@ Gli articoli di magazzino hanno anche **costo e IVA d'acquisto**: senza,
 costo al cl, valore di magazzino, margine e prezzo consigliato restano vuoti
 — cioè metà delle schermate che si vogliono provare.
 
+## Provare le regole Firestore
+
+Le regole sono l'unica barriera fra i dati del locale e chiunque abbia letto
+`apiKey` e `projectId` dal bundle — pubblici per disegno. Hanno una suite
+loro, che gira contro l'emulatore con le regole **vere** lette da
+`firestore.rules` (REQ-DEV-015):
+
+```sh
+npx firebase emulators:start --project demo-tana-drink   --only auth,firestore,storage --config firebase.collaudo.json
+npm run test:regole
+```
+
+Non stanno in `npm test`: senza emulatore acceso non partirebbero, e la CI
+diventerebbe rossa per un motivo che non è un difetto. Girano su progetti
+loro (`regole-*`), quindi non toccano i dati con cui stai lavorando.
+
+**Ogni prova è doppia**: che l'abuso sia bloccato conta quanto che l'uso
+legittimo passi. Una regola che chiude tutto è facile da scrivere e la sera
+manda a casa il locale.
+
 ## Cosa NON si prova in locale
 
 - **La stampante vera**: è un apparecchio sulla rete del bar, e da qui non

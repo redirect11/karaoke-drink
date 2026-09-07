@@ -194,8 +194,11 @@ export default function App() {
     if (!isFirebaseConfigured) return
     return onAuthStateChanged(auth, async (u) => {
       // Le impostazioni della stampante sono di chi è collegato su QUESTO
-      // dispositivo: cambiando persona cambia la scheda.
-      impostaUtenteStampante(u?.uid || null)
+      // dispositivo: cambiando persona cambia la scheda. Il nome viaggia
+      // insieme all'uid perché insieme cambiano, ed è quello che finisce
+      // sullo scontrino: la riga dell'operatore dice CHI STA STAMPANDO
+      // (BUG-088).
+      impostaUtenteStampante(u?.uid || null, u ? { name: u.displayName, email: u.email } : null)
       setCollegato(!!u)
       if (!u) return setStaffRole(null)
       try {

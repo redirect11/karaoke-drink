@@ -7,7 +7,7 @@
 // non si accende: lì ci si collega alla stampante vera, ed è il posto dove
 // provarla davvero.
 
-import { describe, it, expect, vi, afterEach } from 'vitest'
+import { describe, it, expect, vi, afterEach, beforeEach } from 'vitest'
 import { stampanteFintaAttiva, creaStampanteFinta, forzaStampanteFinta } from '../../src/lib/stampanteFinta.js'
 
 describe('quando si accende la stampante finta', () => {
@@ -134,5 +134,102 @@ describe('la forzatura dal terminale', () => {
     forzaStampanteFinta(null)
     expect(stampanteFintaAttiva(AMBIENTE_TEST)).toBe(false)
     expect(stampanteFintaAttiva({ DEV: true })).toBe(true)
+  })
+})
+
+// Le finestre del facsimile aperte dalla stampante finta: contarle è il
+// modo di dire se la carta e' uscita.
+let finestre
+
+// ── IL GUASTO FINTO (BUG-098) ────────────────────────────────────────
+//
+// La catena della diagnostica — risposta di errore, registro, avviso a
+// schermo — fino a qui si provava solo al banco, con la carta finita in
+// mano: ed è esattamente per questo che «la chiusura di cassa spesso non
+// stampa» è sopravvissuto tanto. Con la stampante finta che sa rompersi,
+// tutta la catena si prova da un computer di sviluppo.
+describe('la stampante finta sa anche rompersi', () => {
+  beforeEach(() => {
+    vi.resetModules()
+    localStorage.clear()
+    finestre = []
+    window.open = vi.fn(() => {
+      const scritto = []
+      finestre.push(scritto)
+      return { document: { write: (h) => scritto.push(h), close: () => {} }, focus: () => {} }
+    })
+    window.Image = class {
+      set src(_v) {
+        queueMicrotask(() => this.onerror?.(new Error('404')))
+      }
+    }
+  })
+
+  it('di suo non si rompe: nessun guasto, e la risposta arriva', async () => {
+    const { guastoFinto } = await import('../../src/lib/stampanteFinta.js')
+    expect(guastoFinto()).toBe(null)
+
+    const P = await import('../../src/lib/printer.js')
+    const { statoRegistro } = await import('../../src/lib/registroStampe.js')
+    await P.printTest()
+    expect(finestre).toHaveLength(1)
+    expect(statoRegistro().voci[0].esito).toBe('riuscita')
+  })
+
+  it('«carta finita»: niente facsimile, e il motivo arriva fino al registro', async () => {
+    // CAMBIATO col ripensamento di BUG-098 (01/09/2026): la stampa non
+    // aspetta più la risposta, quindi NON rifiuta più — chi ha chiesto la
+    // stampa è andato avanti da un pezzo. Il guasto si legge dopo, nel
+    // registro, che è il posto dove serve a chi ripara.
+    const { impostaGuastoFinto } = await import('../../src/lib/stampanteFinta.js')
+    impostaGuastoFinto('carta')
+
+    const P = await import('../../src/lib/printer.js')
+    const { statoRegistro } = await import('../../src/lib/registroStampe.js')
+    await expect(P.printTest()).resolves.toBeUndefined()
+    // Come al banco: la stampante ha detto di no e la carta non esce.
+    expect(finestre).toHaveLength(0)
+    const voce = statoRegistro().voci[0]
+    expect(voce.esito).toBe('fallita')
+    expect(voce.motivo).toMatch(/la carta è finita/)
+  })
+
+  it('«nessuna risposta»: la carta esce e la voce resta in attesa', async () => {
+    // È il caso sospettato dietro la chiusura di cassa che non si vede
+    // uscire, e il più difficile da riconoscere: la stampante fa MENO, non
+    // di più. Un fallimento non c'è — e dirlo sarebbe una bugia. Da
+    // BUG-098 (ripensamento) non c'è nemmeno più un'attesa: la stampa si
+    // chiude subito e la voce resta «inviata» per sempre.
+    const { impostaGuastoFinto } = await import('../../src/lib/stampanteFinta.js')
+    impostaGuastoFinto('muta')
+
+    const P = await import('../../src/lib/printer.js')
+    const { statoRegistro } = await import('../../src/lib/registroStampe.js')
+    await P.printTest()
+
+    expect(finestre).toHaveLength(1) // il facsimile c'è: la carta è uscita
+    expect(statoRegistro().voci[0].esito).toBe('inviata')
+  })
+
+  it('il guasto si spegne, e la stampa torna a riuscire', async () => {
+    const { impostaGuastoFinto, guastoFinto } = await import('../../src/lib/stampanteFinta.js')
+    impostaGuastoFinto('carta')
+    impostaGuastoFinto(null)
+    expect(guastoFinto()).toBe(null)
+
+    const P = await import('../../src/lib/printer.js')
+    await P.printTest()
+    expect(finestre).toHaveLength(1)
+  })
+
+  it('un guasto che non esiste non si accende: si scrive quello, o niente', async () => {
+    // La leva la muove chi sta provando, ma il valore arriva da
+    // localStorage: una memoria sporca non deve poter inventare un
+    // comportamento che nel codice non c'è.
+    const { impostaGuastoFinto, guastoFinto } = await import('../../src/lib/stampanteFinta.js')
+    impostaGuastoFinto('esplodi')
+    expect(guastoFinto()).toBe(null)
+    localStorage.setItem('tana_stampante_finta_guasto', 'esplodi')
+    expect(guastoFinto()).toBe(null)
   })
 })

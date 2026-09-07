@@ -17,11 +17,25 @@ import {
   createSupplier,
   updateSupplier,
   deleteSupplier,
+  fetchSupplierPrices,
+  salvaRigaListino,
+  togliProdottoDagliOrdini,
   subscribeSettings,
   subscribeActiveOrders,
   subscribeDrinks,
+  settingsIniziali,
   DEFAULT_SETTINGS,
 } from '../lib/api.js'
+import { voceVisibile } from '../lib/licenza.js'
+import {
+  coloreACaso,
+  coloreFornitore,
+  COLORI_FORNITORE,
+  righeDiProdotto,
+  fornitoreProposto,
+  fornitoriPerArticolo,
+} from '../lib/listini.js'
+import ListinoFornitore from './ListinoFornitore.jsx'
 import { useCashSession } from '../lib/cashSession.js'
 import { impegnatoPerArticolo, articoloPrevisto } from '../lib/impegnato.js'
 import {
@@ -49,6 +63,10 @@ import {
   filterItems,
   ASSORTIMENTI,
   assortimentoDi,
+  ETICHETTA_ASSORTIMENTO,
+  mancaNellaScheda,
+  prodottiDaCompletare,
+  schedaCompletata,
   costWithVat,
   stockValue,
   smallUnits,
@@ -57,6 +75,7 @@ import {
   unitaGenerica,
   UNIT_LABEL,
 } from '../lib/inventory.js'
+import { cambioAMano, cambioDaAvvisare } from '../lib/statoAssortimento.js'
 import { formatPrice } from '../lib/orderStatus.js'
 import { parseSupplierList } from '../lib/warehouse.js'
 import MacroCategoryManager from './MacroCategoryManager.jsx'
@@ -65,12 +84,12 @@ import { indiceMacro, macroDiCategoria } from '../lib/macros.js'
 import { useChiudiConIndietro } from '../lib/schermate.js'
 import { toastSuccess, toastError } from '../lib/toast.js'
 import StockCountPanel from './StockCountPanel.jsx'
-import PurchaseOrdersPanel from './PurchaseOrdersPanel.jsx'
-import SupplierInvoicesPanel from './SupplierInvoicesPanel.jsx'
 import CategoryRail from './CategoryRail.jsx'
+import SortTh from './SortTh.jsx'
 import SectionPanels from './SectionPanels.jsx'
 import { IconFornitore } from './Icons.jsx'
 import Tendina from './Tendina.jsx'
+import ConfirmDialog from './ConfirmDialog.jsx'
 import { useSottosezioni } from '../lib/sottosezioni.js'
 import { usePaginaPiena } from '../lib/paginaPiena.js'
 
@@ -82,14 +101,6 @@ const STATUS_ITEM = [
 ]
 
 const STATUS_LABEL = { ok: '', low: 'in esaurimento', empty: 'esaurito' }
-// La striscia a sinistra della riga: si legge anche col dito (title),
-// oltre che dalla legenda sopra la lista.
-const ETICHETTA_ASSORTIMENTO = {
-  assortimento: 'In assortimento',
-  linea: 'In linea: non deve mancare',
-  premium: 'Premium',
-  out: 'Fuori assortimento: non si ricompra',
-}
 
 // Come si chiama, a parole, il modo in cui un articolo è gestito: è quello che
 // si legge nell'avviso quando lo si cambia in modifica.
@@ -126,6 +137,14 @@ const ASSORTIMENTO_TITOLO = {
   premium: 'I prodotti buoni',
   out: 'Fuori assortimento: non si ricompra',
 }
+// Il segno della SCHEDA DA COMPLETARE (REQ-MAG-032), accanto al nome come la
+// coroncina del premium: un prodotto nato da una consegna si riconosce
+// scorrendo la lista, senza doverlo aprire.
+function SegnoSchedaDaCompletare({ item }) {
+  if (!item?.scheda_da_completare) return null
+  return <span className="badge-segno" title="Scheda da completare">✏️</span>
+}
+
 function SegnoAssortimento({ item }) {
   const a = assortimentoDi(item)
   if (a === 'out') return <span className="badge-empty">OUT</span>
@@ -180,16 +199,20 @@ function UnitPrice({ item, markup }) {
   )
 }
 
-// Sezioni del magazzino: prodotti (giacenze), conta periodica, ordini
-// fornitore e scadenzario — la controparte software dei fogli Excel storici.
+// Sezioni del magazzino: cosa c'è sullo scaffale e come è ordinato —
+// giacenze, conta periodica, anagrafiche e movimenti.
+// DAL 26/08/2026 ORDINI, SCADENZARIO E FORNITORI NON SONO PIÙ QUI: sono
+// passati alla sezione «Fornitori» del gestionale (FornitoriTab.jsx), che
+// risponde a un'altra domanda — non «cosa ho» ma «con chi lavoro e quanto
+// gli devo».
+// La CONTA è una funzione premium (lib/licenza.js): resta in questo elenco,
+// ma si vede solo dove il modulo lavora. L'elenco non si sdoppia apposta —
+// l'ordine delle sezioni è uno solo.
 const INV_VIEWS = [
   ['prodotti', '📦', 'Prodotti'],
   ['conta', '📋', 'Conta'],
-  ['ordini', '🛒', 'Ordini'],
-  ['scadenzario', '📄', 'Scadenzario'],
   ['categorie', '🏷️', 'Categorie'],
   ['macro', '🗂️', 'Macro-categorie'],
-  ['fornitori', '🏭', 'Fornitori'],
   ['movimenti', '📜', 'Movimenti'],
 ]
 
@@ -199,22 +222,36 @@ const INV_VIEWS = [
 // tanto e non merita spazio fisso: ora è il TITOLO della pagina a diventare
 // il comando, e sul telefono si apre il foglio dal basso.
 export default function InventoryManager() {
-  const [view, setView] = useState('prodotti')
+  const [sezione, setSezione] = useState('prodotti')
   usePaginaPiena()
+  // DUE SEZIONI SONO FUNZIONI PREMIUM (lib/licenza.js): Conta e Scadenzario
+  // compaiono solo dove il modulo è acceso. Le impostazioni si prendono
+  // dalla cache (`settingsIniziali`) e si aggiornano da sole: nessuna
+  // lettura in più e nessuna attesa, se no la barra delle sezioni si
+  // disegnerebbe due volte e le voci ballerebbero sotto il dito.
+  const [impostazioni, setImpostazioni] = useState(settingsIniziali)
+  useEffect(() => subscribeSettings(setImpostazioni, () => {}), [])
+  const voci = useMemo(
+    () => INV_VIEWS.filter(([id]) => voceVisibile(impostazioni, id)),
+    [impostazioni]
+  )
+  // Il modulo può spegnersi mentre la sua sezione è aperta (lo si spegne
+  // da un altro terminale). La vista aperta si RICAVA dall'elenco invece di
+  // essere solo quella scelta: così si torna ai Prodotti senza un giro di
+  // stato in più, e non resta a schermo un pannello che non è più in
+  // elenco.
+  const view = voci.some(([id]) => id === sezione) ? sezione : 'prodotti'
   useSottosezioni(
-    INV_VIEWS.map(([id, icona, label]) => ({ id, icona, label })),
+    voci.map(([id, icona, label]) => ({ id, icona, label })),
     view,
-    setView
+    setSezione
   )
   return (
     <div className="pagina-inventario">
       {view === 'prodotti' && <ProductsPanel />}
       {view === 'conta' && <StockCountPanel />}
-      {view === 'ordini' && <PurchaseOrdersPanel />}
-      {view === 'scadenzario' && <SupplierInvoicesPanel />}
       {view === 'categorie' && <CategoriePanel />}
       {view === 'macro' && <MacroPanel />}
-      {view === 'fornitori' && <FornitoriPanel />}
       {view === 'movimenti' && <MovimentiPanel />}
     </div>
   )
@@ -250,15 +287,24 @@ function MacroPanel() {
   // Le macro del MENÙ servono qui solo per l'aggancio: su ogni macro di
   // spesa si sceglie a quale macro di vendita corrisponde.
   const [macroMenu, setMacroMenu] = useState([])
+  // I PRODOTTI CON LA SCHEDA DA COMPLETARE SI GUARDANO QUI (REQ-MAG-032), coi
+  // conti che hanno un buco: una categoria senza macro e un prodotto senza
+  // categoria sono lo stesso buco visto da due lati (REQ-UI-022), e in tutti
+  // e due i casi una spesa vera non compare in «Acquisti × Fatturato».
+  const [daCompletare, setDaCompletare] = useState([])
   const ricarica = async () => {
-    const [macs, cats, menu] = await Promise.all([
+    const [macs, cats, menu, items] = await Promise.all([
       fetchMacroCategories('magazzino'),
       fetchInventoryCategories(),
       fetchMacroCategories('menu').catch(() => []),
+      // Il pannello deve reggere anche se il magazzino non risponde: le
+      // macro sono la cosa per cui si è entrati, i prodotti un di più.
+      fetchInventoryItems().catch(() => []),
     ])
     setMacros(macs)
     setCategories(cats)
     setMacroMenu(menu)
+    setDaCompletare(prodottiDaCompletare(items))
   }
   useEffect(() => {
     ricarica()
@@ -272,6 +318,7 @@ function MacroPanel() {
       aggiornaCategoria={updateInventoryCategory}
       creaCategoria={createInventoryCategory}
       macroDiVendita={macroMenu}
+      prodottiDaCompletare={daCompletare}
     />
   )
 }
@@ -307,13 +354,29 @@ function MovimentiPanel() {
   )
 }
 
-function FornitoriPanel() {
+// L'ANAGRAFICA DEI FORNITORI vive nella sezione «Fornitori»
+// (FornitoriTab.jsx), non più qui. Il pannello resta in questo file perché
+// ci resta `SupplierManager`, che è il modulo vero e non ha altri clienti:
+// spostare seicento righe per una voce di menu avrebbe reso illeggibile il
+// diff di un trasloco che di suo è una riga.
+export function FornitoriPanel() {
   const [suppliers, setSuppliers] = useState([])
+  // IL LISTINO È IL DETTAGLIO DELLA RIGA, non una sottosezione in più
+  // (docs/navigazione.md): si apre da un fornitore, si chiude e si torna
+  // all'elenco. Uscendo si dimentica, come le chiusure di cassa: tornando
+  // qui si riparte sempre dalla lista.
+  const [listinoPer, setListinoPer] = useState(null)
   const ricarica = async () => setSuppliers(await fetchSuppliers())
   useEffect(() => {
     ricarica()
   }, [])
-  return <SupplierManager suppliers={suppliers} onChange={ricarica} />
+  const aperto = suppliers.find((s) => s.id === listinoPer)
+  if (aperto) {
+    return <ListinoFornitore fornitore={aperto} onIndietro={() => setListinoPer(null)} />
+  }
+  return (
+    <SupplierManager suppliers={suppliers} onChange={ricarica} onListino={setListinoPer} />
+  )
 }
 
 // QUANTO NE RESTA A FINE SERATA. Si legge con le stesse regole della
@@ -362,10 +425,16 @@ function ProductsPanel() {
   const [items, setItems] = useState([])
   const [categories, setCategories] = useState([])
   const [suppliers, setSuppliers] = useState([])
+  // Il listino: chi vende cosa, e a quanto (REQ-MAG-029). Serve alla scheda
+  // prodotto, che il fornitore lo scrive lì e non più sul prodotto.
+  const [listini, setListini] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
   const [editing, setEditing] = useState(null) // null | 'new' | item
+  // Lo stato cambiato a mano su un prodotto che sta in un ordine aperto:
+  // { payload, scelte, ordini } finché non si risponde alla domanda.
+  const [avvisaOrdine, setAvvisaOrdine] = useState(null)
   // Aperta la scheda, «indietro» torna al magazzino invece di uscire dalla
   // pagina: vedi lib/schermate.js.
   useChiudiConIndietro(!!editing, () => setEditing(null))
@@ -441,18 +510,26 @@ function ProductsPanel() {
 
   const catName = (id) => categories.find((c) => c.id === id)?.name
   const supName = (id) => suppliers.find((s) => s.id === id)?.name
+  // Sulla card si leggono TUTTI i fornitori di quel prodotto: uno solo
+  // farebbe credere che sia l'unico da cui si compra.
+  const supNames = (it) =>
+    (fornitoriDegliArticoli.get(it.id) || []).map(supName).filter(Boolean).join(', ')
 
   async function load() {
     setLoading(true)
     try {
-      const [its, cats, sups] = await Promise.all([
+      const [its, cats, sups, list] = await Promise.all([
         fetchInventoryItems(),
         fetchInventoryCategories().catch(() => []),
         fetchSuppliers().catch(() => []),
+        // Un magazzino senza nessun listino è la normalità finché non li si
+        // compila: la schermata regge lo stesso.
+        fetchSupplierPrices().catch(() => []),
       ])
       setItems(its)
       setCategories(cats)
       setSuppliers(sups)
+      setListini(list)
     } catch (e) {
       setError(e.message)
     } finally {
@@ -527,6 +604,19 @@ function ProductsPanel() {
   // vista a LISTA: carico, rettifica, costi e modifica/elimina.
   const itemActions = (it, bd) => (
     <div className="grid-card-actions">
+      {/* SCHEDA DA COMPLETARE (REQ-MAG-032): il prodotto è nato da una
+          consegna, con quello che l'ordine sapeva. Non è la lista «da
+          sistemare» del travaso e non blocca niente — si dice cosa manca e
+          basta, perché è chi conosce il prodotto a poterlo scrivere.
+          L'ambra vuol dire «lavoro che manca»: il rosso, in questa app, vuol
+          dire annullato (DESIGN.md). */}
+      {it.scheda_da_completare && (
+        <p className="badge-low" style={{ display: 'block', margin: '0 0 8px' }}>
+          ✏️ Scheda da completare: manca {mancaNellaScheda(it).join(', ')}.
+          {!it.category_id &&
+            ' Finché manca la categoria, quello che si spende per questo prodotto resta fuori dai conti degli acquisti.'}
+        </p>
+      )}
       <dl className="inv-info">
         {/* QUANTO CE N'È, PER PRIMO — è la ragione per cui un prodotto si
             apre. Dove si conta a pezzi lo dice la riga «Pezzi», che è più
@@ -660,6 +750,13 @@ function ProductsPanel() {
     </div>
   )
 
+  // Chi vende cosa, secondo il listino: il filtro per fornitore non può più
+  // guardare il campo sul prodotto, che da REQ-MAG-029 non si scrive più.
+  const fornitoriDegliArticoli = useMemo(
+    () => fornitoriPerArticolo(items, listini),
+    [items, listini]
+  )
+
   const visible = useMemo(
     () =>
       filterItems(items, {
@@ -668,8 +765,9 @@ function ProductsPanel() {
         supplierId: supplierFilter,
         status: statusFilter,
         assortimenti,
+        fornitoriPerArticolo: fornitoriDegliArticoli,
       }),
-    [items, query, categoryFilter, supplierFilter, statusFilter, assortimenti]
+    [items, query, categoryFilter, supplierFilter, statusFilter, assortimenti, fornitoriDegliArticoli]
   )
 
   // Righe ordinate per la TABELLA: testo in ordine alfabetico, numeri per
@@ -725,14 +823,69 @@ function ProductsPanel() {
     return creato
   }
 
-  async function handleSave(payload) {
+  // ── LO STATO A MANO, SU UN PRODOTTO CHE STA IN UN ORDINE (REQ-MAG-037)
+  //
+  // «Gli si deve DIRE che quel prodotto è presente in un ordine in attesa di
+  // essere ricevuto. Se cambia lo stato manualmente, il prodotto va eliminato
+  // dall'ordine» (utente, 27/08). Sono la stessa decisione presa dai due
+  // capi: un prodotto non più «in assortimento» che resta dentro un ordine
+  // aperto è un ordine che nessuno sa più di aver fatto.
+  //
+  // La domanda si fa con la sola scheda in mano — gli ordini che lo tengono
+  // dentro sono scritti sul prodotto — quindi il magazzino non legge niente
+  // di nuovo, e la sua interfaccia resta quella di prima.
+  async function handleSave(payload, scelte = {}) {
+    const ordini = editing && editing !== 'new' ? cambioDaAvvisare(editing, payload.status) : null
+    if (ordini) {
+      setAvvisaOrdine({ payload, scelte, ordini })
+      return
+    }
+    return salva(payload, scelte)
+  }
+
+  // IL FORNITORE NON SI SCRIVE PIÙ SUL PRODOTTO (REQ-MAG-029): finisce nel
+  // LISTINO, come riga prodotto-fornitore. Il vecchio campo `supplier_id`
+  // non si cancella — resta a leggersi sui dieci prodotti che ce l'hanno,
+  // dove fa da riga virtuale — ma da qui in poi nessuno lo riscrive.
+  async function salva(payload, { supplier_id } = {}, ordiniDaLiberare = null) {
     setError(null)
     try {
-      if (editing && editing !== 'new') {
-        await updateInventoryItem(editing.id, payload)
-      } else {
-        await createInventoryItem(payload)
+      // LO STATO COMMERCIALE SI SCRIVE CON LA SUA MEMORIA (REQ-MAG-037):
+      // passando in assortimento il prodotto si ricorda da dove viene, e
+      // uscendone si liberano memoria e legame con gli ordini. Senza, un
+      // premium tornerebbe indietro come prodotto qualunque.
+      const patchStato =
+        editing && editing !== 'new' ? cambioAMano(editing, payload.status) : null
+      const conStato = patchStato ? { ...payload, ...patchStato } : payload
+      // LA SCHEDA NATA DA UN ORDINE SI CHIUDE QUI (REQ-MAG-032), e la
+      // chiude la CATEGORIA: è quella che serve al resto del sistema, ed è
+      // per lei che la spesa del prodotto sparirebbe dai conti.
+      const completa =
+        editing && editing !== 'new' && schedaCompletata(editing, payload)
+          ? { ...conStato, scheda_da_completare: false }
+          : conStato
+      const salvato =
+        editing && editing !== 'new'
+          ? await updateInventoryItem(editing.id, completa)
+          : await createInventoryItem(completa)
+      if (supplier_id && salvato?.id) {
+        // LA RIGA DI PRIMA SERVE ALLO STORICO (REQ-MAG-035): senza, ogni
+        // salvataggio della scheda risulterebbe una variazione di prezzo,
+        // anche quello di chi ha solo corretto il nome del prodotto.
+        salvaRigaListino({
+          supplier_id,
+          item_id: salvato.id,
+          price: payload.cost ?? null,
+          precedente: listini.find(
+            (r) => r.supplier_id === supplier_id && r.item_id === salvato.id
+          ),
+        })
       }
+      // Il legame si taglia dall'altra parte SOLO dopo che lo stato è
+      // scritto: se la scheda non si salva, il prodotto resta dentro
+      // l'ordine e nessuno ha perso niente.
+      if (ordiniDaLiberare?.length > 0 && salvato?.id)
+        await togliProdottoDagliOrdini(salvato.id, ordiniDaLiberare)
       setEditing(null)
       await load()
     } catch (e) {
@@ -802,15 +955,35 @@ function ProductsPanel() {
 
   if (editing) {
     return (
-      <ItemForm
-        initial={editing === 'new' ? null : editing}
-        categories={categories}
-        suppliers={suppliers}
-        defaultVat={purchaseVat}
-        onCancel={() => setEditing(null)}
-        onSave={handleSave}
-        onCreateSupplier={creaFornitoreAlVolo}
-      />
+      <>
+        {avvisaOrdine && (
+          <ConfirmDialog
+            title="Il prodotto è in un ordine aperto"
+            message={`«${editing?.name || 'Questo prodotto'}» fa parte di ${
+              avvisaOrdine.ordini.length === 1
+                ? 'un ordine ancora in attesa di consegna'
+                : `${avvisaOrdine.ordini.length} ordini ancora in attesa di consegna`
+            }. Cambiando lo stato viene tolto da quell’ordine: le righe già consegnate restano dove sono.`}
+            confirmLabel="Cambia lo stato"
+            onCancel={() => setAvvisaOrdine(null)}
+            onConfirm={() => {
+              const { payload, scelte, ordini } = avvisaOrdine
+              setAvvisaOrdine(null)
+              salva(payload, scelte, ordini)
+            }}
+          />
+        )}
+        <ItemForm
+          initial={editing === 'new' ? null : editing}
+          categories={categories}
+          suppliers={suppliers}
+          listini={listini}
+          defaultVat={purchaseVat}
+          onCancel={() => setEditing(null)}
+          onSave={handleSave}
+          onCreateSupplier={creaFornitoreAlVolo}
+        />
+      </>
     )
   }
 
@@ -1074,6 +1247,7 @@ function ProductsPanel() {
                   <span className="inv-row-name">
                     {it.name}
                     <SegnoAssortimento item={it} />
+                    <SegnoSchedaDaCompletare item={it} />
                   </span>
                   <span className="muted small inv-row-cat">{catName(it.category_id) || '—'}</span>
                   <span className="inv-cell-num">{it.cost != null ? formatPrice(it.cost) : '—'}</span>
@@ -1124,13 +1298,14 @@ function ProductsPanel() {
                 <div className="row between" style={{ alignItems: 'flex-start', gap: 6 }}>
                   <strong style={{ fontSize: '0.92rem', lineHeight: 1.25 }}>
                     {it.name} <SegnoAssortimento item={it} />
+                    <SegnoSchedaDaCompletare item={it} />
                   </strong>
                   <span className={`dot dot-${st}`} title={STATUS_LABEL[st] || 'ok'} />
                 </div>
                 <div className="row between" style={{ alignItems: 'baseline' }}>
                   <span className="muted small" style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                     {catName(it.category_id) || 'Senza categoria'}
-                    {supName(it.supplier_id) ? ` · ${supName(it.supplier_id)}` : ''}
+                    {supNames(it) ? ` · ${supNames(it)}` : ''}
                   </span>
                   {(() => {
                     // Item da drink: bottiglie (pezzi) come numero grande, il
@@ -1253,11 +1428,16 @@ function InvCategoryManager({ categories, macros = [], onChange }) {
 
 // --- Gestione fornitori --------------------------------------------------
 
-function SupplierManager({ suppliers, onChange }) {
+function SupplierManager({ suppliers, onChange, onListino = null }) {
   const [name, setName] = useState('')
   const [busy, setBusy] = useState(false)
   const [showImport, setShowImport] = useState(false)
   const [importText, setImportText] = useState('')
+  // OGNI FORNITORE HA UN COLORE (REQ-MAG-029): è quello che distingue i
+  // doppioni nella lista degli ordini, dove lo stesso Campari compare una
+  // volta per fornitore. Si propone a caso e si può cambiare a mano.
+  const [colore, setColore] = useState(coloreACaso)
+  const [tavolozzaPer, setTavolozzaPer] = useState(null) // id fornitore | 'nuovo'
 
   // Import in blocco (es. dall'Excel): un fornitore per riga, ";email"
   // opzionale. I nomi già presenti vengono saltati.
@@ -1292,12 +1472,31 @@ function SupplierManager({ suppliers, onChange }) {
     if (!name.trim()) return
     setBusy(true)
     try {
-      await createSupplier({ name: name.trim(), sort_order: suppliers.length })
+      const creato = await createSupplier({
+        name: name.trim(),
+        sort_order: suppliers.length,
+        color: colore,
+      })
       setName('')
+      // Il prossimo fornitore nasce con un altro colore: due creati di
+      // fila con lo stesso non si distinguerebbero proprio dove serve.
+      setColore(coloreACaso())
+      setTavolozzaPer(null)
       await onChange()
+      // «Quando creo un fornitore mi si deve aprire una pagina dove posso
+      // associare i prodotti» (l'utente, 27/08/2026): un fornitore appena
+      // creato è un fornitore da cui non si sa ancora cosa si compra, e
+      // quello è il lavoro che viene subito dopo.
+      if (creato?.id && onListino) onListino(creato.id)
     } finally {
       setBusy(false)
     }
+  }
+
+  async function cambiaColore(s, nuovo) {
+    setTavolozzaPer(null)
+    await updateSupplier(s.id, { color: nuovo })
+    await onChange()
   }
   async function rename(s) {
     const n = prompt('Nuovo nome fornitore:', s.name)
@@ -1321,9 +1520,17 @@ function SupplierManager({ suppliers, onChange }) {
   return (
     <div className="card" style={{ marginTop: 8 }}>
       <div className="row" style={{ gap: 8 }}>
+        <PastigliaColore
+          colore={colore}
+          etichetta="Colore del nuovo fornitore"
+          onClick={() => setTavolozzaPer((v) => (v === 'nuovo' ? null : 'nuovo'))}
+        />
         <input value={name} onChange={(e) => setName(e.target.value)} placeholder="Nuovo fornitore (es. NOVA)" />
         <button className="btn small" onClick={add} disabled={busy}>Aggiungi</button>
       </div>
+      {tavolozzaPer === 'nuovo' && (
+        <Tavolozza scelto={colore} onScegli={(c) => { setColore(c); setTavolozzaPer(null) }} />
+      )}
       <button
         className="btn ghost small block"
         style={{ marginTop: 8 }}
@@ -1349,17 +1556,86 @@ function SupplierManager({ suppliers, onChange }) {
         <div className="muted small" style={{ marginTop: 8 }}>Nessun fornitore.</div>
       )}
       {suppliers.map((s) => (
-        <div className="row between" key={s.id} style={{ marginTop: 8 }}>
-          <span>
-            {s.name}
-            {s.email && <span className="muted small"> · {s.email}</span>}
-          </span>
-          <span className="row" style={{ gap: 4 }}>
-            <button className="btn ghost small" title="Email per gli ordini" onClick={() => setEmail(s)}>📧</button>
-            <button className="btn ghost small" onClick={() => rename(s)}>✏️</button>
-            <button className="btn ghost small" onClick={() => remove(s)}>🗑</button>
-          </span>
+        <div key={s.id}>
+          <div className="row between" style={{ marginTop: 8 }}>
+            <span className="row" style={{ gap: 8, alignItems: 'center', minWidth: 0 }}>
+              <PastigliaColore
+                colore={coloreFornitore(s)}
+                etichetta={`Colore di ${s.name}`}
+                onClick={() => setTavolozzaPer((v) => (v === s.id ? null : s.id))}
+              />
+              <span>
+                {s.name}
+                {s.email && <span className="muted small"> · {s.email}</span>}
+              </span>
+            </span>
+            <span className="row" style={{ gap: 4 }}>
+              {onListino && (
+                <button
+                  className="btn ghost small"
+                  aria-label={`Listino di ${s.name}`}
+                  onClick={() => onListino(s.id)}
+                >
+                  📋 Listino
+                </button>
+              )}
+              <button className="btn ghost small" title="Email per gli ordini" onClick={() => setEmail(s)}>📧</button>
+              <button className="btn ghost small" onClick={() => rename(s)}>✏️</button>
+              <button className="btn ghost small" onClick={() => remove(s)}>🗑</button>
+            </span>
+          </div>
+          {tavolozzaPer === s.id && (
+            <Tavolozza scelto={coloreFornitore(s)} onScegli={(c) => cambiaColore(s, c)} />
+          )}
         </div>
+      ))}
+    </div>
+  )
+}
+
+// Il segno del colore del fornitore: la stessa pastiglia tonda dei pallini
+// della scorta, ma qui dice CHI vende, non quanto ce n'è.
+function PastigliaColore({ colore, etichetta, onClick }) {
+  return (
+    <button
+      type="button"
+      className="btn ghost small"
+      aria-label={etichetta}
+      title={etichetta}
+      onClick={onClick}
+      style={{ padding: 4, lineHeight: 0 }}
+    >
+      <span
+        style={{
+          display: 'inline-block',
+          width: 16,
+          height: 16,
+          borderRadius: '50%',
+          background: colore || 'transparent',
+        }}
+      />
+    </button>
+  )
+}
+
+function Tavolozza({ scelto, onScegli }) {
+  return (
+    <div className="row" style={{ gap: 6, flexWrap: 'wrap', marginTop: 6 }}>
+      {COLORI_FORNITORE.map((c) => (
+        <button
+          key={c}
+          type="button"
+          aria-label={`Colore ${c}`}
+          onClick={() => onScegli(c)}
+          style={{
+            width: 24,
+            height: 24,
+            borderRadius: '50%',
+            background: c,
+            border: c === scelto ? '2px solid var(--text)' : '1px solid var(--line)',
+            cursor: 'pointer',
+          }}
+        />
       ))}
     </div>
   )
@@ -1962,7 +2238,7 @@ function AiutoPezzo({ onClose }) {
   )
 }
 
-function ItemForm({ initial, categories, suppliers, defaultVat = 22, onCancel, onSave, onCreateSupplier }) {
+function ItemForm({ initial, categories, suppliers, listini = [], defaultVat = 22, onCancel, onSave, onCreateSupplier }) {
   const isEdit = !!initial
   // L'articolo arriva SEMPRE nella forma nuova, anche quando sul database è
   // ancora scritto a litri o a «U»: a rimetterlo in riga è la lettura
@@ -2002,7 +2278,12 @@ function ItemForm({ initial, categories, suppliers, defaultVat = 22, onCancel, o
   const [form, setForm] = useState({
     name: initial?.name ?? '',
     category_id: initial?.category_id ?? '',
-    supplier_id: initial?.supplier_id ?? '',
+    // Il fornitore si legge dal LISTINO, con la compatibilità già dentro
+    // (`righeDiProdotto` ricade sul vecchio campo del prodotto). Fra più
+    // fornitori si propone quello dell'ULTIMO ACQUISTO, che è la stessa
+    // regola degli ordini: due schermate che propongono fornitori diversi
+    // per lo stesso prodotto sono due risposte alla stessa domanda.
+    supplier_id: fornitoreProposto(righeDiProdotto(initial, listini))?.supplier_id ?? '',
     // IL COSTO È SEMPRE QUELLO DI UN PEZZO. Sotto resta salvato nel campo
     // `cost`, che il resto dell'app legge come «costo della confezione» da
     // sempre: con l'unità bloccata sul pezzo le due cose coincidono.
@@ -2085,7 +2366,6 @@ function ItemForm({ initial, categories, suppliers, defaultVat = 22, onCancel, o
         // un dato che non vuol dire più niente.
         tipo: null,
         category_id: form.category_id || null,
-        supplier_id: form.supplier_id || null,
         cost: form.cost === '' ? null : arrotonda(costNum),
         vat: Number(form.vat) || 0,
         status: form.status || 'assortimento',
@@ -2101,6 +2381,9 @@ function ItemForm({ initial, categories, suppliers, defaultVat = 22, onCancel, o
         // La soglia si scrive in pezzi, come la giacenza.
         low_threshold: scorta ? num(form.low_threshold) : 0,
       }
+      // Il fornitore viaggia a parte perché non è più un campo del
+      // prodotto: chi salva ne fa una riga di listino (REQ-MAG-029).
+      const scelte = { supplier_id: form.supplier_id || null }
       if (isEdit) {
         // In modifica la giacenza non si tocca: quella la muovono il carico e
         // la conta. Due eccezioni, tutte e due sulla stessa cosa — il
@@ -2115,12 +2398,12 @@ function ItemForm({ initial, categories, suppliers, defaultVat = 22, onCancel, o
             return
           }
           const stock = Math.round((num0(initial.stock) / convertibile) * 100) / 100
-          await onSave({ ...base, stock, bottles_total: Math.round(stock) })
+          await onSave({ ...base, stock, bottles_total: Math.round(stock) }, scelte)
           return
         }
         // La giacenza letta è già quella giusta anche per un prodotto
         // ancora da migrare: si salva com'è.
-        await onSave({ ...base, stock: Number(initial?.stock) || 0 })
+        await onSave({ ...base, stock: Number(initial?.stock) || 0 }, scelte)
       } else {
         // In creazione la giacenza è quello che si scrive: i pezzi interi più
         // la frazione della confezione già aperta, che non è né zero né uno.
@@ -2128,7 +2411,7 @@ function ItemForm({ initial, categories, suppliers, defaultVat = 22, onCancel, o
         const apertaBase = toBaseQty(num(form.open_content), form.content_unit)
         const stock =
           pieni + (apertaBase > 0 && contenutoPezzo > 0 ? apertaBase / contenutoPezzo : 0)
-        await onSave({ ...base, stock, bottles_total: 0 })
+        await onSave({ ...base, stock, bottles_total: 0 }, scelte)
       }
     } finally {
       setSaving(false)
@@ -2170,6 +2453,10 @@ function ItemForm({ initial, categories, suppliers, defaultVat = 22, onCancel, o
       </select>
 
       <label htmlFor="isup">Fornitore</label>
+      <p className="muted small" style={{ marginTop: 0 }}>
+        Va nel listino di questo fornitore, col prezzo qui sotto. Gli altri
+        fornitori dello stesso prodotto restano dove sono.
+      </p>
       {nuovoFornitore != null ? (
         <div className="row" style={{ gap: 8 }}>
           <input
@@ -2420,19 +2707,3 @@ function ScegliUnita({ valore, unita, onChange, etichetta, conPezzi = false }) {
   )
 }
 
-// Intestazione di colonna ORDINABILE della tabella inventario: un click ordina,
-// il ri-click inverte; la freccia indica il verso attivo.
-function SortTh({ label, col, sort, onSort, num = false }) {
-  const active = sort.col === col
-  return (
-    <button
-      type="button"
-      className={`inv-th${num ? ' inv-cell-num' : ''}${active ? ' active' : ''}`}
-      onClick={() => onSort(col)}
-      title={`Ordina per ${label}`}
-    >
-      {label}
-      <span aria-hidden className="inv-th-arrow">{active ? (sort.dir === 'asc' ? '▲' : '▼') : ''}</span>
-    </button>
-  )
-}

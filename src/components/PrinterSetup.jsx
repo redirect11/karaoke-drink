@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useSyncExternalStore } from 'react'
 import {
   loadPrinterSettings,
   savePrinterSettings,
@@ -6,6 +6,12 @@ import {
   disconnectPrinter,
   DEFAULT_PRINTER_SETTINGS,
 } from '../lib/printer.js'
+import {
+  ETICHETTA_ESITO,
+  iscrivitiAlRegistro,
+  statoRegistro,
+  svuotaRegistro,
+} from '../lib/registroStampe.js'
 import { savePrinterConfig } from '../lib/api.js'
 
 // Salva le impostazioni stampante sia in locale (uso immediato/offline) sia
@@ -198,6 +204,8 @@ export default function PrinterSetup() {
         <input id="prn-foot" value={form.businessFooter} onChange={set('businessFooter')} />
       </fieldset>
 
+      <RegistroStampe />
+
       {testResult && (
         <div
           className={testResult.ok ? '' : 'banner'}
@@ -242,5 +250,121 @@ export default function PrinterSetup() {
         </button>
       </div>
     </form>
+  )
+}
+
+// ── IL REGISTRO DELLE STAMPE (REQ-STAMPA-017, BUG-098) ───────────────
+//
+// «Quando fanno la chiusura cassa, la stampante non stampa lo scontrino di
+// chiusura molto spesso» (Flavio, 28/08/2026) — e nessun avviso, nessuna
+// traccia. La cassa si chiude una volta a notte: senza un posto dove
+// leggere com'è andata, un difetto così si insegue per settimane.
+//
+// Sta QUI perché qui c'è la MACCHINA — indirizzo, prova di stampa, i dati
+// che finiscono sulla carta — ed è il posto dove si va quando la stampante
+// fa i capricci.
+function RegistroStampe() {
+  // `useSyncExternalStore` e non un `useEffect`: la coda cambia mentre la
+  // carta esce, e questa lista si deve muovere con lei senza un giro di
+  // stato in mezzo. L'istantanea è la stessa finché niente cambia (vedi
+  // registroStampe.js), se no sarebbe un ridisegno all'infinito.
+  const stato = useSyncExternalStore(iscrivitiAlRegistro, statoRegistro, statoRegistro)
+  const { inCorso, inAttesa, voci } = stato
+
+  const ora = (iso) => {
+    try {
+      return new Date(iso).toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' })
+    } catch {
+      return ''
+    }
+  }
+  const giorno = (iso) => {
+    try {
+      return new Date(iso).toLocaleDateString('it-IT', { day: '2-digit', month: '2-digit' })
+    } catch {
+      return ''
+    }
+  }
+  // Il puntino della voce appena mandata: la risposta della stampante
+  // arriva dopo, e finché non arriva l'esito è sospeso — non riuscito e
+  // nemmeno fallito.
+  const segno = { inviata: '·', riuscita: '✓', fallita: '✕' }
+
+  return (
+    <fieldset
+      style={{
+        border: '1px solid rgba(255,255,255,0.1)',
+        borderRadius: 8,
+        padding: 12,
+        marginBottom: 12,
+      }}
+    >
+      <legend className="muted" style={{ fontSize: '0.85rem', padding: '0 6px' }}>
+        Registro delle stampe
+      </legend>
+
+      <p className="muted" style={{ fontSize: '0.85rem', margin: '0 0 10px' }}>
+        Le ultime stampe di questo dispositivo e come sono andate. Resta qui,
+        non viene inviato da nessuna parte. Una voce «in attesa di risposta»
+        vuol dire che la stampa è partita e la stampante non ha detto come è
+        finita.
+      </p>
+
+      {/* LA CODA. La seconda domanda davanti a una stampante ferma è «si è
+          impiantata?»: qui si legge cosa sta uscendo e quanto c'è dietro. */}
+      <div className="row between" style={{ marginBottom: 10 }}>
+        <span className="small">
+          {inCorso ? `In stampa: ${inCorso.che}` : 'Nessuna stampa in corso'}
+        </span>
+        <span className="muted small">
+          {inAttesa.length === 0
+            ? 'Coda vuota'
+            : `${inAttesa.length} in attesa`}
+        </span>
+      </div>
+
+      {voci.length === 0 ? (
+        <p className="muted small" style={{ margin: 0 }}>
+          Nessuna stampa registrata su questo dispositivo.
+        </p>
+      ) : (
+        <ul style={{ listStyle: 'none', margin: 0, padding: 0 }}>
+          {voci.map((v) => (
+            <li
+              key={v.id}
+              style={{
+                borderTop: '1px dashed var(--line)',
+                padding: '6px 0',
+                fontSize: '0.85rem',
+              }}
+            >
+              <div className="row between" style={{ gap: 8 }}>
+                <span>
+                  {segno[v.esito] || '?'} {v.che}
+                </span>
+                <span className="muted small">
+                  {giorno(v.quando)} {ora(v.quando)}
+                </span>
+              </div>
+              <div className="muted small">
+                {ETICHETTA_ESITO[v.esito] || v.esito}
+                {v.motivo ? ` — ${v.motivo}` : ''}
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      {voci.length > 0 && (
+        <button
+          type="button"
+          className="btn ghost small"
+          style={{ marginTop: 10 }}
+          onClick={svuotaRegistro}
+        >
+          Svuota il registro
+        </button>
+      )}
+    </fieldset>
   )
 }

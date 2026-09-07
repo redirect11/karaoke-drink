@@ -31,11 +31,6 @@ vi.mock('../../src/lib/firebaseClient.js', () => ({
   functions: {},
   storage: {},
 }))
-vi.mock('../../src/lib/sumupApi.js', () => ({
-  createSumUpSale: vi.fn(),
-  updateSumUpSaleStatus: vi.fn(),
-  toSumUpStatus: vi.fn(),
-}))
 
 const leggi = async (ref) => {
   if (ref?.col && ref.col !== 'orders') return { exists: () => false, data: () => ({}) }

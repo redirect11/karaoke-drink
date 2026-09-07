@@ -5,6 +5,7 @@
 // «Storico» — e chi legge si chiede se siano due posti diversi.
 
 import { isAdmin, isGestore } from './ruoli.js'
+import { voceVisibile } from './licenza.js'
 
 // Il QUARTO elemento di una voce dice CHI LA VEDE, ed è una funzione di
 // `ruoli.js`: dove manca, la voce è di tutto il gestionale. Un flag di
@@ -16,6 +17,10 @@ export const NAV_GESTIONALE = [
   // (vedi CassaTab). «Lista ordini» aveva una voce sua qui accanto, come
   // se fosse un altro mestiere.
   ['pagamenti', '💶', 'Cassa'],
+  // FATTURE AI CLIENTI: funzione premium (REQ-LIC-001), non inclusa per la
+  // Tana. Il filtro non è qui accanto al ruolo perché non è una domanda sul
+  // ruolo: la voce c'è o non c'è per tutto il locale, e a deciderlo sono le
+  // impostazioni — vedi `vociPerRuolo`.
   ['fatture', '📄', 'Fatture'],
   ['stats', '📊', 'Statistiche'],
   // BILANCIO: i conti del locale — incassi, stipendi, spese, netto del
@@ -26,6 +31,17 @@ export const NAV_GESTIONALE = [
   ['bilancio', '⚖️', 'Bilancio', isAdmin],
   ['menu', '🍸', 'Menù'],
   ['inventario', '📦', 'Magazzino'],
+  // FORNITORI: chi ci vende, cosa gli abbiamo ordinato, cosa gli dobbiamo
+  // (anagrafica, ordini, scadenzario). Chiesta dall'utente il 26/08/2026:
+  // stavano nel magazzino, che però risponde a «cosa ho sullo scaffale»,
+  // mentre queste rispondono a «con chi lavoro e quanto gli devo».
+  // SOLO ADMIN, come il Bilancio e per la stessa ragione, già messa a
+  // verbale in REQ-MAG-025: ordini e fatture fornitore sono i soldi che
+  // ESCONO dal locale, e non sono roba da turno. Finché stavano dentro il
+  // magazzino li vedeva ogni gestore, ma per contiguità, non per una
+  // scelta. Chi lavora al banco non perde niente di quello che gli serve:
+  // un fornitore nuovo si crea ancora dalla tendina del modulo prodotto.
+  ['fornitori', '🏭', 'Fornitori', isAdmin],
   ['staff', '👥', 'Staff'],
   ['utenti', '🧑‍🤝‍🧑', 'Utenti e ruoli'],
   ['vista-cliente', '👀', 'Vista cliente'],
@@ -78,15 +94,29 @@ export function titoloPagina(pathname = '', search = '') {
 // il menu non è l'unico posto che deve saperlo — l'indirizzo `?tab=…` si
 // scrive anche a mano — e due filtri scritti in due punti diversi prima o
 // poi dicono cose diverse.
-export function vociPerRuolo(role) {
+// DUE DOMANDE DIVERSE, e stanno tutt'e due qui:
+// · CHI SEI — il quarto elemento della voce, funzione di `ruoli.js`;
+// · COSA HA IL LOCALE — le funzioni premium (`lib/licenza.js`), che valgono
+//   per tutti allo stesso modo.
+// `impostazioni` sono quelle del bar, già in cache da chi chiama: nessuna
+// lettura nuova. Se non arrivano, passa solo quello che è incluso di suo —
+// e non si vede lampeggiare una voce che poi sparisce.
+// È il pezzo che la Fase 3 del piano di sbrandizzazione chiede a questo
+// file: le voci del gestionale compaiono solo se il modulo è attivo.
+export function vociPerRuolo(role, impostazioni = null) {
   if (!isGestore(role)) return NAV_SALA
-  return NAV_GESTIONALE.filter(([, , , vede]) => !vede || vede(role))
+  return NAV_GESTIONALE.filter(
+    ([id, , , vede]) => (!vede || vede(role)) && voceVisibile(impostazioni, id)
+  )
 }
 
 // Una sezione del gestionale si può aprire con questo ruolo? Togliere la
 // voce dal menu non basta: `?tab=bilancio` battuto a mano, o un
 // collegamento salvato quando si era admin, ci arriverebbero lo stesso.
-export function sezioneConsentita(id, role) {
+export function sezioneConsentita(id, role, impostazioni = null) {
   const voce = NAV_GESTIONALE.find(([v]) => v === id)
-  return !voce?.[3] || voce[3](role)
+  if (voce?.[3] && !voce[3](role)) return false
+  // E una funzione che il locale non ha non si apre nemmeno a chi avrebbe
+  // il ruolo giusto: la voce non c'è per nessuno.
+  return voceVisibile(impostazioni, id)
 }

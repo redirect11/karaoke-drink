@@ -74,6 +74,8 @@ vi.mock('../../src/lib/api.js', () => {
     updateMacroCategory: vi.fn(() => Promise.resolve({})),
     deleteMacroCategory: vi.fn(() => Promise.resolve()),
     fetchSuppliers: vi.fn(() => Promise.resolve([])),
+    fetchSupplierPrices: vi.fn(() => Promise.resolve([])),
+    salvaRigaListino: vi.fn(() => Promise.resolve({})),
     createSupplier: vi.fn((s) => Promise.resolve({ id: 'nuovo-fornitore', ...s })),
     updateSupplier: vi.fn(() => Promise.resolve({})),
     deleteSupplier: vi.fn(() => Promise.resolve()),
@@ -81,6 +83,10 @@ vi.mock('../../src/lib/api.js', () => {
       cb({ price_markup: 3, purchase_vat: 22 })
       return () => {}
     },
+    // Il magazzino parte dalla CACHE delle impostazioni (REQ-LIC-001): le
+    // sezioni premium non devono comparire e sparire mentre il server
+    // risponde. Qui i moduli sono spenti, come sul locale che non li ha.
+    settingsIniziali: () => ({ price_markup: 3, purchase_vat: 22 }),
     // La colonna «a fine serata» (REQ-MAG-014) legge anche la cassa aperta,
     // i conti in corso e il listino: qui la serata non è aperta, quindi la
     // colonna non compare — ma senza queste tre voci la schermata non si
@@ -109,7 +115,7 @@ vi.mock('../../src/components/SupplierInvoicesPanel.jsx', () => ({
 }))
 
 import InventoryManager from '../../src/components/InventoryManager.jsx'
-import { createInventoryItem, loadStock, adjustStock, createSupplier } from '../../src/lib/api.js'
+import { createInventoryItem, loadStock, adjustStock, createSupplier, salvaRigaListino } from '../../src/lib/api.js'
 
 // Apre la vista a CARD (il default è la lista) e aspetta il prodotto.
 // Card e lista sono DUE ICONE, e si cercano dalla loro etichetta: sulla linea
@@ -671,8 +677,16 @@ describe('il fornitore si aggiunge dalla tendina del prodotto', () => {
     await user.type(screen.getByLabelText('Nome *'), 'Acqua Brillante Tonica')
     await user.click(screen.getByRole('button', { name: 'Salva' }))
     await waitFor(() => expect(createInventoryItem).toHaveBeenCalled())
-    expect(createInventoryItem.mock.calls.at(-1)[0]).toMatchObject({
+    // IL FORNITORE NON SI SCRIVE PIÙ SUL PRODOTTO (REQ-MAG-029): il
+    // prodotto resta UNO e i fornitori possono essere più d'uno, quindi il
+    // legame vive nel LISTINO. Prima qui si controllava
+    // `supplier_id: 'nuovo-fornitore'` sul prodotto; adesso quel campo non
+    // lo scrive più nessuno — non si cancella, ma non si riscrive.
+    expect(createInventoryItem.mock.calls.at(-1)[0].supplier_id).toBeUndefined()
+    await waitFor(() => expect(salvaRigaListino).toHaveBeenCalled())
+    expect(salvaRigaListino.mock.calls.at(-1)[0]).toMatchObject({
       supplier_id: 'nuovo-fornitore',
+      item_id: 'nuovo',
     })
   })
 

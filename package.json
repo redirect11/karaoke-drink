@@ -1,7 +1,7 @@
 {
   "name": "karaoke-drink",
   "private": true,
-  "version": "1.5.5",
+  "version": "1.5.7",
   "type": "module",
   "description": "App per la prenotazione dei drink del cocktail bar La Tana del Coniglio",
   "scripts": {
@@ -11,6 +11,7 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:regole": "vitest run --config vitest.regole.config.mjs",
     "test:coverage": "vitest run --coverage",
     "requirements:issues": "node scripts/generate-issues.mjs",
     "seed": "node scripts/seed.js",
@@ -37,6 +38,7 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.11.1",
+    "@firebase/rules-unit-testing": "^5.0.2",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",

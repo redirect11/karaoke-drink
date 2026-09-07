@@ -8,21 +8,17 @@
 // come tre, e per sapere se bastavano per la serata si apriva il dettaglio.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, within } from '@testing-library/react'
+import { act, render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import '@testing-library/jest-dom/vitest'
 import { useEffect, useState } from 'react'
 
-// I pannelli pesanti hanno i loro giri (conta, ordini, scadenzario): qui
-// basta sapere che la sezione giusta monta il pannello giusto.
+// Il pannello pesante ha il suo giro (la conta): qui basta sapere che la
+// sezione giusta monta il pannello giusto. Ordini, Scadenzario e Fornitori
+// dal 26/08/2026 non stanno più qui — sono nella sezione «Fornitori»
+// (tests/component/FornitoriTab.test.jsx).
 vi.mock('../../src/components/StockCountPanel.jsx', () => ({
   default: () => <div>PANNELLO CONTA</div>,
-}))
-vi.mock('../../src/components/PurchaseOrdersPanel.jsx', () => ({
-  default: () => <div>PANNELLO ORDINI</div>,
-}))
-vi.mock('../../src/components/SupplierInvoicesPanel.jsx', () => ({
-  default: () => <div>PANNELLO SCADENZARIO</div>,
 }))
 vi.mock('../../src/lib/paginaPiena.js', () => ({ usePaginaPiena: () => {} }))
 vi.mock('../../src/lib/toast.js', () => ({
@@ -84,6 +80,21 @@ const ITEMS = [
     supplier_id: 's1',
     status: 'assortimento',
   },
+  {
+    // NATO DA UNA CONSEGNA (REQ-MAG-032): l'ordine portava una referenza che
+    // in anagrafica non c'era. Ha nome, costo e giacenza; categoria, misura
+    // del pezzo e soglia sono quello che l'ordine non poteva sapere.
+    id: 'i5',
+    name: 'Mezcal Verde',
+    unit: 'pz',
+    stock: 4,
+    category_id: null,
+    cost: 20,
+    vat: 22,
+    low_threshold: 0,
+    status: 'assortimento',
+    scheda_da_completare: true,
+  },
 ]
 const CATS = [
   // «Distillati» sta in una macro, ALTRO no — ed è una scelta, non una
@@ -99,7 +110,17 @@ const SUPS = [
 
 // Quello che la serata sta facendo, quando serve: cassa aperta, conti in
 // corso, listino. Di suo il locale è chiuso e non c'è niente in ballo.
-const stato = { cassa: null, ordini: [], drinks: [] }
+// I moduli premium, come sta questa installazione (lib/licenza.js): lo
+// SCADENZARIO è incluso e lavora, la CONTA no. Le prove che vogliono
+// un'altra configurazione se la scrivono, coi campi veri.
+const IMPOSTAZIONI_BASE = { price_markup: 3, purchase_vat: 22 }
+const stato = {
+  cassa: null,
+  ordini: [],
+  drinks: [],
+  impostazioni: IMPOSTAZIONI_BASE,
+  avvisaImpostazioni: null,
+}
 
 // La cassa aperta la tiene un modulo solo per tutta l'app (una
 // sottoscrizione sola, vedi lib/cashSession.js): fra un test e l'altro
@@ -112,6 +133,10 @@ vi.mock('../../src/lib/api.js', () => ({
   fetchInventoryItems: vi.fn(async () => ITEMS),
   fetchInventoryCategories: vi.fn(async () => CATS),
   fetchSuppliers: vi.fn(async () => SUPS),
+  // Il listino prodotto-fornitore (REQ-MAG-029): qui vuoto, che è il caso
+  // vero finché nessuno l'ha compilato.
+  fetchSupplierPrices: vi.fn(async () => []),
+  salvaRigaListino: vi.fn(async () => ({})),
   fetchStockMovements: vi.fn(async () => []),
   fetchMacroCategories: vi.fn(async (ambito) => (ambito === 'magazzino' ? MACRO_MAG : [])),
   createInventoryItem: vi.fn(),
@@ -144,9 +169,16 @@ vi.mock('../../src/lib/api.js', () => ({
     return () => {}
   }),
   subscribeSettings: vi.fn((cb) => {
-    cb({ price_markup: 3, purchase_vat: 22 })
+    // La callback si tiene: le impostazioni del locale cambiano anche a
+    // schermata aperta (le tocca un altro terminale), ed e' proprio quel
+    // caso che le prove sulle sezioni premium devono poter rifare.
+    stato.avvisaImpostazioni = cb
+    cb(stato.impostazioni)
     return () => {}
   }),
+  // Il magazzino parte dalla CACHE delle impostazioni: le sezioni premium
+  // non devono comparire e sparire mentre il server risponde.
+  settingsIniziali: () => stato.impostazioni,
   DEFAULT_SETTINGS: { price_markup: 3, purchase_vat: 22 },
 }))
 
@@ -186,27 +218,24 @@ beforeEach(() => {
   stato.cassa = null
   stato.ordini = []
   stato.drinks = []
+  stato.impostazioni = IMPOSTAZIONI_BASE
 })
 
 describe('la schermata del magazzino (REQ-MAG-010)', () => {
-  it('le sezioni stanno nella barra: otto voci, e ognuna apre il suo pannello', async () => {
+  it('le sezioni stanno nella barra, e ognuna apre il suo pannello', async () => {
     const user = userEvent.setup()
     mostra()
     await aspettaLista()
-    for (const voce of [
-      'Prodotti',
-      'Conta',
-      'Ordini',
-      'Scadenzario',
-      'Categorie',
-      'Macro-categorie',
-      'Fornitori',
-      'Movimenti',
-    ]) {
+    for (const voce of ['Prodotti', 'Categorie', 'Macro-categorie', 'Movimenti']) {
       expect(screen.getByRole('button', { name: new RegExp(voce) })).toBeInTheDocument()
     }
-    await user.click(screen.getByRole('button', { name: /Conta/ }))
-    expect(screen.getByText('PANNELLO CONTA')).toBeInTheDocument()
+    // QUELLO CHE NON C'È PIÙ: ordini, scadenzario e anagrafica fornitori
+    // sono passati alla sezione «Fornitori» del gestionale.
+    for (const andata of ['Ordini', 'Scadenzario', 'Fornitori']) {
+      expect(screen.queryByRole('button', { name: new RegExp(andata) })).toBeNull()
+    }
+    await user.click(screen.getByRole('button', { name: /Movimenti/ }))
+    expect(screen.getByText('Ancora nessun movimento.')).toBeInTheDocument()
     expect(screen.queryByText('Gin Mare')).toBeNull()
   })
 
@@ -259,8 +288,10 @@ describe('la schermata del magazzino (REQ-MAG-010)', () => {
     await aspettaLista()
     await user.click(screen.getByRole('button', { name: /⚗️ Filtra/ }))
     const voce = screen.getByRole('button', { name: /In scorta/ })
-    // Il conteggio c'è come sulle altre voci: Gin Mare, Rum e Ichnusa.
-    expect(voce).toHaveTextContent('3')
+    // Il conteggio c'è come sulle altre voci: Gin Mare, Rum, Ichnusa e il
+    // Mezcal nato da una consegna (REQ-MAG-032) — una scheda da completare è
+    // pur sempre merce sullo scaffale.
+    expect(voce).toHaveTextContent('4')
     await user.click(voce)
     expect(screen.getByText('Gin Mare')).toBeInTheDocument()
     expect(screen.queryByText('Vodka Vecchia')).toBeNull()
@@ -441,6 +472,40 @@ describe('la macro di ogni categoria, nell’elenco delle categorie', () => {
   })
 })
 
+// ── L'ALTRO LATO DELLO STESSO BUCO (REQ-MAG-032) ─────────────────────
+//
+// Un prodotto nato da una consegna non ha categoria, quindi non ha macro
+// d'acquisto: la sua spesa non compare in «Acquisti × Fatturato» invece di
+// risultare sbagliata, che è peggio. Sta accanto alle categorie senza macro
+// perché è la stessa mancanza vista dall'altro lato, e si guardano nello
+// stesso momento.
+//
+// E IL NOME NON È QUELLO DEL TRAVASO: in magazzino «da sistemare» sono i
+// prodotti che il passaggio ai pezzi non sa convertire, e finché ce n'è uno
+// il magazzino resta in sola lettura. Questa lista non blocca niente.
+describe('i prodotti con la scheda da completare', () => {
+  it('si guardano insieme alle categorie senza macro', async () => {
+    const user = userEvent.setup()
+    mostra()
+    await aspettaLista()
+    await user.click(screen.getByRole('button', { name: /Macro-categorie/ }))
+    expect(await screen.findByText(/Prodotti con la scheda da completare/)).toBeInTheDocument()
+    expect(screen.getByText('Mezcal Verde')).toBeInTheDocument()
+    // Le categorie senza macro restano dov'erano: le due liste convivono.
+    expect(screen.getByText(/Categorie senza macro/)).toBeInTheDocument()
+  })
+
+  it('nella lista si riconoscono senza aprirli, e aperti dicono cosa manca', async () => {
+    const user = userEvent.setup()
+    mostra()
+    await aspettaLista()
+    const riga = screen.getByText('Mezcal Verde').closest('.inv-row')
+    expect(within(riga).getByTitle('Scheda da completare')).toBeInTheDocument()
+    await user.click(within(riga).getByRole('button'))
+    expect(screen.getByText(/Scheda da completare: manca la categoria/)).toBeInTheDocument()
+  })
+})
+
 // ── LA LEGENDA DEI DUE SEGNI (REQ-MAG-027) ───────────────────────────
 //
 // Nata da una domanda vera di Flavio (vocale del 20/08): «perché alcune
@@ -465,5 +530,80 @@ describe('la legenda del magazzino', () => {
     // E i campioncini sono le classi VERE dei segni, non copie.
     expect(legenda.querySelector('.dot-empty')).toBeTruthy()
     expect(legenda.querySelector('.tacca-linea')).toBeTruthy()
+  })
+})
+
+// LE DUE SEZIONI PREMIUM (REQ-LIC-001). Conta e Scadenzario si vedono solo
+// dove il modulo è acceso: di partenza il magazzino ne ha sei, non otto.
+// Rimettendo il difetto — cioè togliendo il filtro da INV_VIEWS — la prima
+// prova qui sotto diventa rossa.
+describe('le sezioni premium del magazzino (REQ-LIC-001)', () => {
+  it('la CONTA non c\u2019\u00e8: non \u00e8 inclusa in questa installazione', async () => {
+    mostra()
+    await aspettaLista()
+    expect(screen.queryByRole('button', { name: /Conta/ })).toBeNull()
+    expect(screen.queryByText('PANNELLO CONTA')).toBeNull()
+  })
+
+  it('la licenza che la include la fa comparire, al suo posto, senza toccare il codice', async () => {
+    // \u00c8 il punto di innesto della Fase 3: il dato dice cosa il locale ha.
+    // E la voce torna DOVE STAVA, fra Prodotti e Categorie: l'elenco delle
+    // sezioni \u00e8 uno solo, filtrato.
+    const user = userEvent.setup()
+    stato.impostazioni = { ...IMPOSTAZIONI_BASE, licenza: { moduli: { conta: true } } }
+    mostra()
+    await aspettaLista()
+    const voci = screen
+      .getAllByRole('button')
+      .map((b) => b.textContent)
+      .filter((t) => /Prodotti|Conta|Categorie|Movimenti/.test(t))
+    const pos = (nome) => voci.findIndex((t) => t.includes(nome))
+    expect(pos('Prodotti')).toBeLessThan(pos('Conta'))
+    expect(pos('Conta')).toBeLessThan(pos('Categorie'))
+    await user.click(screen.getByRole('button', { name: /Conta/ }))
+    expect(screen.getByText('PANNELLO CONTA')).toBeInTheDocument()
+  })
+
+  it('inclusa ma spenta a mano: non c\u2019\u00e8', async () => {
+    stato.impostazioni = {
+      ...IMPOSTAZIONI_BASE,
+      licenza: { moduli: { conta: true } },
+      modulo_conta_enabled: false,
+    }
+    mostra()
+    await aspettaLista()
+    expect(screen.queryByRole('button', { name: /Conta/ })).toBeNull()
+  })
+
+  it('la sezione aperta non si sposta sotto le mani quando l\u2019elenco cambia', async () => {
+    // La vista si tiene per ID, non per posizione: se un modulo si accende
+    // da un altro terminale mentre si guardano i Movimenti, la voce nuova
+    // entra in elenco e basta \u2014 non porta altrove chi sta leggendo.
+    const user = userEvent.setup()
+    mostra()
+    await aspettaLista()
+    await user.click(screen.getByRole('button', { name: /Movimenti/ }))
+    expect(screen.getByText('Ancora nessun movimento.')).toBeInTheDocument()
+
+    await act(async () => {
+      stato.avvisaImpostazioni({ ...IMPOSTAZIONI_BASE, licenza: { moduli: { conta: true } } })
+    })
+    expect(screen.getByRole('button', { name: /Conta/ })).toBeInTheDocument()
+    expect(screen.getByText('Ancora nessun movimento.')).toBeInTheDocument()
+  })
+
+  it('e se a spegnersi \u00e8 la sezione che si sta guardando, si torna ai Prodotti', async () => {
+    const user = userEvent.setup()
+    stato.impostazioni = { ...IMPOSTAZIONI_BASE, licenza: { moduli: { conta: true } } }
+    mostra()
+    await aspettaLista()
+    await user.click(screen.getByRole('button', { name: /Conta/ }))
+    expect(screen.getByText('PANNELLO CONTA')).toBeInTheDocument()
+
+    await act(async () => {
+      stato.avvisaImpostazioni({ ...IMPOSTAZIONI_BASE, licenza: { moduli: {} } })
+    })
+    expect(screen.queryByText('PANNELLO CONTA')).toBeNull()
+    expect(screen.getByText('Gin Mare')).toBeInTheDocument()
   })
 })

@@ -29,11 +29,6 @@ vi.mock('../../src/lib/firebaseClient.js', () => ({
   functions: {},
   storage: {},
 }))
-vi.mock('../../src/lib/sumupApi.js', () => ({
-  createSumUpSale: vi.fn(),
-  updateSumUpSaleStatus: vi.fn(),
-  toSumUpStatus: vi.fn(),
-}))
 
 vi.mock('firebase/firestore', () => ({
   collection: (_db, nome) => ({ __col: nome }),

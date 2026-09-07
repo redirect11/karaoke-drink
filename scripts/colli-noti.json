@@ -1,0 +1,102 @@
+[
+ {
+  "articolo": "Coca Cola Vetro Zero",
+  "prodotto": "Coca Zero Vetro",
+  "fornitore": "FONT",
+  "prezzo": 16.64,
+  "cl": 24,
+  "pezziPerCollo": 24,
+  "prezzoPezzo": 0.6933,
+  "costoApp": 0.7
+ },
+ {
+  "articolo": "Bjorne",
+  "prodotto": "Bjorne",
+  "fornitore": "FONT",
+  "prezzo": 25.05,
+  "cl": 24,
+  "pezziPerCollo": 24,
+  "prezzoPezzo": 1.0437,
+  "costoApp": 1.2333
+ },
+ {
+  "articolo": "Ceres",
+  "prodotto": "Ceres",
+  "fornitore": "FONT",
+  "prezzo": 30.44,
+  "cl": 24,
+  "pezziPerCollo": 24,
+  "prezzoPezzo": 1.2683,
+  "costoApp": 1.3542
+ },
+ {
+  "articolo": "Ceres Lager",
+  "prodotto": "Ceres Lager",
+  "fornitore": "FONT",
+  "prezzo": 18.29,
+  "cl": 24,
+  "pezziPerCollo": 24,
+  "prezzoPezzo": 0.7621,
+  "costoApp": 0.7
+ },
+ {
+  "articolo": "Ceres Ten",
+  "prodotto": "Ceres Ten",
+  "fornitore": "FONT",
+  "prezzo": 34.68,
+  "cl": 24,
+  "pezziPerCollo": 24,
+  "prezzoPezzo": 1.445,
+  "costoApp": 1.64
+ },
+ {
+  "articolo": "Tennents",
+  "prodotto": "Tennents",
+  "fornitore": "FONT",
+  "prezzo": 30.48,
+  "cl": 24,
+  "pezziPerCollo": 24,
+  "prezzoPezzo": 1.27,
+  "costoApp": 1.3542
+ },
+ {
+  "articolo": "Heineken",
+  "prodotto": "Heineken",
+  "fornitore": "FONT",
+  "prezzo": 17.52,
+  "cl": 24,
+  "pezziPerCollo": 24,
+  "prezzoPezzo": 0.73,
+  "costoApp": 0.875
+ },
+ {
+  "articolo": "Kinley Ginger Beer",
+  "prodotto": "Kinley Ginger Beer",
+  "fornitore": "FONT",
+  "prezzo": 12.29,
+  "cl": 24,
+  "pezziPerCollo": 24,
+  "prezzoPezzo": 0.5121,
+  "costoApp": 0.5
+ },
+ {
+  "articolo": "MBU Westcost IPA California",
+  "prodotto": "MBU California",
+  "fornitore": "FONT",
+  "prezzo": 19.98,
+  "cl": 12,
+  "pezziPerCollo": 12,
+  "prezzoPezzo": 1.665,
+  "costoApp": 1.67
+ },
+ {
+  "articolo": "MBU Italian Tripel Forzuta",
+  "prodotto": "MBU Forzuta",
+  "fornitore": "FONT",
+  "prezzo": 20.69,
+  "cl": 12,
+  "pezziPerCollo": 12,
+  "prezzoPezzo": 1.7242,
+  "costoApp": 1.72
+ }
+]

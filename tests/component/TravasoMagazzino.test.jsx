@@ -43,6 +43,8 @@ vi.mock('../../src/lib/api.js', () => ({
   updateMacroCategory: vi.fn(() => Promise.resolve({})),
   deleteMacroCategory: vi.fn(() => Promise.resolve()),
   fetchSuppliers: vi.fn(() => Promise.resolve([])),
+  fetchSupplierPrices: vi.fn(() => Promise.resolve([])),
+  salvaRigaListino: vi.fn(() => Promise.resolve({})),
   createSupplier: vi.fn(() => Promise.resolve({})),
   updateSupplier: vi.fn(() => Promise.resolve({})),
   deleteSupplier: vi.fn(() => Promise.resolve()),
@@ -50,6 +52,10 @@ vi.mock('../../src/lib/api.js', () => ({
     cb({ price_markup: 3, purchase_vat: 22 })
     return () => {}
   },
+  // Il magazzino parte dalla CACHE delle impostazioni (REQ-LIC-001): le
+  // sezioni premium non devono comparire e sparire mentre il server
+  // risponde. Qui i moduli sono spenti, come sul locale che non li ha.
+  settingsIniziali: () => ({ price_markup: 3, purchase_vat: 22 }),
   subscribeOpenCashSession: (cb) => {
     cb(null)
     return () => {}

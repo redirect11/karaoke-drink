@@ -45,12 +45,17 @@ export const CAMPI_SCONTRINO = [
     desc: 'La riga «SCONTRINO - 12» con giorno e ora.',
     acceso: true,
   },
-  { id: 'operatore', label: 'Chi ha battuto il conto', acceso: true },
+  {
+    id: 'operatore',
+    label: 'Chi stampa lo scontrino',
+    desc: 'Il nome di chi è collegato a questo terminale. Se non si sa chi è, la riga non esce.',
+    acceso: true,
+  },
   { id: 'persone', label: 'Quante persone', desc: 'La riga «2 clienti».', acceso: true },
   {
     id: 'riga_vendita',
-    label: 'Tavolo o numero di comanda',
-    desc: 'La riga «Vendita - Tavolo 4».',
+    label: 'Tavolo o nome del cliente',
+    desc: 'La riga «Vendita - Tavolo 4». Senza tavolo e senza nome non esce: il numero è già in cima.',
     acceso: true,
   },
   {
@@ -98,18 +103,33 @@ export const CAMPI_SCONTRINO = [
 // ── I CAMPI DELLA COMANDA ────────────────────────────────────────────
 //
 // Qui il lettore è il banco, non il cliente: quello che non si legge in
-// mezzo secondo è carta sprecata. Le parole della fascia e delle righe di
-// servizio arrivano dal modello da cui il ticket è nato — «CONTATORIE»,
+// mezzo secondo è carta sprecata. Le parole delle righe di servizio
+// arrivano dal modello da cui il ticket è nato — «CONTATORIE»,
 // «Vendeur» — e sono le prime che un locale vuole cambiare o togliere.
+//
+// LA FASCIA NON HA PIÙ PAROLE DA SCRIVERE (BUG-089). Fino al 25/08/2026
+// era una casella di testo con dentro «DIRETTO»; adesso la fascia dice
+// QUALE TICKET È — «COMANDA 2 - ORDINE 28» — e quel contenuto viene dai
+// dati, non da un'impostazione: un testo libero lì sopra vorrebbe dire
+// poterla far mentire, e a corpo doppio non ci starebbe comunque
+// accanto. L'interruttore resta: chi la fascia non la vuole la spegne.
+// Un locale che aveva scritto la sua parola non trova niente di rotto —
+// quel testo semplicemente non viene più letto, e la fascia esce piena.
+// Per dire «questo ticket è del bar» c'è la riga del reparto, che di
+// parole ne ha ancora.
 export const CAMPI_COMANDA = [
   {
     id: 'fascia',
     label: 'Fascia nera in cima',
-    desc: 'La riga bianco-su-nero che si vede da lontano.',
+    desc: 'La riga bianco-su-nero che si vede da lontano: «COMANDA 2 - ORDINE 28».',
     acceso: true,
-    testo: { valore: 'DIRETTO', label: 'Cosa c’è scritto nella fascia' },
   },
-  { id: 'ora', label: 'Ora nella fascia', desc: 'Quando è stata battuta.', acceso: true },
+  {
+    id: 'ora',
+    label: 'Ora nella fascia',
+    desc: 'Quando è stata battuta: sta sotto al numero, dentro il nero.',
+    acceso: true,
+  },
   {
     id: 'conteggio',
     label: 'Riga del conteggio',
@@ -182,11 +202,16 @@ export const CAMPI_ACCONTO = [
     desc: 'La riga «ACCONTO - 12» con giorno e ora.',
     acceso: true,
   },
-  { id: 'operatore', label: 'Chi ha incassato', acceso: true },
+  {
+    id: 'operatore',
+    label: 'Chi stampa la ricevuta',
+    desc: 'Il nome di chi è collegato a questo terminale: al banco è chi ha appena preso i soldi.',
+    acceso: true,
+  },
   {
     id: 'riga_vendita',
-    label: 'Tavolo o numero di comanda',
-    desc: 'Di che conto è questo acconto.',
+    label: 'Tavolo o nome del cliente',
+    desc: 'Di che conto è questo acconto. Senza tavolo e senza nome non esce.',
     acceso: true,
   },
   {
@@ -282,6 +307,45 @@ export function configStampa(settings, quale) {
   }
 }
 
+// ── LE DUE RIGHE SOTTO AL NUMERO (BUG-088) ───────────────────────────
+//
+// «"Utente A" che sarebbe? E poi scrivi "scontrino 28" e poi "comanda n
+// 28". Non ha molto senso» (l'utente, 25/08/2026, con in mano uno
+// scontrino appena uscito).
+//
+// Quelle righe venivano dal modello da cui il ticket è nato — la stessa
+// provenienza di «CONTATORIE» e «Vendeur» sulla comanda: una costante
+// scritta a mano, e il numero del conto ripetuto e chiamato comanda. Qui
+// ci sono le regole che le compongono adesso: pure, così la carta si
+// prova senza stampante, e accanto ai campi che le accendono.
+//
+// Il NOME di chi stampa non sta qui ma in printer.js (`nomeDiChiStampa`):
+// non è un dato del conto, è chi è collegato a questo terminale
+// nell'istante in cui la carta esce.
+
+// A CHI APPARTIENE IL CONTO, e solo quello. Senza tavolo si ripiegava su
+// «Vendita - Comanda #28»: il numero era già stampato in cima
+// («SCONTRINO - 28»), quindi la riga non aggiungeva niente, e per giunta
+// lo chiamava comanda mentre 28 è il numero del CONTO — le sue comande
+// sono la 1 e la 2, ed è così che il banco le chiama.
+//
+// Adesso o dice il tavolo, o dice il nome del cliente — la stessa scelta
+// che fa il titolo grande della comanda — oppure non si stampa: una riga
+// che ripete si legge come un secondo numero, e chi tiene il foglio in
+// mano si ferma a capire quale dei due conta.
+export function rigaVendita(order) {
+  if (order?.table_label) return `Vendita - Tavolo ${order.table_label}`
+  const nome = String(order?.customer_name || '').trim()
+  return nome ? `Vendita - ${nome}` : ''
+}
+
+// Con due coperti usciva «2 clientei»: la «i» del plurale attaccata a
+// «cliente». Senza coperto il conto è di una persona, com'è sempre stato.
+export function rigaPersone(persone) {
+  const n = Number(persone) > 0 ? Number(persone) : 1
+  return `${n} ${n === 1 ? 'cliente' : 'clienti'}`
+}
+
 // ── IL LOGO: SE STAMPARLO, SU COSA, E QUALE (REQ-STAMPA-011) ─────────
 //
 // «Su quali stampe» è una domanda per TIPO DI CARTA, non per schermata:
@@ -308,7 +372,13 @@ export const TIPI_LOGO = [
   {
     id: 'comanda',
     label: 'Comanda',
-    desc: 'Al banco non serve a nessuno: è carta e inchiostro.',
+    // PARTE SPENTO, e il perché sta qui e non a schermo: la comanda resta al
+    // banco, non la vede nessun cliente, e il logo su ogni ticket è solo
+    // carta e inchiostro. Detto in didascalia — «al banco non serve a
+    // nessuno» — sembrava un giudizio sulla COMANDA invece che sul logo, e
+    // faceva pensare a una funzione inutile. Le altre righe di questo
+    // elenco descrivono il documento: questa fa lo stesso.
+    desc: 'Il ticket con cui il banco prepara.',
     acceso: false,
   },
   {

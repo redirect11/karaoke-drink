@@ -1788,7 +1788,28 @@ bugs:
       Tre secondi perche' il logo sta nella cache del service worker e in
       condizioni sane arriva in millisecondi: se non e' arrivato in tre
       secondi, stasera non arriva.
-    in_produzione: true
+      ── ADESSO È STATO VISTO: LA SERA DEL 24/08/2026 ──
+      «Mai visto accadere al banco» è rimasto vero per quattro giorni.
+      Flavio, dal locale, il 24/08 sera, sulla 1.5.1: «in fase di
+      riscossione non stampava lo scontrino», e «ieri sera buona parte
+      delle stampe non sono uscite». Era questo, per intero, e con un
+      danno che qui sopra non era stato previsto: la pretesa dello
+      scontrino si prende PRIMA di stampare e torna libera solo nel
+      `catch` della stampa — una promessa che non si chiude né bene né
+      male quel `catch` non lo fa partire mai, quindi quel conto non
+      stampava più nemmeno riaperto. Il racconto per intero, con la catena
+      riga per riga e il nesso con gli ingredienti sotto soglia (le
+      notifiche di scorta chiedono LO STESSO logo, dalla stessa strada di
+      rete, mentre lo scontrino lo aspetta), sta in BUG-086.
+      DUE COSE CAMBIANO DA QUI. Una: `in_produzione` passa a false, perché
+      la 1.5.5 — che porta questa cura — è in produzione dal 25/08. L'altra:
+      la riga qui sopra che dice «il logo sta nella cache del service
+      worker» NON ERA VERA quando è stata scritta. `logo.png` non stava fra
+      le risorse precaricate, e la strada era «prima la rete»: è per questo
+      che il tempo massimo è servito davvero invece di restare una cintura
+      di sicurezza. Adesso ci sta, e per lui si guarda prima la cache
+      (REQ-OFFLINE-007).
+    in_produzione: false
     status: fixed
     generate_issue: true
     labels: [bug, stampa]
@@ -2895,28 +2916,43 @@ bugs:
       e' lo stesso guaio di fondo — una misura fissa dentro una pagina che lo
       zoom rimpicciolisce — ma la cura e' un'altra riga di CSS e tocca TUTTE
       le finestrelle di conferma dell'app, non solo lo sconto.
-      COSA SUCCEDE. '.confirm-overlay' centra la finestrella
+      COSA SUCCEDEVA. '.confirm-overlay' centrava la finestrella
       ('align-items: center') dentro un velo fisso che non scorre. Quando la
       finestrella e' piu' alta dello schermo, centrare vuol dire tagliarla
-      dai DUE lati: sopra sparisce il titolo, sotto il tasto che applica. Non
-      c'e' modo di raggiungerli, perche' non scorre niente.
-      MISURATO IN CHROME (sconto del pagamento, 63 combinazioni di finestra e
-      zoom): esce dallo schermo in 6, dal 120% su una finestra alta 500px in
-      giu' fino al 160% su una alta 600px. Prima della cura di BUG-075 erano
-      11 — il minimo dei tasti che segue lo zoom ha gia' tolto meta' dei casi,
-      ma non li chiude.
-      COME SI SISTEMA (da fare): il velo deve poter scorrere e la finestrella
-      fermarsi all'altezza dello schermo con dentro il suo scorrimento —
-      'overflow-y: auto' sul velo, 'align-items: safe center' perche' centrare
-      non tagli in cima, e un tetto d'altezza sulla scatola. Vale per ogni
-      '.confirm-box' dell'app, quindi va provato dove le finestrelle sono
-      piu' lunghe (ripristino conto, scelta del buono), non solo qui.
+      dai DUE lati: sopra spariva il titolo, sotto il tasto che applica. Non
+      c'era modo di raggiungerli, perche' non scorreva niente.
+      COME E' STATO SISTEMATO, due reti che servono tutte e due. (1) La
+      scatola non e' mai piu' alta dello schermo e dentro scorre lei:
+      'max-height: calc(100dvh / var(--zoom, 1) - var(--safe-top) - 32px)' e
+      'overflow-y: auto' — e' l'idioma delle altezze a tutto schermo gia' in
+      uso nel foglio ('.posd-root'), e tiene il velo fermo mentre si scorre.
+      (2) 'align-items: safe center' e velo scorrevole ('overflow-y: auto'),
+      per le finestrelle che si mettono un 'max-height' per conto loro in
+      'vh' — che dentro '#root' scalato NON segue lo zoom e resta piu' alto
+      dello schermo. Con 'center' secco il troppo esce anche DA SOPRA, dove
+      non si scorre mai; con 'safe' esce solo di sotto, e di sotto il velo
+      scorre. In piu' il cuscino del velo scende da 24 a 16px: ogni pixel li'
+      e' un pixel che non si deve scorrere.
+      MISURATO IN CHROME VERO, non a occhio: 77 combinazioni di finestra
+      (460..1080px di altezza) per zoom 100%..160%, chiedendo per ogni
+      elemento chi gli finisce sopra con 'elementFromPoint' e contando solo i
+      casi in cui e' raggiungibile PER INTERO, dopo aver scorso quello che
+      l'utente puo' davvero scorrere. Sul portatile (1440 di larghezza):
+      prima 4 combinazioni con titolo e tasto tagliati, dopo ZERO. Sul
+      telefono (390): prima 22, dopo ZERO. Quello che resta e' inevitabile e
+      non e' un difetto: quando la finestrella e' piu' alta della finestra,
+      per premere «Applica» si scorre dentro la finestrella (16 combinazioni
+      su 77 sul portatile, 32 sul telefono) — prima, negli stessi casi, il
+      tasto non c'era proprio.
+      RIMETTENDO 'align-items: center' O TOGLIENDO IL TETTO ALLA SCATOLA,
+      tests/unit/css.test.js torna rosso (provato).
     labels: [bug, interfaccia]
     severity: lieve
     priority: P3
-    status: todo
-    generate_issue: true
+    status: fixed
     in_produzione: true
+    test_cases:
+      - tests/unit/css.test.js
 
   - id: BUG-077
     title: "Con lo zoom alto, nel conto i tasti in fondo escono dallo schermo e non si scorre"
@@ -2925,30 +2961,65 @@ bugs:
       Trovato misurando BUG-075, non segnalato al banco. Stessa causa di
       fondo — lo zoom rimpicciolisce l'altezza disponibile e le misure fisse
       no — ma un'altra schermata e un'altra struttura, quindi un lavoro a se'.
-      COSA SUCCEDE. La schermata del conto e' alta quanto lo schermo
-      ('calc(100dvh / var(--zoom, 1))') con 'overflow: hidden', e in fondo ha
-      una pila di tasti che non si stringe. Quando la somma delle fasce fisse
-      supera l'altezza, gli ultimi tasti finiscono FUORI dal riquadro e
-      niente scorre per andarli a prendere: sono irraggiungibili, non solo
-      scomodi. A scorrere e' la lista delle righe, che pero' e' sopra e non
-      aiuta.
-      MISURATO IN CHROME (conto aperto, 63 combinazioni di finestra e zoom):
-      16 combinazioni con almeno un tasto fuori. Il primo a sparire e'
-      «Annulla ordine», poi «Stato servizio», poi «Invia comanda» e
-      «Pagamento». Su un portatile 1440x768 succede dal 160%; su una finestra
-      alta 600px gia' dal 130%. Su schermi da 860px in su non succede mai
-      fino al 160%.
-      DA DECIDERE: se il piede debba scorrere, se i tasti debbano andare a
-      capo, o se le fasce fisse debbano seguire lo zoom come il tastierino
-      del pagamento. La regola che non si tratta e' quella: nessun tasto
-      finisce sotto o fuori senza un modo di arrivarci.
+      E' la schermata piu' usata della serata.
+      COSA SUCCEDEVA. La schermata del conto e' alta quanto lo schermo
+      ('calc(100dvh / var(--zoom, 1))') con 'overflow: hidden', e la colonna
+      dell'ordine era fatta di tre fasce che non cedevano: testata, lista,
+      piede. Sommate fanno circa 500px CSS SEMPRE UGUALI, mentre lo spazio
+      disponibile e' 100dvh diviso lo zoom. Quando la somma superava
+      l'altezza, gli ultimi tasti finivano FUORI dal riquadro e niente
+      scorreva per andarli a prendere: irraggiungibili, non solo scomodi. A
+      scorrere era la lista delle righe, che pero' sta sopra e non aiuta.
+      COME E' STATO SISTEMATO. La regola adesso e' una sola: in quella
+      colonna non cede mai la riga con «Invia comanda» e «Pagamento» — i due
+      gesti della serata restano alla stessa altezza a qualunque finestra e
+      qualunque zoom ('flex-shrink: 0' sulla '.grid-2'). Tutto il resto ha un
+      pavimento e sotto quel pavimento SCORRE invece di sparire: la testata
+      ('.posd-testa', che smette di essere uno 'style' inline dove
+      'flex-shrink: 0' vinceva sempre) e i due tasti secondari
+      ('.posd-foot-secondarie': «Stato servizio» e «Annulla ordine») si
+      fermano a una '--riga-lista', cioe' 44px VERI sotto il dito a qualunque
+      zoom; i numeri del piede ('.posd-foot-info': subtotale, supplementi,
+      totale, incassi) a una riga di testo, perche' non sono bersagli. I due
+      tasti secondari sono alti esattamente una '--riga-lista', cosi' il
+      pavimento del loro contenitore e' alto quanto UN TASTO e scorrendo se
+      ne vede sempre uno intero. Il piede cede grazie a 'min-height: 0': su
+      'auto' varrebbe il minimo di CONTENUTO, e per un flex annidato Chrome
+      lo calcola sommando le altezze piene dei figli — con 'auto' il piede
+      non cedeva di un pixel (misurato). Ultima rete, se anche i pavimenti
+      non bastassero: a scorrere e' il piede stesso.
+      SUL TELEFONO E SUL TABLET STRETTO la colonna diventa un pannello in
+      basso alto 'var(--pos-comanda-h)' in 'dvh', e quel 'dvh' aveva la
+      stessa malattia: dentro '#root' scalato, '50dvh' vale mezzo schermo in
+      pixel CSS, che al 160% sono OTTO DECIMI di schermo veri — il pannello
+      sfondava il corpo e il suo piede finiva sotto il bordo. Ora l'altezza
+      e' divisa per lo zoom, cosi' la maniglia continua a promettere quello
+      che dice, e i tre gesti in fondo ('.posd-foot-telefono') hanno 52px
+      veri invece di 52px CSS.
+      MISURATO IN CHROME VERO, non a occhio: 77 combinazioni di finestra
+      (460..1080px di altezza) per zoom 100%..160%, per tre larghezze, con
+      'elementFromPoint' e contando solo i tasti raggiungibili PER INTERO
+      dopo aver scorso quello che l'utente puo' davvero scorrere (attenzione:
+      'scrollIntoView' scorre anche i contenitori 'overflow: hidden', e
+      usarlo come giudice assolverebbe proprio il difetto che si cerca).
+      Portatile 1440: prima 40 combinazioni con almeno un tasto perso, dopo
+      ZERO. Tablet stretto 820, dove la colonna e' un pannello in basso:
+      prima 63, dopo ZERO. Telefono 390: prima 18, dopo ZERO. I due gesti
+      principali non chiedono mai di scorrere su 1440 e su 820; sul telefono
+      restano 5 combinazioni su 77 (schermi alti 460..540 al 140..160%) in
+      cui l'ultima riga vuole una spinta di pochi pixel dentro il piede —
+      prima, negli stessi casi, non c'era proprio.
+      RIMETTENDO UNA QUALUNQUE DELLE SEI RIGHE, tests/unit/css.test.js torna
+      rosso; togliendo gli involucri dal componente ne cadono tre in
+      tests/component/OrderPosDetail.test.jsx (provato).
     labels: [bug, interfaccia, pos]
     severity: media
     priority: P2
-    status: todo
-    generate_issue: true
+    status: fixed
     in_produzione: true
-
+    test_cases:
+      - tests/unit/css.test.js
+      - tests/component/OrderPosDetail.test.jsx
 
   - id: BUG-078
     title: "Nel conto, fra la maniglia del piede e il Totale c'era piu' vuoto della riga stessa"
@@ -3371,3 +3442,1147 @@ bugs:
     test_cases:
       - tests/unit/coda.test.js
       - tests/component/CodaCorsie.test.jsx
+
+  - id: BUG-086
+    title: "Riscuotendo, lo scontrino non usciva — e quel conto non stampava piu'"
+    area: "src/lib/printer.js (lavoroDiStampa, logoPerStampa), public/sw.js, src/components/PaymentScreen.jsx"
+    description: >
+      Segnalato da Flavio la sera del 24/08/2026, dal locale, parole sue:
+      «in fase di riscossione non stampava lo scontrino», e «ieri sera
+      buona parte delle stampe non sono uscite». Sospettava un legame con
+      le voci di menu che avevano ingredienti esauriti o sotto soglia.
+      Girava la 1.5.1.
+      È IL PRIMO CASO IN CUI QUESTO DIFETTO È STATO VISTO. Il meccanismo
+      era già scritto qui dentro — BUG-053, registrato il 20/08 con la
+      nota «mai visto accadere al banco, ma il meccanismo è certo» — e
+      quella sera è successo davvero, con il locale pieno.
+      LA CATENA, riga per riga. 1) `closePaid` prende la pretesa dello
+      scontrino (`reclaimReceiptPrint`) PRIMA di stampare — deve, se no due
+      schermate stampano la stessa cosa — e poi chiama `printScontrino`.
+      2) `printScontrino` si ferma su `await stampaLogo(prn)`;
+      `logoPerStampa` caricava l'immagine SENZA tempo massimo. 3)
+      `logo.png` non stava fra le risorse precaricate del service worker,
+      che è «prima la rete»: una `fetch` che PENDE non risolve e non
+      rifiuta, quindi l'`<img>` non fa né `onload` né `onerror` e la
+      promessa non si chiude mai. 4) Niente carta — e, peggio,
+      `releaseReceiptPrint` NON VIENE MAI CHIAMATO, perché sta nel `catch`
+      di una promessa che non fallisce: la pretesa resta presa per sempre.
+      Quel conto non stampa più, nemmeno riaperto, nemmeno dalla coda. 5)
+      Il fallimento non veniva ricordato (BUG-032), quindi il conto dopo
+      rifaceva lo stesso identico giro. Prova rifatta sulla 1.5.1: 0
+      scontrini su 5 riscossioni, e nessun errore a schermo.
+      IL NESSO CON GLI INGREDIENTI BASSI, che sembrava una coincidenza e
+      non lo è: `notifyLowStock` → `notify()` chiede LO STESSO `logo.png`
+      (icona e badge) per ogni ingrediente sotto soglia, dalla stessa
+      strada di rete, mentre lo scontrino lo sta aspettando. Più voci
+      scarse, più richieste alla stessa risorsa appesa: è per questo che
+      Flavio vedeva il legame.
+      E LA STAMPANTE RESTAVA MUTA PER LA SERATA. Da BUG-052 la stampa è
+      una coda seriale: un lavoro che non finisce non sporca più i ticket
+      degli altri, li FERMA. Dietro allo scontrino appeso restavano le
+      comande — «buona parte delle stampe non sono uscite».
+      SULLA 1.5.5 IL DIFETTO NON C'È: lo hanno chiuso `947359c` (tre
+      secondi di tempo massimo sul caricamento del logo, BUG-053) e
+      `f65622e` (il «provato e non c'è» si ricorda, BUG-032). Stessa prova,
+      stessa scena: 5 fogli su 5. Per questo `in_produzione` è false —
+      quello che gira al banco adesso non ha più questo problema.
+      COSA SI È FATTO IN PIÙ, il 25/08, per quello che restava scoperto.
+      1) `logo.png` ENTRA NEL PRECACHE del service worker e per lui si
+      guarda PRIMA LA CACHE (REQ-OFFLINE-007): così la rete esce dal
+      percorso della stampa, invece di avere solo un limite di tempo
+      sopra. Precaricarlo e basta non sarebbe servito a niente — con
+      «prima la rete» la copia salvata si guarda solo quando la rete
+      FALLISCE, e una richiesta appesa non fallisce mai.
+      2) IL TEMPO MASSIMO STA ANCHE SUL LAVORO INTERO, non solo sul logo:
+      quindici secondi in `lavoroDiStampa`. Il limite sul logo copre IL
+      LOGO; se domani si impiccasse un altro passaggio — la stampante che
+      accetta il collegamento e poi tace, un `await` aggiunto lì dentro —
+      si tornerebbe al 24/08. Scaduti i quindici secondi la promessa
+      rifiuta, e da lì funziona tutto quello che era già scritto: pretesa
+      liberata, messaggio a schermo, coda che riparte. Quindici perché
+      sotto ci sta comoda ogni attesa legittima (l'SDK molla il
+      collegamento da sé intorno ai dieci secondi, il logo ai tre) e
+      sopra non c'è più niente da aspettare. Il lavoro abbandonato non si
+      può interrompere a metà, ma gli si toglie la penna: scrive su un
+      guscio sordo, quindi se poi arriva davvero in fondo non fa uscire
+      una seconda copia e non cancella la carta di chi sta stampando
+      adesso.
+      3) UN DATO STORTO NON FERMA PIÙ IL TICKET: `item.name.toUpperCase()`
+      sulla comanda era senza difesa (mentre `printOrdineFornitore`, due
+      funzioni più sotto, faceva già `String(l.name || '')`). Su un
+      documento malformato la comanda saltava e l'auto-stampa ci riprovava
+      all'infinito. Adesso una riga senza nome esce come «(SENZA NOME)»,
+      una senza prezzo come «0.00€» — niente più «undefined» e «NaN€» sullo
+      scontrino del cliente — e la carta esce.
+      LA CATENA INTERA ADESSO HA UN TEST, che è la cosa che mancava: i
+      pezzi erano provati (il logo, la serializzazione), il giro
+      riscossione → pretesa → stampa impiccata → pretesa liberata → coda
+      che rimedia non lo provava nessuno, ed è esattamente lì che è
+      successo il danno.
+    in_produzione: false
+    status: fixed
+    generate_issue: true
+    labels: [bug, stampa, pagamenti, banco]
+    severity: bloccante
+    priority: P1
+    test_cases:
+      - tests/unit/stampaCheNonSiChiude.test.js
+      - tests/unit/serviceWorkerCache.test.js
+      - tests/unit/stampaSerializzata.test.js
+      - tests/unit/logoScontrino.test.js
+
+  - id: BUG-087
+    title: "Il logo pesava mezzo mega, ed e' la prima cosa che ogni stampa aspetta"
+    area: "public/logo.png, public/logo-full.png"
+    description: >
+      Trovato il 25/08/2026 chiudendo BUG-086, e messo in lista dall'utente:
+      «alleggerisci anche il logo».
+      COSA C'ERA. `public/logo.png` era 596x596 e pesava 523 KB. E' la
+      risorsa piu' richiesta dell'app: la chiede ogni scontrino e ogni
+      preconto prima di stampare, ogni notifica (icona e badge), la barra
+      in alto, il menu laterale, l'insegna del menu clienti e il segnaposto
+      di ogni drink senza foto. Dal 25/08 sta anche nel precache del
+      service worker (BUG-086), quindi mezzo mega lo si scarica alla prima
+      apertura, su tablet e telefoni del locale.
+      A COSA SERVE DAVVERO. Il posto piu' grande in cui compare e'
+      l'insegna del menu, 72 px; la stampa lo riduce a 220 px
+      (LARGHEZZA_LOGO) e la testina termica lo tira in bianco e nero. Sopra
+      i 320 px non lo guarda nessuno, nemmeno su uno schermo a tripla
+      densita'.
+      COME E' STATO SISTEMATO. 320x320 e tavolozza a 256 colori: da 523 KB
+      a 8,4 KB, cioe' un sessantesimo. Misurato prima di sostituirlo: solo
+      lo 0,02% dei pixel cambia di piu' di 16/255, e in stampa la resa e'
+      identica al pixel — 57,4% di inchiostro prima e dopo. La trasparenza
+      resta.
+      E UN FILE CHE NON GUARDAVA NESSUNO. `public/logo-full.png`, altri 727
+      KB, non era citato da nessuna parte: ne' nel codice, ne' nel
+      manifest, ne' nella pagina. Finiva nella build e basta. Rimosso.
+      In tutto, un mega e un quarto in meno da scaricare.
+    labels: [bug, stampa, pwa, prestazioni]
+    severity: media
+    priority: P2
+    status: fixed
+    in_produzione: true
+    test_cases:
+      - tests/unit/serviceWorkerCache.test.js
+
+  - id: BUG-088
+    title: "Lo scontrino diceva «Utente A», ripeteva il numero chiamandolo comanda e scriveva «2 clientei»"
+    area: "src/lib/printer.js (printScontrino, printScontrinoAcconto), src/lib/campiStampa.js, src/App.jsx"
+    description: >
+      Visto dall'utente il 25/08/2026 su uno scontrino vero appena uscito:
+      «"Utente A" che sarebbe? E poi scrivi "scontrino 28" e poi "comanda n
+      28". Non ha molto senso». Tre righe una sotto l'altra, tre difetti
+      diversi, tutti residui del modello da cui il ticket e' nato — la
+      stessa provenienza di «CONTATORIE» e «Vendeur» sulla comanda.
+      COSA STAMPAVA. Sotto «SCONTRINO - 28» uscivano «Utente A», poi
+      «1 cliente» (o «2 clientei» con due coperti), poi «Vendita - Comanda
+      #28».
+      UNO. «Utente A» era una costante scritta a mano: uguale per sempre e
+      per chiunque, su ogni scontrino di ogni terminale. L'impostazione che
+      la accendeva si chiamava pero' «Chi ha battuto il conto» — prometteva
+      una persona e ne stampava una formula. Stessa cosa sulla ricevuta
+      d'acconto, dove il campo si chiamava «Chi ha incassato».
+      DUE. «Vendita - Comanda #28» ripeteva il numero gia' stampato in cima
+      e per giunta lo chiamava comanda, mentre 28 e' il numero del CONTO:
+      le comande di quel conto sono la 1 e la 2, ed e' cosi' che il banco
+      le chiama. Col tavolo la riga diceva «Vendita - Tavolo 4», e quella
+      andava bene: dice a chi appartiene il conto.
+      TRE. «${n} cliente${n > 1 ? 'i' : ''}» attaccava la «i» a «cliente»:
+      con due coperti usciva «2 clientei». Notato giorni prima e mai
+      chiuso.
+      COME E' STATO SISTEMATO. La riga dell'operatore porta il NOME DI CHI
+      STA STAMPANDO — l'utente collegato a quel terminale, deciso
+      dall'utente stesso il 25/08: «quell'"Utente A" dovrebbe essere il
+      nome dell'utente che stampa lo scontrino». Il nome arriva
+      dall'ascolto di Firebase Auth (App.jsx) insieme all'uid con cui la
+      stampante gia' sceglie la sua scheda, e si ricava con `placedByName`,
+      la stessa funzione della coda e del dettaglio conto: sulla carta e
+      sullo schermo la stessa persona si chiama allo stesso modo. Una
+      RISTAMPA porta quindi il nome di chi ristampa, ed e' giusto cosi': e'
+      lui che quel foglio lo consegna. Se non si sa chi e' — nessuno
+      collegato — LA RIGA NON SI STAMPA: una riga in meno e' meglio di una
+      formula vuota.
+      La riga di vendita dice il tavolo, o il nome del cliente se il tavolo
+      non c'e' (la stessa scelta del titolo grande della comanda), oppure
+      non esce: il numero e' gia' in cima, e una riga che lo ripete si
+      legge come un secondo numero.
+      Il plurale e' «2 clienti». Le tre regole sono funzioni pure in
+      campiStampa.js, accanto ai campi che le accendono.
+      GLI INTERRUTTORI RESTANO tutti e tre: cambia cosa stampano da accesi,
+      non se si possono spegnere. Le etichette nelle impostazioni dicono
+      adesso quello che esce davvero: «Chi stampa lo scontrino» e «Tavolo o
+      nome del cliente».
+    labels: [bug, stampa]
+    severity: lieve
+    priority: P2
+    status: fixed
+    in_produzione: true
+    test_cases:
+      - tests/unit/campiDiStampa.test.js
+      - tests/unit/cartaAcconto.test.js
+      - tests/component/CampiStampa.test.jsx
+
+  - id: BUG-089
+    title: "La comanda diceva «DIRETTO» su ogni ticket, anche sul secondo invio dello stesso tavolo"
+    area: "src/lib/printer.js (strisciaComanda, printComanda), src/lib/comande.js (numeroComanda), src/lib/campiStampa.js"
+    description: >
+      Trovato il 25/08/2026 cercando cosa volesse dire «DIRETTO» sulla
+      fascia nera del ticket.
+      DA DOVE VENIVA. E' un'etichetta di SumUp POS Pro (l'ex Tiller), il
+      modello da cui questa carta e' stata copiata — la stessa provenienza
+      di «CONTATORIE» e «Vendeur». La' vuol dire una cosa precisa: quando
+      un ordine si spedisce in cucina a portate, «Diretto» e' la PRIMA
+      infornata, quella che parte subito, e le successive si chiamano
+      «Ordine 1», «Ordine 2».
+      COSA STAMPAVAMO NOI. La stessa parola su OGNI comanda, anche sulla
+      seconda e sulla terza dello stesso conto: un ticket che dichiarava
+      «questo va adesso» mentre era il secondo invio di quel tavolo. Il
+      contrario di quello che la parola vuol dire, e il banco non aveva
+      modo di capire quale ticket avesse in mano — la comanda il suo
+      numero non lo portava scritto.
+      LA DECISIONE DELL'UTENTE, parole sue: «Non usiamo Diretto o Subito.
+      Chiamiamo Comanda X - Ordine Y sulla comanda». I dati c'erano gia':
+      la comanda ha il suo progressivo (`seq`) e il conto ha
+      `daily_number`. La fascia dice «COMANDA 2 - ORDINE 28», e lo dice
+      anche quando la comanda e' una sola («COMANDA 1 - ORDINE 28»):
+      «senza numero vuol dire la prima» e' una regola che chi legge un
+      ticket non deve conoscere. «Comanda 2» e' anche come la chiamano la
+      corsia e il dettaglio del conto: sulla carta e sullo schermo lo
+      stesso ticket si chiama allo stesso modo.
+      DUE RIGHE E NON UNA. A corpo doppio sulla carta da 80 mm ci stanno
+      24 caratteri e «COMANDA 2 - ORDINE 28» ne occupa 21: l'ora non ci
+      sta piu' accanto ed e' scesa sotto, dentro lo stesso rettangolo
+      nero, con le due righe pareggiate in larghezza — se no il nero
+      uscirebbe a scaletta. Il suo interruttore («Ora nella fascia») resta
+      quello di prima.
+      IL TESTO LIBERO DELLA FASCIA NON C'E' PIU'. Il contenuto adesso
+      viene dai dati, e una casella li' sopra vorrebbe dire poter far
+      mentire il ticket; a corpo doppio non ci starebbe comunque accanto.
+      L'INTERRUTTORE RESTA: chi la fascia non la vuole la spegne. Un
+      locale che aveva scritto la sua parola non trova niente di rotto —
+      quel testo semplicemente non viene piu' letto, e la fascia esce
+      piena lo stesso. Per dire «questo ticket e' del bar» c'e' gia' la
+      riga del reparto, che di parole ne ha ancora.
+      QUELLO CHE NON SI SA NON SI SCRIVE (la lezione di BUG-086): un conto
+      appena nato senza `daily_number` stampa solo «COMANDA 1», il ticket
+      unito — che non e' nessuna comanda in particolare, le contiene tutte
+      — stampa solo «ORDINE 28», e una comanda vecchia senza `seq` prende
+      il suo posto nell'elenco. Niente «undefined» sulla carta.
+    labels: [bug, stampa]
+    severity: lieve
+    priority: P2
+    status: fixed
+    in_produzione: true
+    test_cases:
+      - tests/unit/campiDiStampa.test.js
+      - tests/unit/comande.test.js
+      - tests/unit/campiStampa.test.js
+      - tests/component/CampiStampa.test.jsx
+
+  # ── I guai trovati dall'audit di sicurezza del 26 agosto 2026 ────────────
+  # Non arrivano dal banco ma da una verifica su tutto il progetto (backend,
+  # frontend, regole Firebase, segreti). Il racconto per esteso, con gli
+  # scenari di abuso e le cose fatte bene, sta in
+  # docs/audit-sicurezza-2026-08-26.md. Qui i difetti da chiudere, ognuno
+  # con la sua voce perché ognuno si sistema per conto suo.
+
+  - id: BUG-090
+    title: "Il repository è pubblico e contiene vocali e foto di persone vere"
+    area: "registrazioni/ (storia git e rami release/1.3.0, release/1.4.0), .gitignore, repository GitHub"
+    description: >
+      Il repo redirect11/tana-drink è PUBBLICO, e in registrazioni/ ci sono
+      63 file — note vocali WhatsApp e foto dal 26/07 al 10/08/2026 — che, per
+      stessa ammissione del .gitignore e di scripts/trascrivi-registrazioni.py,
+      contengono i nomi dei clienti e le voci di chi lavora al banco. Sono dati
+      personali (voce e immagine identificabili) pubblicati senza base
+      giuridica: un problema di privacy prima ancora che di sicurezza.
+      Il commit che li ha tolti (c002eb1, «fuori dal versionamento i vocali dal
+      banco») li ha rimossi SOLO dal tip. Restano scaricabili da chiunque:
+      dai tip dei rami remoti vivi release/1.3.0 e release/1.4.0 (63 file
+      ciascuno), dalla storia raggiungibile di main e develop (i commit che li
+      aggiungono — c89e4f5, fefa53a, 64573ad… — sono antenati del tip), e dai
+      rami locali agents/configurazione-agenti e feature/riordino-css.
+      Comportamento atteso: quei file non devono essere raggiungibili da un
+      repository pubblico, né dal tip né dalla storia.
+      COSA FARE (in quest'ordine): (1) cancellare sul server i rami
+      release/1.3.0 e release/1.4.0 (e i locali citati, o riscriverli);
+      (2) riscrivere la storia di tutti i rami con
+      `git filter-repo --path registrazioni/ --invert-paths` (o BFG) e
+      force-push; (3) aprire un ticket al GitHub Support per purgare gli
+      oggetti dalle cache/reflog lato server — i commit restano raggiungibili
+      per SHA anche dopo il force-push — e verificare che non esistano fork;
+      (4) decidere se il repo debba restare pubblico. Non c'è un segreto da
+      ruotare: è privacy di persone reali, ed è il finding più grave dell'audit.
+    in_produzione: true
+    status: todo
+    generate_issue: true
+    labels: [bug, sicurezza, infrastruttura]
+    severity: grave
+    priority: P0
+    test_cases: []
+
+  - id: BUG-091
+    title: "counters/{dateKey} è scrivibile da chiunque, anche senza login"
+    area: "firestore.rules (match /counters/{dateKey}), src/lib/progressivi.js"
+    description: >
+      In firestore.rules la collezione dei progressivi ha `allow read, write:
+      if true`: nessun login, nessun ruolo, nessun App Check imposto. Chiunque
+      abbia estratto apiKey e projectId dal bundle (pubblici per design) può
+      fare setDoc(counters/2026-08-26, {last: 999999}) o azzerare il contatore.
+      Danno: la sera i nuovi conti prendono numeri assurdi o DUPLICATI di conti
+      già in mano ai clienti — la comanda stampata «#15» e quella a schermo non
+      coincidono più. È la stessa classe di incidente che progressivi.js
+      documenta come già vissuta; risolviNumeroDuplicato gestisce le collisioni
+      accidentali fra terminali, non un avvelenamento deliberato del contatore.
+      L'apertura è motivata dalla numerazione lato client offline, ma va
+      ristretta. Comportamento atteso: la scrittura dei counter solo allo staff.
+      CURA: `allow write: if isStaffMember();`. Se serve l'incremento dal
+      client anonimo, vincolarlo a
+      `request.resource.data.last == resource.data.last + 1` con App Check
+      imposto (vedi BUG-092), o spostare l'assegnazione del progressivo
+      interamente server-side. Serve un test delle regole
+      (@firebase/rules-unit-testing), oggi assente: l'anonimo non deve poter
+      scrivere counters.
+      RISOLTO (26/08/2026). La cura secca suggerita dall'audit — `allow
+      write: if isStaffMember()` — È SBAGLIATA, e la prova lo dimostra: il
+      cliente che ordina dal menù NON è autenticato e passa dallo stesso
+      contatore; con quella regola il suo conto uscirebbe lo stesso ma il
+      contatore non salirebbe, e il cliente dopo prenderebbe lo stesso
+      numero — cioè proprio il doppione che si voleva evitare. Quindi non si
+      chiede CHI scrive ma COSA scrive: a chi non è del personale si concede
+      esattamente il gesto di progressivi.js — un `increment(1)` sul solo
+      campo `last` — e nient'altro. Le regole vedono il valore DOPO
+      l'incremento (verificato sull'emulatore), quindi il vincolo
+      `request.resource.data.last == resource.data.last + 1` si può scrivere
+      così com'è. Un contatore nuovo può nascere solo a 1. Il personale
+      resta libero (apertura cassa `_active_cash`, `fatture-AAAA`,
+      correzioni). Il local-first è intatto: nessuna lettura in più prima di
+      scrivere, `prendiNumero` resta a fuoco e via.
+      PROVATO con la prima suite di test delle regole del progetto
+      (tests/regole/, `npm run test:regole`, emulatore Firestore): 14 prove,
+      metà sull'abuso e metà sull'uso legittimo. Doppia prova del rosso —
+      rimessa la regola vecchia, i 9 test dell'abuso falliscono (l'abuso
+      passa); messa la regola troppo stretta, falliscono i 3 dell'uso
+      legittimo del cliente.
+      RESTA il gocciolamento: mille chiamate spingono il contatore avanti di
+      mille. Numeri alti e brutti, mai due conti uguali — il danno vero è
+      chiuso. A fermare anche quello è App Check imposto (BUG-092).
+      DA FARE A MANO: le regole hanno effetto solo dopo `firebase deploy
+      --only firestore:rules`, che è una decisione dell'utente.
+    in_produzione: true
+    status: fixed
+    generate_issue: true
+    labels: [bug, sicurezza]
+    severity: grave
+    priority: P1
+    test_cases:
+      - tests/regole/counters.test.js
+
+  - id: BUG-092
+    title: "App Check è inizializzato sul client ma non imposto da nessuna parte"
+    area: "src/lib/firebaseClient.js (initializeAppCheck), functions/index.js (OPTS delle onCall), firestore.rules"
+    description: >
+      Il client registra App Check con reCAPTCHA v3 (firebaseClient.js), ma il
+      backend non lo pretende mai: nessuna Cloud Function dichiara
+      `enforceAppCheck: true` (OPTS è solo la region), l'enforcement non risulta
+      acceso per Firestore/Storage, e se manca VITE_RECAPTCHA_SITE_KEY App Check
+      si spegne in silenzio. Risultato: il token viene prodotto e allegato, ma
+      le callable restano invocabili da qualunque client, anche fuori dall'app.
+      È il moltiplicatore che rende sfruttabili i buchi da anonimo (BUG-091,
+      BUG-093) e apre a spam/DoS/costo battendo createOrder o
+      createPaymentCheckout in loop con la sola apiKey pubblica. È anche il
+      sospetto già annotato per BUG-001 (il banner «Missing or insufficient
+      permissions» in coda).
+      Comportamento atteso: le operazioni riservate all'app passano solo da
+      client legittimi con App Check valido.
+      CURA: accendere l'enforcement in console per Firestore/Storage/Functions;
+      aggiungere `enforceAppCheck: true` alle callable riservate allo staff
+      (staffAdmin, sync/sale SumUp, pagamenti), lasciando fuori con grazia
+      quelle pensate per il cliente anonimo con capability-token (checkout
+      online); far fallire la build in produzione se manca
+      VITE_RECAPTCHA_SITE_KEY, invece di spegnere App Check in silenzio.
+    in_produzione: true
+    status: todo
+    generate_issue: true
+    labels: [bug, sicurezza, produzione]
+    severity: grave
+    priority: P1
+    test_cases: []
+
+  - id: BUG-093
+    title: "Ogni ordine è leggibile e creabile da chiunque: dati personali esposti"
+    area: "firestore.rules (match /orders/{orderId}), src/lib/api.js"
+    description: >
+      RISOLTO IN DUE PASSI (26 e 28/08/2026). Il terzo — spostare i campi
+      personali fuori dal documento — e' un lavoro a se', ed e' scritto in
+      fondo.
+      IL DIFETTO. Gli ordini sono l'unica collezione che un cliente NON
+      autenticato deve poter creare e leggere: e' il modello «id ordine come
+      lasciapassare», ed e' una scelta, non una dimenticanza. Ma le regole
+      dicevano `allow read: if true` e una `create` senza vincoli di forma, e
+      dentro un ordine ci sono dati personali — nome del cliente, note, token
+      push, email e ruolo di chi l'ha battuto. Ne' la lettura ne' la creazione
+      erano ristrette: con la sola chiave pubblica del bundle (che e' pubblica
+      per disegno) si arrivava ai dati dei clienti e si scriveva nella coda
+      del banco.
+      Comportamento atteso: chi ha l'id in mano vede e modifica il SUO conto;
+      l'archivio non si scarica, e la coda non si riempie da fuori.
+      CHIUSA LA CREAZIONE (26/08/2026). Era un rubinetto aperto: in coda
+      poteva comparire un conto firmato `placed_by: {email: admin@…, role:
+      admin}` — la legenda della coda, la stampa e lo storico dicevano tutti
+      «l'ha battuto lui» — oppure gia' pagato, gia' scontato, gia' fatturato,
+      gia' venduto a SumUp, intestato all'account di un ALTRO cliente (che se
+      lo ritrovava nei «miei ordini» e nel suo gruppo), gia' avanti di stato
+      (saltando la coda: nessuno lo prepara e risulta servito) o con un totale
+      che non e' un numero. Adesso chi non e' del personale puo' scrivere solo
+      la forma che scrive davvero creaOrdine: conto `aperto`, una comanda
+      sola, `placed_by` nullo, nessun campo di incasso/sconto/fattura/SumUp,
+      `customer_uid` solo il proprio, totale numero non negativo. Il personale
+      resta libero.
+      CHIUSA LA LETTURA (28/08/2026). In Firestore `read` sono due mestieri
+      diversi messi insieme: `get` (un documento di cui si conosce l'id) e
+      `list` (scaricarne tanti). Il primo e' il modello voluto e resta
+      `if true`; il secondo era concesso per errore, ed era quello che
+      permetteva di travasare l'archivio — mesi di nomi, note, importi ed
+      email. Ora `list` passa solo dove la domanda si dimostra sicura da se',
+      perche' le regole misurano la query prima di eseguirla e non filtrano i
+      risultati: il PERSONALE (coda, storico, statistiche, cassa, gruppi), il
+      CLIENTE REGISTRATO sui conti intestati al suo account, e le due liste
+      del TABELLONE del menu' (`comande_statuses` che contiene ricevuto /
+      in_preparazione, oppure pronto). Tutto il resto e' rifiutato, anche
+      quando i documenti che tornerebbero sarebbero leciti.
+      CAMBIATO ANCHE IL CLIENT, ed e' il pezzo che mancava. «I miei ordini»
+      del cliente NON registrato chiedeva i conti salvati sul telefono con
+      una query su `documentId() in [...]`, spezzata in blocchi da 30 per il
+      limite della clausola `in`. Quella domanda nessuna regola sa
+      riconoscerla, e infatti restava fuori dai quattro rami. Adesso
+      fetchOrdersByIds (src/lib/api.js) fa N letture singole — che il `get`
+      gia' permette — con gli stessi risultati e lo stesso ordinamento: gli
+      id sono al massimo venti (cart.js), quindi in velocita' non cambia
+      niente, e la complicazione dei blocchi sparisce.
+      SCARTATA una scorciatoia: un ramo `resource.id is string` fa passare la
+      query per id e blocca il travaso, ma e' un comportamento non
+      documentato del pianificatore (la condizione e' vera per qualunque
+      documento). Una barriera di sicurezza non si appoggia a un dettaglio
+      d'implementazione che domani puo' sparire.
+      RESTA FUORI, e va deciso a parte: i documenti che le liste legittime
+      tornano sono INTERI, e dentro ci sono ancora push_token, customer_uid e
+      placed_by. Le regole non sanno proiettare campi: per non mostrarli
+      vanno spostati in un sottodocumento a lettura ristretta, e `placed_by`
+      e' letto in mezza app (coda.js, ServiceQueue, printer.js, storiaOrdine,
+      cassa.js). Il recinto ora e' molto piu' stretto — restano dentro solo i
+      conti in lavorazione, non l'archivio — ma quel travaso li' non e'
+      chiuso. Insieme va imposto App Check (BUG-092), che e' quello che
+      limita anche la creazione ai client legittimi.
+      DA FARE A MANO: le regole hanno effetto solo dopo `firebase deploy
+      --only firestore:rules`.
+    in_produzione: true
+    status: fixed
+    generate_issue: true
+    labels: [bug, sicurezza]
+    severity: grave
+    priority: P1
+    test_cases:
+      - tests/regole/orders.test.js
+      - tests/unit/mieiOrdiniPerId.test.js
+
+  - id: BUG-094
+    title: "Le callable SumUp POS Pro non controllano né login né ruolo"
+    area: "functions/index.js (syncSumUpProducts, createSumUpSale, updateSumUpSaleStatus), functions/lib/sumup-service.js, functions/lib/sumup-core.js"
+    description: >
+      LATENTE — oggi innocuo perché SumUp è spento (functions/.env vuoto), ma
+      da chiudere PRIMA di accendere l'integrazione. Le tre callable
+      syncSumUpProducts, createSumUpSale e updateSumUpSaleStatus non leggono
+      request.auth; un onCall v2 non richiede autenticazione di default, e non
+      c'è requireRole né App Check. A integrazione attiva, chiunque conosca
+      l'id progetto (è nel bundle) può, da internet:
+      - syncSumUpProducts: riscrivere l'intera collezione drinks (il menù) con
+        la risposta dell'API SumUp;
+      - createSumUpSale: passare orderId/items/unit_price/qty DAL CLIENT e
+        scrivere sumup_sale_id su un ordine arbitrario con prezzi a piacere;
+      - updateSumUpSaleStatus: cambiare lo stato di qualunque vendita.
+      Comportamento atteso: sono operazioni di back-office, mai di un cliente.
+      CURA: aggiungere `requireRole(request.auth, BANCO)` come già fanno i
+      pagamenti (payment-service.js), validare orderId/items (esistenza
+      dell'ordine) e RICALCOLARE i prezzi lato server invece di prenderli dal
+      client. Insieme, imporre App Check (BUG-092).
+      RISOLTO (26/08/2026). Il controllo di ruolo sta nel servizio
+      (functions/lib/sumup-service.js), con lo stesso metro dei pagamenti: il
+      ruolo vive nel custom claim, che nessuno puo' darsi da solo. BANCO per
+      syncProducts — riscrivere il menu' e' back-office, non servizio — e
+      TUTTO IL PERSONALE per createSale e updateSaleStatus, perche' la sala
+      prende gli ordini al tavolo e segna «servito». index.js passa
+      request.auth e traduce { code, message } in HttpsError, come staffAdmin.
+      L'ORDINE DEI CONTROLLI E' VOLUTO: prima `isConfigured()`, poi il ruolo.
+      Con SumUp spento queste funzioni non fanno NIENTE — nessuna chiamata,
+      nessuna scrittura — e devono restare un no-op silenzioso: mettere il
+      ruolo davanti trasformerebbe un nulla di fatto in un errore, e il primo a
+      prenderlo sarebbe il telefono del CLIENTE, che chiama createSumUpSale a
+      ogni ordine (api.js, creaOrdine). Cosi' il comportamento di oggi non
+      cambia di una virgola, e il buco si chiude nell'istante in cui SumUp si
+      accende.
+      I PREZZI LI METTE IL SERVER: se l'ordine e' gia' su Firestore il payload
+      della vendita si costruisce dai SUOI item. Se non c'e' ancora si usano
+      quelli arrivati, e non e' una svista: il conto e' local-first, creaOrdine
+      scrive senza aspettare e chiama subito la callable, quindi il documento
+      puo' essere ancora per strada — pretenderlo vorrebbe dire perdere la
+      vendita di ogni conto battuto con la linea lenta. Ora che di li' passa
+      solo il personale, il salto vale la pena.
+      DA DECIDERE, e non e' un dettaglio: `createSumUpSale` oggi parte dal
+      BROWSER DEL CLIENTE a ogni ordine dal menu' (api.js), e il cliente non e'
+      autenticato. Col ruolo, quando SumUp verra' acceso, gli ordini fatti dal
+      telefono del cliente NON arriveranno piu' al POS: arriveranno solo quelli
+      battuti dal personale. La strada giusta e' spostare l'invio lato server
+      (un trigger onDocumentCreated su orders), ma e' un cambiamento
+      d'architettura e lo decide l'utente. Finche' SumUp e' spento non cambia
+      niente per nessuno.
+      PROVATO in tests/bdd/: 12 casi nuovi fra create-sale, sync-products e
+      update-sale-status — cliente e non autenticato respinti, sala e banco che
+      passano dove devono, la sala respinta sul catalogo, il no-op silenzioso a
+      SumUp spento, e i prezzi falsi dal client che vengono ignorati a favore
+      di quelli dell'ordine.
+      NON DEPLOYATO: le Functions non si pubblicano senza via libera esplicito.
+    in_produzione: false
+      CHIUSO SENZA CORREZIONE (26/08/2026): IL DIFETTO NON C'È PIÙ PERCHÉ LA
+      FUNZIONE NON C'È PIÙ. Due giorni dopo la cura qui sopra l'utente ha
+      deciso di buttare tutta l'integrazione SumUp Cassa Pro: «Sta cosa di
+      SumUp Cassa Pro possiamo anche toglierla, non serve. A noi serve solo
+      inviare il pagamento al POS in modo che si possa riscuotere tramite il
+      POS SumUp». Le tre callable syncSumUpProducts, createSumUpSale e
+      updateSumUpSaleStatus sono state rimosse, insieme ai moduli
+      functions/lib/sumup-core.js e functions/lib/sumup-service.js e a
+      src/lib/sumupApi.js. Anche i controlli di ruolo aggiunti il 26/08 se ne
+      sono andati con loro, e con essi i test che li provavano.
+      NON È «CORRETTO», ED È BENE DIRLO: la superficie d'attacco è sparita, non
+      è stata difesa. Se un domani si volesse rimandare le vendite a un
+      registratore di cassa, questo bug torna in piedi tale e quale e la sua
+      cura è ancora quella scritta sopra — per questo il testo resta.
+      Cade anche la domanda lasciata aperta («createSumUpSale parte dal browser
+      del cliente»): non parte più niente.
+    status: wontfix
+    generate_issue: true
+    labels: [bug, sicurezza, pagamenti]
+    severity: grave
+    priority: P2
+    test_cases: []
+
+  - id: BUG-095
+    title: "sumupWebhook si fida dello stato nel payload, senza firma né ri-verifica"
+    area: "functions/index.js (sumupWebhook), functions/lib/sumup-service.js (handleWebhook), functions/lib/sumup-core.js (parseWebhookBody)"
+    description: >
+      LATENTE — innocuo finché SumUp è spento (nessun ordine ha sumup_sale_id),
+      ma si attiva insieme al POS Pro. A differenza del webhook dei pagamenti,
+      che è fatto bene, sumupWebhook prende sale_id E status dal corpo della
+      richiesta e li scrive direttamente sull'ordine, senza verifica di firma
+      HMAC, senza segreto condiviso e senza ri-verifica via API. Chi conosce o
+      indovina un sumup_sale_id POSTa {sale_id, status: 'COMPLETED'}
+      sull'endpoint pubblico e fa avanzare di stato ordini altrui. Manca anche
+      la guardia isConfigured().
+      Comportamento atteso: come per i pagamenti, lo stato non si prende mai per
+      buono dal payload.
+      CURA: verificare la firma/segreto del webhook SumUp POS Pro se il prodotto
+      la offre, oppure — come già fa il webhook pagamenti — rileggere l'esito
+      dall'API SumUp e non fidarsi del payload; aggiungere `if (!isConfigured())
+      return {status: 200}`.
+      RISOLTO (26/08/2026), e prima si e' andati a vedere cosa offre davvero
+      SumUp. RISPOSTA: NIENTE FIRMA. Su SumUp POS Pro (Goodtill,
+      api.thegoodtill.com) non esiste HMAC, ne' timestamp firmato, ne'
+      anti-replay: l'intera specifica dell'API non nomina mai «webhook» o
+      «signature». L'unica difesa documentata e' un SEGRETO CONDIVISO STATICO
+      nell'header `Verification-Token`, che si legge nel back office
+      (Impostazioni -> Integrazioni -> Webhook), da confrontare a tempo
+      costante. E i documenti stessi dicono che il corpo del messaggio porta un
+      id e nient'altro: «you will then need to use the API to retrieve the
+      relevant data». Cioe' il disegno giusto e' proprio quello dei pagamenti —
+      il webhook e' una sveglia, la verita' si chiede all'API.
+      FATTO COSI': (1) guardia `isConfigured()` in testa, che mancava — a SumUp
+      spento l'endpoint risponde 200 e non tocca niente; (2) il gettone
+      `Verification-Token` e' OBBLIGATORIO quando SumUp e' acceso, e se manca o
+      non corrisponde si risponde 401 senza chiedere niente a nessuno — se non
+      e' configurato si rifiuta invece di lasciar correre, perche' un controllo
+      che si spegne da solo quando manca la configurazione non e' un controllo
+      (e' la stessa trappola di BUG-092); (3) lo `status` del corpo NON SI
+      GUARDA PIU': si cerca l'ordine col sumup_sale_id, e se e' nostro si
+      rilegge la vendita dall'API e si prende `current_status` da li'.
+      IN PIU', trovato leggendo la documentazione vera: il messaggio di SumUp
+      annida la vendita — {data: {sale: {id, url}}} — mentre il parser leggeva
+      solo `sale_id`/`id` in cima. Di un messaggio vero non avrebbe trovato
+      niente. Ora tollera tutt'e due le forme.
+      IL SEGRETO NON E' STATO INVENTATO: `firebase functions:secrets:set
+      SUMUP_POS_WEBHOOK_TOKEN`, e in functions/.env i valori restano vuoti come
+      documentato (quel file e' committato apposta). Il commento nel .env dice
+      dove si prende il gettone e perche' non sta li'.
+      DA CONFERMARE CON SUMUP prima di accendere: i percorsi. La documentazione
+      pubblica dice `/external_sale/sale/:id` al SINGOLARE, mentre il codice usa
+      `/external_sales` — e l'intestazione di functions/index.js dice gia' che
+      l'URL base va confermato col supporto quando arriva il Vendor-Id. Non si
+      e' cambiato alla cieca: la ri-lettura usa la stessa famiglia di percorsi
+      del resto del file, e resta da allineare tutta insieme quando SumUp
+      risponde. La ri-lettura vuole anche un Bearer JWT che oggi sumupFetch non
+      manda (manda solo Vendor-Id/Outlet-Id): altro pezzo da sistemare
+      all'accensione.
+      PROVATO in tests/bdd/webhook.test.js (11 casi) e
+      tests/unit/sumup-core.test.js: status falso nel corpo che perde contro
+      l'API, gettone sbagliato/assente/non configurato -> 401 senza scritture,
+      SumUp spento -> 200 e nessuna scrittura, messaggio annidato che trova
+      comunque l'ordine, e tutti i casi di prima che continuano a valere.
+      NON DEPLOYATO: le Functions non si pubblicano senza via libera esplicito.
+    in_produzione: false
+      CHIUSO SENZA CORREZIONE (26/08/2026): IL DIFETTO NON C'È PIÙ PERCHÉ
+      L'ENDPOINT NON C'È PIÙ. Con la rimozione di SumUp Cassa Pro decisa
+      dall'utente, `sumupWebhook` è stato cancellato: non esiste più un
+      indirizzo pubblico a cui bussare, e con lui se ne sono andati il gettone
+      `Verification-Token`, la ri-lettura dall'API e i test che li provavano.
+      Cadono anche i due punti lasciati «da confermare con SumUp» (i percorsi
+      al singolare o al plurale, e il Bearer JWT mancante in sumupFetch): non
+      c'è più codice a cui si riferiscano.
+      DA NON CONFONDERE COL WEBHOOK DEI PAGAMENTI: `paymentWebhook`, quello del
+      lettore e del checkout, è un'altra cosa, è fatto bene (rilegge l'esito
+      dall'API) e RESTA IN PIEDI.
+      NON È «CORRETTO», ED È BENE DIRLO: se un domani tornasse un webhook di
+      Cassa Pro, tornerebbe anche questo buco — la cura scritta sopra vale
+      ancora, e per questo il testo resta.
+    status: wontfix
+    generate_issue: true
+    labels: [bug, sicurezza, pagamenti]
+    severity: grave
+    priority: P2
+    test_cases: []
+
+  - id: BUG-096
+    title: "Fuori da «organizza» i sensori del trascinamento venivano tolti, non spenti"
+    area: "src/components/PosProductPicker.jsx, src/components/OrderPosDetail.jsx, src/lib/sensoriDnd.js"
+    description: >
+      Sia la griglia dei prodotti sia la lista del conto passavano a dnd-kit
+      una lista di sensori VUOTA quando «organizza» era spento, e la lista
+      piena quando era acceso.
+      IL PUNTO: dnd-kit usa quella lista come dipendenze di un `useEffect`
+      (`useSensorSetup`), e React le dipendenze le confronta una a una PER
+      POSIZIONE. Una lista che cambia LUNGHEZZA fra un disegno e l'altro non e'
+      un confronto valido — React lo dice a voce alta, «The final argument
+      passed to useEffect changed size between renders» — e in pratica,
+      entrando e uscendo dalla modalita', il montaggio e lo smontaggio dei
+      sensori si disallineano: nessuno puo' garantire che dopo un giro dentro e
+      fuori la maniglia prenda ancora. Al banco e' il tipo di guaio che non si
+      riproduce a comando e si liquida con «non ha funzionato, riprovo».
+      Trovato ripulendo gli avvisi della suite (agosto 2026), non da una
+      segnalazione: l'avviso c'era da sempre, sepolto sotto migliaia di righe.
+      Comportamento atteso: la lista dei sensori non cambia mai lunghezza;
+      fuori da «organizza» nessun tocco deve poter far partire un
+      trascinamento.
+      RISOLTO: `src/lib/sensoriDnd.js` — `spegnibile(Sensore)` avvolge un
+      sensore di dnd-kit in modo che il suo attivatore risponda «no» quando
+      l'opzione `attiva` e' falsa. I sensori restano montati sempre (tre nella
+      griglia, uno nella lista del conto) e si spengono con un'opzione, invece
+      di sparire dalla lista. Il comportamento a schermo non cambia: dentro
+      «organizza» si trascina come prima, fuori non si trascina come prima.
+      PROVATO: i test che entrano ed escono da «organizza» ci passavano gia'
+      sopra (tests/component/PosProductPicker.test.jsx, «la griglia non viene
+      rifatta»); quello che mancava era che l'avviso COSTASSE qualcosa. Da ora
+      lo fa: tests/helpers/guardiaConsole.js fa fallire il test che stampa un
+      avviso inatteso, quindi se la lista tornasse a cambiare lunghezza la
+      suite diventa rossa.
+    status: fixed
+    generate_issue: true
+    labels: [bug, pos]
+    in_produzione: true
+    severity: media
+    priority: P2
+    test_cases:
+      - tests/component/PosProductPicker.test.jsx
+
+  - id: BUG-097
+    title: "Il conto si apre senza sapere chi lo guarda: per un attimo il banco vede la schermata della sala"
+    area: "src/components/OrderPosDetail.jsx (effetto onAuthStateChanged, `ruolo`)"
+    description: >
+      Aprendo un conto, `ruolo` parte da `null` e diventa quello vero solo
+      quando il token risponde (`getIdTokenResult`, una promessa). Nel mezzo
+      `puoGestireComande(null)` e' falso, quindi al primo disegno la schermata
+      si comporta come se a guardarla fosse la sala: i passi della preparazione
+      non ci sono, «Annulla ordine» e' spento, e i tasti di divisione della
+      comanda non compaiono. Un istante dopo arrivano tutti insieme.
+      Al banco vuol dire una schermata che si assesta sotto le mani nel momento
+      in cui ci si appoggia il dito — e col token scaduto o la rete lenta quel
+      momento si allunga: si tocca «Annulla» e non risponde, si tocca di nuovo
+      e intanto e' diventato attivo.
+      Trovato mentre si ripulivano gli avvisi `act(...)` della suite (agosto
+      2026): erano proprio quei tre aggiornamenti che atterravano a test
+      finito. I test adesso lo aspettano, quindi la schermata che verificano e'
+      quella completa — ma il ritardo nel prodotto resta.
+      Comportamento atteso: chi apre un conto vede subito la schermata del
+      proprio ruolo. Il ruolo e' gia' noto altrove nell'app (il gestionale non
+      si apre senza), e va tenuto da parte invece di richiederlo da capo a ogni
+      montaggio — per esempio ricordandolo come si fa col numero di conto
+      previsto (`progressivi.js`, «se un dato serve e non c'e', si precarica»).
+      NON CORRETTO QUI: cambiarlo cambia cosa si vede al primo disegno, e
+      questo giro era una pulizia degli avvisi, non un cambio di comportamento.
+    status: todo
+    generate_issue: true
+    labels: [bug, pos]
+    in_produzione: true
+    severity: media
+    priority: P2
+    test_cases: []
+
+  - id: BUG-098
+    title: "Lo scontrino di chiusura cassa spesso non esce, e nessuno se ne accorge"
+    area: "src/lib/printer.js (lavoroDiStampa, raccontaLaRisposta), src/lib/registroStampe.js, src/lib/notify.js, src/components/CashFlow.jsx"
+    severity: media
+    priority: P2
+    description: >
+      Segnalato da Flavio il 28/08/2026: «quando fanno la chiusura cassa, la
+      stampante non stampa lo scontrino di chiusura molto spesso».
+      I FATTI CHE HA DATO, e valgono piu' di qualunque lettura del codice:
+      · durante la serata la stampante stampa SEMPRE — comande e scontrini
+      escono anche nelle sere lente, con mezz'ora fra un ordine e l'altro;
+      · la RISTAMPA della stessa chiusura, dalla lista delle serate, esce
+      SUBITO;
+      · quando non stampa NON compare nessun avviso;
+      · la chiusura si fa dalla schermata della cassa (`CashFlow`), non dal
+      riquadro della coda.
+      COSA E' STATO ESCLUSO, con la verifica accanto, perche' il prossimo che
+      ci mette mano non rifaccia la stessa strada:
+      · NON e' la coda di stampa piantata: durante la serata stampa tutto;
+      · NON e' la connessione morta per inattivita': stampa anche dopo mezz'ora
+      di pausa, e il battito cardiaco c'e' anche in produzione;
+      · NON e' un `await` che non torna: `closeCashSession` non restituisce
+      niente, quindi la riga della stampa viene raggiunta;
+      · NON e' una regressione: il codice della chiusura in produzione (1.5.5)
+      e' IDENTICO a quello attuale, in tutte e due le schermate;
+      · NON e' un interruttore che spegne la stampa: non esiste, e se manca
+      l'IP della stampante il codice lancia un errore invece di tacere;
+      · NON e' la schermata: i due test nuovi
+      (`tests/component/ChiusuraCassaStampa.test.jsx`) dimostrano che la
+      chiusura CHIEDE la stampa coi dati giusti e che un fallimento viene
+      detto.
+      RESTA QUINDI UN SOLO SPAZIO: la stampa parte, il codice la considera
+      riuscita, e la carta non esce.
+      LA CAUSA STRUTTURALE, che e' anche il motivo per cui il difetto e'
+      difficile da inseguire: NON SAPPIAMO SE LA STAMPANTE HA STAMPATO. Il
+      lavoro si considera finito quando `prn.send()` e' stato CHIAMATO, non
+      quando la carta e' uscita. La stampante una risposta la manda —
+      `onreceive`, con esito e codice: carta finita, coperchio aperto, fuori
+      linea, tempo scaduto — ma nel codice quella risposta finisce in una riga
+      di console, scollegata dal lavoro che l'ha causata. Non usiamo nessuno
+      degli altri strumenti dell'SDK: ne' il monitoraggio di stato
+      (`startMonitor`/`onstatuschange`), ne' il tempo massimo del dispositivo,
+      ne' l'identificativo di lavoro sulla `send`.
+      LA CURA, in due pezzi (com'e' stata scritta il 31/08; per il terzo
+      pezzo previsto allora — il ritentativo automatico — vedi piu' sotto:
+      e' stato tolto il giorno dopo):
+      1) SAPERE COM'E' ANDATA: la risposta della stampante (`onreceive`)
+      torna al foglio che l'ha causata invece di finire in console. La
+      correlazione non ha bisogno di identificativi, che l'SDK non da': le
+      risposte tornano nell'ordine degli invii, e si contano.
+      2) LASCIARE TRACCIA: oggi una stampa fallita non lascia niente. L'avviso
+      vive OTTO SECONDI in una striscia che compare insieme a quella verde
+      «Cassa chiusa» — e con i toast che si accavallano (BUG-078) puo'
+      passare inosservata — e la risposta della stampante finisce in una
+      console che nessuno legge. Con una cassa che si chiude una volta a
+      notte, cosi' si va per tentativi per settimane. Serve un registro delle
+      stampe sul dispositivo: cosa, quando, esito.
+      DA VERIFICARE AL BANCO, ed e' la domanda che dividerebbe in due il
+      campo: alla prossima chiusura mancata, guardare il BASSO dello schermo
+      per una decina di secondi. Se compare una striscia rossa, il testo dice
+      gia' la causa e questo difetto si chiude in un pomeriggio.
+      ---
+      FATTO IL 31/08/2026 e RIVISTO IL 01/09/2026, sul ramo
+      feature/lettura-ordini-ristretta.
+      COM'E' ADESSO, in tre pezzi.
+      1) LA RISPOSTA E' DIAGNOSTICA (REQ-STAMPA-016). La stampa si chiude
+      sull'INVIO, come e' sempre stato: chi chiude cassa o batte una comanda
+      ha il suo esito nell'istante in cui tocca. La risposta della stampante
+      arriva DOPO e per conto suo, e serve solo a raccontare: aggiorna la
+      voce gia' scritta nel registro. La correlazione non usa identificativi
+      — le risposte tornano nell'ordine degli invii, e si contano — e para i
+      due modi di sbagliare: la risposta di un foglio gia' passato (chi
+      aspetta l'invio n scarta la risposta n-1) e quella che arriva da una
+      connessione VECCHIA (si confronta anche l'oggetto stampante).
+      2) SOLO GLI ERRORI FANNO RUMORE. Una risposta di errore manda un
+      avviso, che si vede subito e resta nello storico della campanella:
+      dice COSA non e' uscito e PERCHE' in parole da banco («Scontrino conto
+      #42: la carta e' finita»), senza codici dell'SDK — quelli restano nel
+      registro. Una risposta buona non dice niente a schermo. E lo stesso
+      motivo non si ripete entro un minuto: con la stampante fuori linea
+      falliscono dieci stampe di fila, e dieci strisce identiche sono
+      peggio di una perche' si smette di leggerle.
+      3) IL REGISTRO DELLE STAMPE (REQ-STAMPA-017), in Impostazioni →
+      Stampante: cosa, quando, com'e' andata e il motivo, piu' lo stato
+      della coda. Ogni stampa ci compare SUBITO come «inviata» e la voce si
+      aggiorna dopo con l'esito vero — o resta «in attesa di risposta» se la
+      stampante non parla mai, che e' un'informazione anche quella. Ultime
+      50 voci, niente dati personali, scritto di lato. Funziona identico con
+      la stampante FINTA, che risponde come quella vera e sa fingere due
+      guasti (carta finita, nessuna risposta) dal pannello Dev — cosi' la
+      catena si prova senza andare al banco.
+      IL RIPENSAMENTO DEL 01/09/2026, ed e' la cosa che serve fra sei mesi
+      piu' della regola nuova. La prima stesura (31/08) aveva fatto una cosa
+      diversa: aveva messo il lavoro ad ASPETTARE la risposta prima di
+      chiudersi, con un ritentativo automatico e una memoria «questa
+      stampante parla / non parla» per decidere quando valesse la pena
+      aspettare. Sembrava prudente e non lo era: e' un `await` sulla
+      stampante nel mezzo di un gesto, cioe' il divieto numero uno di questo
+      progetto (CLAUDE.md, local-first). Al banco vuol dire che chi chiude
+      cassa col locale pieno resta fermo davanti a una testina — la stessa
+      cosa che non si fa aspettando Firestore. E tutta la macchina che ci
+      stava intorno (attesa, ritentativo, contatori di silenzi, memoria
+      della stampante muta) esisteva SOLO per rendere sopportabile
+      quell'attesa: tolta l'attesa, e' stata tolta anche quella, perche'
+      quello che non serve piu' resta li' a fare da trappola per chi legge.
+      IL RITENTATIVO NON TORNA, ed e' una scelta, non una dimenticanza:
+      senza attesa non c'e' piu' il momento in cui riprovare, la risposta e'
+      solo diagnostica, e a ristampare e' una persona — che e' anche l'unico
+      modo di non rischiare il doppio scontrino su una stampa che in realta'
+      era uscita. Quello che resta e' il tempo massimo di 15 secondi sul
+      lavoro impiccato (BUG-086): e' un'altra cosa, difende da un lavoro che
+      non finisce, e li' la stampa RIFIUTA perche' il chiamante deve saperlo
+      adesso.
+      MITIGATO, NON CHIUSO, e la differenza e' importante: la causa vera non
+      e' ancora DIMOSTRATA. Non sappiamo tuttora perche' proprio la chiusura
+      di cassa, e non lo sapremo finche' non capitera' di nuovo al banco. Il
+      registro delle stampe e l'avviso servono esattamente a questo: alla
+      prossima chiusura mancata compare una striscia che dice cos'e'
+      successo, e in Impostazioni → Stampante la riga dice se la stampante
+      ha risposto di errore (e quale), se non ha risposto affatto, o se il
+      lavoro non e' nemmeno partito. Da li' il difetto si chiude davvero.
+      06/09/2026 — UNA CAUSA CHE SPIEGHEREBBE TUTTO, e che nel frattempo e'
+      stata trovata leggendo l'SDK per un'altra segnalazione (BUG-102): la
+      vita del collegamento si chiedeva a `isConnected()`, che risponde di
+      si' anche mentre l'SDK sta soltanto provando a riconnettersi. Un
+      collegamento caduto restava quindi in memoria e ogni invio finiva nel
+      vuoto, in silenzio. Perche' proprio la chiusura? Perche' e' la stampa
+      che arriva dopo il buco piu' lungo senza stampare — durante il servizio
+      le comande si susseguono e il collegamento resta caldo, mentre fra
+      l'ultimo scontrino e la chiusura passano ore. E spiega anche perche' la
+      RISTAMPA della stessa chiusura usciva subito: nel frattempo la stretta
+      di mano era stata rifatta.
+      NON SI CHIUDE LO STESSO. E' un'ipotesi che regge su tutti i fatti noti,
+      non una prova: nessuno ha visto il registro di quella sera. La cura di
+      BUG-102 e' in ogni caso quella che serve, e alla prossima chiusura
+      mancata il registro dira' se era questa.
+    # ATTENZIONE: NON e' `fixed`, ed e' voluto. Il testo qui sopra lo dice —
+    # «mitigato, non chiuso» — e un `fixed` chiuderebbe da solo la sua issue
+    # su GitHub, cioe' archivierebbe un difetto di cui NON conosciamo la
+    # causa e che puo' ripresentarsi la prossima serata. Resta aperto finche'
+    # il registro delle stampe non dice cos'e' successo davvero.
+    status: todo
+    in_produzione: false
+    generate_issue: true
+    labels: [stampa, cassa]
+    test_cases:
+      - tests/component/ChiusuraCassaStampa.test.jsx
+      - tests/unit/confermaDiStampa.test.js
+      - tests/unit/registroStampe.test.js
+      - tests/unit/scontrinoChiusura.test.js
+      - tests/unit/chiusuraCassaSenzaRete.test.js
+      - tests/component/RegistroStampe.test.jsx
+  - id: BUG-099
+    title: "Il conto appena incassato si vede sparire dalla coda: una memoria, due letture, una non la guardava"
+    area: "src/lib/api.js (subscribeActiveOrders, payGroupCash), src/lib/mutazioniOrdine.js"
+    severity: media
+    priority: P1
+    description: >
+      Segnalato dall'utente il 01/09/2026: «dopo che riscuoto il conto e
+      torna automaticamente alla coda ordini, vedo per un attimo scomparire
+      l'ordine nella coda. Quando torno alla coda non voglio vedere
+      quell'ordine scomparire: deve essere gia' andato via».
+      LA CAUSA, e non e' una regressione di codice. Riscuotere passa da
+      `scriviOrdine`, che fa due cose giuste: RICORDA com'e' il conto dopo la
+      modifica (`ricordaOrdine`, lib/mutazioniOrdine.js) e manda la scrittura
+      in sottofondo (`bgWrite`). La coda, per non restare bianca su una rete
+      lenta, si dipinge SUBITO dalla cache di Firestore — scelta deliberata,
+      sorvegliata da tests/unit/codaCache.test.js. Ma quella lettura mappava i
+      documenti con `mapOrder` e NON consultava la memoria: `ordineRicordato`
+      era applicato solo rileggendo UN conto (`leggiOrdine`), mai alla LISTA.
+      Quindi la coda dipingeva il conto com'era — aperto — e un istante dopo
+      la scrittura atterrava e il conto spariva. E' il lampo.
+      In una riga: una memoria, due letture, e una non la guardava. E' la
+      stessa FORMA di BUG-028 («una sola memoria di l'ho appena fatto io»),
+      girata: li' erano due memorie e ogni vista ne leggeva una, qui e' una
+      memoria e due letture, e una non la guarda.
+      LA CURA (01/09/2026, ramo feature/lettura-ordini-ristretta).
+      1) `ordineRicordato` si applica anche alle LISTE della coda, e a tutte
+      e tre insieme — aperti, recenti, chiusi in questa cassa. `emit` non
+      fonde piu' conti gia' mappati: tiene i documenti GREZZI dei tre ascolti,
+      sceglie il piu' fresco per ogni conto (l'ultimo elenco che ce l'ha, come
+      prima) e compone UNA volta sola passando dalla memoria. Applicarlo a un
+      elenco solo, o due volte con esiti diversi, vorrebbe dire un conto che
+      sparisce da un elenco e ricompare in un altro — al banco, peggio del
+      lampo.
+      2) L'incasso di GRUPPO passa da `scriviOrdine` invece che da `bgWrite`
+      nudo: senza il ricordo, i conti di un tavolo restavano a schermo finche'
+      non atterrava la scrittura, uno per volta.
+      3) LA SVEGLIA. Il ricordo copre il documento vero al massimo per
+      `VITA_MEMORIA` (2 secondi); se in quella finestra non arriva nessun
+      altro snapshot — di notte, con un conto solo in ballo — la lista
+      resterebbe ferma su una versione che non esiste piu', e a quel punto
+      sarebbe il ricordo a nascondere quello che hanno fatto GLI ALTRI
+      terminali. Quando la lista usa un ricordo, la coda si programma una
+      ricomposizione alla scadenza. Non e' un ritardo che indovina la
+      velocita' della macchina — il meccanismo resta il confronto con la
+      cache, che si accorge da se' quando la scrittura e' arrivata: e' la
+      sveglia che rimette in moto la ricomposizione quando il ricordo non vale
+      piu'. Stessa idea del `setTimeout` di `ordiniNascosti`.
+      COSA NON E' STATO INDEBOLITO, ed e' la parte che protegge gli altri
+      terminali: il ricordo muore appena il documento vero racconta la stessa
+      cosa (confronto della patch) e scade comunque dopo `VITA_MEMORIA`. Il
+      limite dichiarato resta quello di sempre, ristretto a un paio di
+      secondi: se un ALTRO terminale riapre il conto mentre il nostro ricordo
+      e' vivo, per quella finestra qui si continua a vedere quello che si e'
+      appena fatto. E' l'«ultimo che scrive vince» che c'era gia', e i test lo
+      dimostrano invece di darlo per buono.
+      RESTA FUORI, apposta: `subscribeOrder` (il singolo conto in tempo reale)
+      e le liste di STORICO e rendicontazione (`subscribeOrdersHistory`,
+      `fetchOrdersBetween`, `fetchOrdersRange`, `fetchRecentDrinkIds`) non
+      consultano la memoria. Sullo storico sarebbe sbagliato — li' si guarda
+      cos'e' successo, non cosa si e' appena fatto — e sul singolo conto il
+      giro passa gia' dai valori COMPOSTI che le mutazioni restituiscono
+      (`ordineDopo`).
+    status: fixed
+    in_produzione: false
+    generate_issue: true
+    labels: [bug, coda, local-first]
+    test_cases:
+      - tests/unit/codaRicordo.test.js
+
+  - id: BUG-100
+    title: "Nello scadenzario i resi si sommano invece di sottrarre, e «reso» non e' la dicitura giusta"
+    area: "src/lib/fatture.js, src/lib/riepilogoFornitori.js, src/lib/warehouse.js, src/components/SupplierInvoicesPanel.jsx, src/components/OrdiniListaPanel.jsx, src/index.css"
+    severity: grave
+    priority: P1
+    description: >
+      Segnalato da Flavio il 03/09/2026, a voce e per messaggio: «in
+      Scadenzario i resi si sommano alle fatture/proforma mentre dovrebbero
+      sottrarre, e l'importo dei resi dovrebbe apparire di colore verde».
+      A voce, la stessa cosa con dentro il perche': «quando si crea il
+      documento e si sceglie la tipologia — fattura, proforma e reso — reso
+      dovrebbe diventare NOTA DI CREDITO, perche' questa e' la dicitura
+      giusta. Non e' importante che io renda: magari e' sbagliato solamente
+      un prezzo, quindi io non rendo niente, mi devono modificare il prezzo
+      di una fattura magari gia' pagata, mi fanno la nota di credito. E la
+      nota di credito, che sostituisce la parola reso, deve andare a
+      modificare il totale dello scadenzario: deve essere in negativo, perche'
+      mi stanno scalando dei soldi. E poi il colore deve apparire in un altro
+      colore, preferibilmente verde».
+      QUANTO FA MALE: il totale sbagliava del DOPPIO della correzione. Mille
+      euro di fattura e centoventi di nota facevano 1.120 da pagare invece di
+      880, e lo stesso errore finiva nel «Da pagare» in testa allo
+      scadenzario, nei totali per fornitore e nel Riepilogo dei soldi che
+      escono (REQ-MAG-034), che conta la merce proprio dalle fatture. Sono i
+      numeri che a fine mese vanno dal commercialista, e sbagliavano in
+      silenzio: nessuna schermata diceva niente.
+      LA CURA (03/09/2026, ramo feature/lettura-ordini-ristretta). Tre cose,
+      piu' tre decisioni che il testo non chiedeva.
+      1) IL NOME. In `TIPI_DOCUMENTO` «Reso» diventa «Nota di credito».
+      2) IL SEGNO. `importoContabile` (src/lib/fatture.js) e' l'unico posto
+      dove una nota di credito diventa negativa, e da li' passano tutti i
+      totali: il «Da pagare», i totali per fornitore e il riepilogo mensile.
+      Il commento sopra dice PERCHE' sottrae — non e' una spesa, e' la spesa
+      tolta — perche' e' la riga che qualcuno «sistemera'» rimettendoci un
+      valore assoluto.
+      3) IL COLORE. `--testo-verde` accanto a `--testo-rosso` e
+      `--testo-ambra`, con la sua variante chiara, e la classe
+      `.importo-nota-credito`. Ma il colore non porta mai da solo il
+      significato: la cifra si legge «− 120,00 €», perche' un numero colorato
+      resta un numero che si somma.
+      LE TRE DECISIONI PRESE IN IMPLEMENTAZIONE.
+      a) I DOCUMENTI VECCHI NON SI MIGRANO. In archivio ci sono documenti con
+      `doc_type: 'Reso'`: nessuno script li riscrive. `eNotaDiCredito` e'
+      l'unica funzione che conosce il nome vecchio e lo tratta da sinonimo,
+      cosi' i documenti di ieri continuano a valere; chi confronta `doc_type`
+      a mano se li perde, ed e' per questo che non lo fa nessuno. Chi apre il
+      modulo di correzione su un vecchio «Reso» lo vede gia' su «Nota di
+      credito», e salvando lo riscrive col nome nuovo: una migrazione che
+      avviene quando qualcuno tocca quel documento, non tutta insieme.
+      b) COSA VUOL DIRE «PAGATA» PER UNA NOTA DI CREDITO. Il gesto resta uno
+      solo — lo stesso campo `paid`, lo stesso tasto, gli stessi totali —
+      perche' due modi di chiudere un documento vogliono dire due stati da
+      tenere allineati, ed e' la stessa ragione per cui «pagato» sta sulla
+      fattura e non sull'ordine (REQ-MAG-038). A cambiare e' la PAROLA: una
+      nota di credito non si paga, o la si incassa o — molto piu' spesso — la
+      si scala da quello che si deve. Il tasto dice «da scalare» / «scalata»
+      (`etichettaSaldo`), che e' il verbo di Flavio e copre tutti e due i
+      casi. Finche' non e' scalata resta dentro il «Da pagare», con il segno
+      meno: e' il netto verso quel fornitore, cioe' la cifra da cui si parte
+      quando si fa il bonifico.
+      c) L'IMPORTO SI SCRIVE POSITIVO E SI CONTA NEGATIVO. Chi batte il
+      documento ha in mano un foglio con scritto 120, non −120, e il campo
+      chiede da sempre un numero senza segno. Il segno e' una conseguenza del
+      TIPO. `importoContabile` usa `-Math.abs()` e non `-x`: se qualcuno
+      scrive −120 intendendo una detrazione, il segno non si gira due volte e
+      la nota non torna a sommare.
+      DOVE E' FINITO `invoiceTotals`: era in src/lib/warehouse.js ed e'
+      passato in src/lib/fatture.js, perche' adesso deve sapere che una nota
+      di credito sottrae e quella regola vive li'. Lasciandolo dov'era,
+      warehouse e fatture si sarebbero importati a vicenda.
+    status: fixed
+    in_produzione: false
+    generate_issue: true
+    labels: [bug, magazzino, fornitori]
+    test_cases:
+      - tests/unit/fatture.test.js
+      - tests/unit/riepilogoFornitori.test.js
+      - tests/component/SupplierInvoicesPanel.test.jsx
+
+  - id: BUG-101
+    title: "Il magazzino si ferma a zero: quello che esce da un prodotto finito non lo sa piu' nessuno"
+    area: "src/lib/inventory.js, src/lib/api.js"
+    severity: grave
+    priority: P1
+    description: >
+      Chiesto da Flavio il 03/09/2026: «in Magazzino i prodotti devono andare
+      in negativo se vengono scaricati dagli items di Menu' dopo che sono
+      arrivati a 0».
+      COM'ERA. Lo scarico toglieva «al massimo quello che risulta in
+      giacenza» (`scaricoPossibile`): da un fondo di 0,2 pezzi se ne toglievano
+      0,2 anche quando ne erano usciti 0,75, e il magazzino si fermava a zero.
+      Sembrava prudenza — la vendita passa comunque, il conto e' gia' scritto
+      — ed era il contrario: gli altri due drink sparivano senza lasciare
+      traccia, e con loro l'unica cosa che diceva che qualcosa non tornava. Il
+      giorno dopo la giacenza diceva «0» esattamente come un prodotto finito
+      per bene, e chi guardava non aveva modo di sapere che c'era un buco.
+      QUANTO FA MALE. E' il caso di tutti i giorni al banco: arriva una
+      consegna, si mette in frigo e nessuno la carica, oppure l'ultimo
+      inventario e' di un mese fa. Da li' in poi ogni drink versato da quelle
+      bottiglie e' un consumo che il magazzino non registra. A fine mese il
+      valore del magazzino e' piu' alto del vero, il costo dei drink piu'
+      basso, e le proposte d'ordine chiedono meno di quello che serve.
+      PERCHE' IL MENO NON E' MERCE CHE MANCA — ed e' il punto che ha deciso
+      tutto il resto. Da uno scaffale vuoto non si versa: se un prodotto
+      continua a uscire dopo essere finito, sullo scaffale c'era davvero. Il
+      meno non conta bottiglie assenti, MISURA QUANTO SE N'E' VERSATO SENZA
+      CHE RISULTASSE. Da qui la risposta alla domanda che decideva la cura —
+      «se il magazzino segna meno una bottiglia e poi ne carichi sei, ne devi
+      trovare cinque o sei?»: SEI. Il carico riparte da zero
+      (`giacenzaPerCarico`, che c'era gia' e non si tocca): le sei bottiglie
+      appena consegnate sullo scaffale ci sono tutte e sei. Trattare il buco
+      da debito avrebbe scritto cinque, cioe' un numero falso, e per giunta
+      su ogni residuo di arrotondamento.
+      LA CURA (04/09/2026, ramo feature/lettura-ordini-ristretta).
+      1) LA VENDITA SCENDE SOTTO ZERO. In `depleteComandeInventory` si chiede
+         di togliere quello che e' uscito, punto. Il freno resta solo sullo
+         scarico A MANO (`scaricoPossibile`), dove c'e' una persona che
+         dichiara quanto ha tolto dallo scaffale — e da uno scaffale vuoto non
+         si toglie niente.
+      2) IL MENO ARRIVA A SCHERMO. Scriverlo nel dato non bastava: la card
+         del magazzino legge i PEZZI, e `pezziInGiacenza` e `formatPezzi` si
+         fermavano a zero anche loro. Un magazzino che sa di essere sotto zero
+         e lo tiene per se' e' lo stesso silenzio di prima.
+      3) QUELLO CHE RESTA DA ZERO IN SU, apposta. I SOLDI (`unitsInStock`,
+         `stockValue`): un magazzino che vale meno di niente non vuol dire
+         niente, e il meno non e' un credito. LE BOTTIGLIE DA TOCCARE
+         (`bottleBreakdown`): sono oggetti su uno scaffale, e «−1 piena piu'
+         750 ml nell'aperta» non e' una cosa che si puo' andare a guardare.
+      QUELLO CHE E' SALTATO FUORI STRADA FACENDO, e vale piu' della richiesta:
+      il freno teneva fermo anche IL VERSO OPPOSTO. `qtyInStockUnit`, che
+      converte una quantita' nell'unita' della giacenza, davanti a un numero
+      negativo rispondeva zero. Cosi' una comanda gia' scalata e poi RIDOTTA —
+      un drink tolto, merce che torna sullo scaffale — scriveva un movimento
+      di tipo «carico» e una giacenza che non si muoveva di un millilitro
+      (REQ-MAG-004): il magazzino restava indietro di un drink per sempre, e
+      il movimento raccontava un rientro mai avvenuto. Adesso la conversione
+      conserva il segno.
+      NESSUNA MIGRAZIONE E NESSUNO SCRIPT: le giacenze di oggi restano quelle
+      che sono, e il primo prodotto che esce da zero comincia a raccontarlo.
+    status: fixed
+    in_produzione: false
+    generate_issue: true
+    labels: [bug, magazzino]
+    test_cases:
+      - tests/unit/magazzinoSottoZero.test.js
+      - tests/unit/inventory.test.js
+
+  - id: BUG-102
+    title: "La stampante smette di stampare tutto, e il pallino resta verde"
+    area: "src/lib/printer.js"
+    severity: critica
+    priority: P1
+    description: >
+      Segnalato il 06/09/2026: «nella versione di produzione, ieri la
+      stampante ha smesso di stampare. Non stampava piu' niente, nemmeno le
+      vecchie chiusure». E il pallino dello stato e' rimasto verde.
+      LE RISTAMPE SONO LA PROVA: quelle rifanno un documento gia' pronto,
+      quindi il guasto non era in quello che si stampava ma nella STRADA.
+      LA CAUSA. La vita del collegamento si chiedeva a `isConnected()`
+      dell'SDK Epson. Quella funzione risponde di si' anche quando lo stato
+      e' `RECONNECTING` — cioe' mentre sta soltanto PROVANDO a riconnettersi
+      — e per giunta mette in OR due canali: basta che uno sembri su. Quindi
+      il battito dei 30 secondi non scattava mai, l'oggetto stampante restava
+      in memoria, `getPrinter()` lo restituiva subito, `preparaStampante()`
+      rispondeva «ok» senza chiedere niente a nessuno (pallino verde), e ogni
+      `send()` finiva in un collegamento che non c'era piu'. Nessun errore,
+      nessun blocco, nessuna carta: il silenzio perfetto.
+      QUELLO CHE FA PIU' RABBIA: la stampante quei fatti li diceva. L'oggetto
+      dell'SDK puo' alzare `ononline`, `onoffline`, `onpoweroff`,
+      `oncoveropen`, `onpaperend`, `onstatuschange`, e c'e' `startMonitor()`
+      che la fa interrogare da sola. L'app non ascoltava NESSUNO di questi:
+      ascoltava solo la risposta ai singoli invii.
+      LA CURA (06/09/2026, ramo feature/lettura-ordini-ristretta). Si smette
+      di chiedere all'SDK e si ascolta la stampante — vedi REQ-STAMPA-018 per
+      la regola per intero. In breve: monitor acceso a dieci secondi, i suoi
+      segnali collegati (non risponde = si molla il collegamento; carta,
+      coperchio e fuori linea = si avvisa e basta), il pallino che riporta il
+      guaio noto, e tre invii di fila senza risposta come rete per quando il
+      monitor non c'e'.
+      PERCHE' IL MONITOR NON PUO' ROMPERE NIENTE, che era la condizione posta
+      per accenderlo: non passa dal collegamento delle stampe ma da una
+      richiesta sua; quando fallisce alza `fireStatusEvent` e NON
+      `fireErrorEvent`, quindi non chiama `cleanup()` e non butta giu' il
+      collegamento; non alza `onreceive`, quindi non sfasa il conto
+      invii/risposte da cui dipendono registro e avvisi; nessuna stampa lo
+      aspetta; e un firmware che non lo sostiene non impedisce di stampare.
+      C'e' un test per ognuna di queste quattro cose.
+      L'ALTRA STRADA, gia' chiusa nella 1.5.6-beta e ancora aperta in
+      produzione: nella 1.5.5 la stretta di mano non ha nessun tempo massimo
+      e viene aspettata DENTRO la coda delle stampe, quindi una connessione
+      che non risponde mai congela la coda per sempre — stesso sintomo,
+      «non stampa piu' niente», e l'unica via d'uscita e' chiudere e riaprire
+      l'app. Il tempo massimo di 15 secondi con `scordaConnessione` (BUG-086)
+      la chiude. Non sapendo se la sera del 05/09 sia stata questa o l'altra
+      — l'app non e' stata riaperta per provare — si chiudono tutte e due.
+      CONFERMATO SUL CAMPO IL 07/09/2026, e non piu' per lettura del codice.
+      La stampante ha smesso di stampare di nuovo, in produzione; premendo
+      «Test stampa» (Impostazioni → Stampante) si e' sbloccata subito. Quel
+      tasto e' l'unico gesto dell'app che prima di stampare BUTTA il
+      collegamento e ne apre uno nuovo — e il fatto che sia partito, invece
+      di restare in attesa, esclude l'altra strada: con la coda impiccata si
+      sarebbe messo in fila anche lui e non sarebbe mai tornato. Quindi era
+      il collegamento morto tenuto per buono, esattamente questo difetto.
+      LA RISPOSTA ALL'OSSERVAZIONE DI CHI L'HA VISTO — «invece di aspettare i
+      dieci secondi, meglio controllare il collegamento prima di ogni stampa
+      e rifarlo come il test». Giusto il PERCHE': se il collegamento muore tre
+      secondi prima della chiusura, il monitor non fa in tempo. «Controllare»
+      pero' non si puo': chiedere all'SDK se e' vivo e' cio' che non funziona.
+      Resta il rifarlo, e si fa quando serve invece che a ogni stampa: la
+      connessione e' tenuta viva apposta, e rifarla ogni volta faceva fallire
+      la prima stampa col cliente davanti.
+      E QUI LA PRIMA RISPOSTA ERA SBAGLIATA IN DUE PUNTI, corretti dopo che
+      la domanda e' stata rifatta. Primo: «la stampante regge poche
+      connessioni» vale per quelle CONTEMPORANEE, non per una dopo l'altra —
+      buttarla e rifarla resta una connessione alla volta, e come obiezione
+      era mal posta. Quello che e' vero e' che `scordaConnessione` ABBANDONA
+      il collegamento invece di chiuderlo, quindi rifarlo spesso lascerebbe
+      sessioni mezze aperte: adesso, quando si molla un collegamento che
+      probabilmente sta bene, si chiama `disconnect()` dentro un try.
+      Secondo, e piu' importante: interrogare la stampante SI PUO'. Non si
+      puo' chiedere all'SDK se il socket e' vivo, ma il monitor a ogni giro
+      scrive sulla testina lo stato che la STAMPANTE ha risposto, con dentro
+      `ASB_NO_RESPONSE` quando ha smesso. Leggerlo prima di stampare non
+      costa niente e non aspetta niente, ed e' diventato il controllo
+      principale; la finestra dei due minuti e' scesa a rete di riserva per
+      quando il monitor non c'e'. Vedi REQ-STAMPA-018.
+      Esiste anche l'interrogazione a richiesta: `getPrintJobStatus()` manda
+      un lavoro VUOTO — non esce carta — e la stampante risponde. E' un ping
+      vero, ma bisogna aspettare la risposta e su un collegamento morto non
+      arriva mai: si conclude solo per scadenza. Non serve finche' bastano i
+      due controlli qui sopra; se un giorno la chiusura di cassa mancasse
+      ancora, e' la mossa da accendere SOLO per lei, che e' l'unica stampa
+      che puo' permettersi un secondo di attesa.
+    status: fixed
+    in_produzione: false
+    generate_issue: true
+    labels: [bug, stampa]
+    test_cases:
+      - tests/unit/stampanteCheNonRisponde.test.js
+

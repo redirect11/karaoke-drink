@@ -12,7 +12,7 @@
 //
 // Il controllo «prima va aggiornato il magazzino» era stato copiato a mano in
 // due casi su sette. Ce l'avevano il carico e la rettifica; non ce l'avevano
-// `receiveBottles`, `receivePurchaseOrder`, l'allineamento della conta e lo
+// `receiveBottles`, la consegna di un ordine fornitore, l'allineamento della conta e lo
 // scarico delle comande — e il buco concreto era Acquisti → «ricevuto», che
 // scriveva su un magazzino non ancora aggiornato perché il blocco viveva
 // dentro la schermata del magazzino.
@@ -50,11 +50,6 @@ vi.mock('../../src/lib/firebaseClient.js', () => ({
   auth: { currentUser: null },
   functions: {},
   storage: {},
-}))
-vi.mock('../../src/lib/sumupApi.js', () => ({
-  createSumUpSale: vi.fn(),
-  updateSumUpSaleStatus: vi.fn(),
-  toSumUpStatus: vi.fn(() => null),
 }))
 
 vi.mock('firebase/firestore', () => ({
@@ -124,7 +119,11 @@ const strade = [
   ['carico a mano', () => api.loadStock('art-1', 2)],
   ['carico a confezioni', () => api.receiveBottles('art-1', 2)],
   ['rettifica della giacenza', () => api.adjustStock('art-1', 3)],
-  ['ricevimento di un ordine fornitore', () => api.receivePurchaseOrder('po-1')],
+  // Era `receivePurchaseOrder`, che caricava l'ordine intero al «ricevuto».
+  // Da REQ-MAG-029 il carico avviene al passaggio a CONSEGNATO, riga per
+  // riga: il gesto ha un altro nome, la regola che deve rispettare è la
+  // stessa — con un magazzino ancora da aggiornare non scrive niente.
+  ['consegna di righe di un ordine fornitore', () => api.consegnaRigheOrdine('po-1')],
   [
     'allineamento della conta',
     () =>

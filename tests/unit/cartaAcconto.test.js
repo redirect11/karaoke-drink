@@ -100,8 +100,15 @@ const INCASSO = {
   at: '2026-08-21T21:30:00.000Z',
 }
 
-const stampaAcconto = async (order = CONTO, incasso = INCASSO) => {
+// CHI STA STAMPANDO, che dal 25/08 è il nome sulla riga dell'operatore
+// (BUG-088): sulla ricevuta d'acconto è chi ha appena preso i soldi, ed è
+// la persona che il cliente ha davanti. Al banco lo mette l'ascolto di
+// Firebase Auth in App.jsx; qui lo si dice a mano.
+const CHI_STAMPA = { name: 'Giulia', email: 'giulia@tana.local' }
+
+const stampaAcconto = async (order = CONTO, incasso = INCASSO, chiStampa = CHI_STAMPA) => {
   const printer = await import('../../src/lib/printer.js')
+  printer.impostaUtenteStampante(chiStampa ? 'u-giulia' : null, chiStampa)
   await printer.printScontrinoAcconto(order, incasso)
   return carta()
 }
@@ -111,12 +118,17 @@ const stampaAcconto = async (order = CONTO, incasso = INCASSO) => {
 // Se un giorno cambia, o è cambiato il documento di proposito — e allora
 // si aggiorna spiegando perché — o qualcosa si è spento da solo in un
 // locale che non ha scelto niente.
+//
+// AGGIORNATO IL 25/08/2026, UNA RIGA (BUG-088): «Utente A» → «Giulia»,
+// il nome di chi sta stampando. Era una costante scritta a mano, uguale
+// per chiunque, mentre il campo si chiamava «Chi ha incassato». Tutto il
+// resto è identico, carattere per carattere.
 const ACCONTO_DI_SEMPRE = `    L a   T a n a   d e l   C o n i g l i o
            Corso Tommaso Vitale 87/89
                80035 Nola - Italy
                  A C C O N T O
 ACCONTO - 12                  21/08/26, 23:30:00
-Utente A
+Giulia
 Vendita - Tavolo 4
 ------------------------------------------------
 QTA  Prodotto                    PU       Prezzo
@@ -194,7 +206,7 @@ describe('spegnere i campi dell’acconto', () => {
     })
     const uscito = await stampaAcconto()
     expect(uscito).not.toContain('La Tana del Coniglio')
-    expect(uscito).not.toContain('Utente A')
+    expect(uscito).not.toContain('Giulia')
     expect(uscito).not.toContain('Resta da pagare')
     expect(uscito).not.toContain('conto-diviso')
     // QUELLO CHE NON SI PUÒ SPEGNERE: la fascia, le righe pagate,
@@ -229,6 +241,33 @@ describe('spegnere i campi dell’acconto', () => {
       },
     })
     expect(await stampaAcconto()).toBe(vuoto)
+  })
+})
+
+// ── LE DUE RIGHE SOTTO AL NUMERO (BUG-088) ───────────────────────────
+//
+// La ricevuta d'acconto aveva le stesse due righe dello scontrino, e gli
+// stessi due difetti: «Utente A» scritto a mano, e il numero del conto
+// ripetuto sotto forma di «Vendita - Comanda #12».
+describe('la ricevuta d’acconto dice chi stampa e di chi è il conto', () => {
+  it('se non si sa chi stampa, la riga non c’è', async () => {
+    const uscito = await stampaAcconto(CONTO, INCASSO, null)
+    expect(uscito).not.toContain('Utente A')
+    expect(uscito).not.toContain('Giulia')
+    // La carta esce lo stesso, con tutto il resto.
+    expect(compatto(uscito)).toContain('13.00€')
+  })
+
+  it('senza tavolo dice il nome del cliente, non il numero del conto', async () => {
+    const uscito = await stampaAcconto({ ...CONTO, table_label: null, customer_name: 'Anna' })
+    expect(uscito).toContain('Vendita - Anna')
+    expect(uscito).not.toContain('Comanda #12')
+  })
+
+  it('senza tavolo e senza nome quella riga non esce', async () => {
+    const uscito = await stampaAcconto({ ...CONTO, table_label: null })
+    expect(uscito).not.toContain('Vendita')
+    expect(uscito).toContain('ACCONTO - 12')
   })
 })
 
@@ -275,7 +314,7 @@ const PRECONTO_CON_DUE_ACCONTI = `    L a   T a n a   d e l   C o n i g l i o
            Corso Tommaso Vitale 87/89
                80035 Nola - Italy
 SCONTRINO - 12                21/08/26, 23:00:00
-Utente A
+Giulia
 1 cliente
 Vendita - Tavolo 4
 ------------------------------------------------
@@ -305,6 +344,7 @@ Resta da pagare                           15.90€
 describe('il preconto di un conto con due acconti scontati', () => {
   it('li elenca tutti, e i conti tornano', async () => {
     const printer = await import('../../src/lib/printer.js')
+    printer.impostaUtenteStampante('u-giulia', CHI_STAMPA)
     await printer.printScontrino(CONTO_CON_DUE_ACCONTI)
     expect(nudo(carta())).toBe(PRECONTO_CON_DUE_ACCONTI)
   })

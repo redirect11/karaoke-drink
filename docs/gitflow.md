@@ -216,7 +216,16 @@ git tag -a v1.4.0-prod -m "In produzione la 1.4.0" && git push origin v1.4.0-pro
 **Mentre si lavora, `package.json` porta il numero della PROSSIMA versione
 col suffisso `-beta`** (es. `1.4.2-beta`): così l'app in test dice
 `v1.4.2-beta · release/1.4.x · <commit>` e non si confonde con quello che è
-davvero uscito. Al rilascio (passo 1) si toglie il `-beta`. Se le note in
+davvero uscito. Al rilascio (passo 1) si toglie il `-beta`.
+
+**E si rialza SUBITO, nello stesso giro del rilascio.** Il numero nuovo è il
+primo commit della linea successiva, non una cosa da ricordarsi dopo: appena
+la versione è uscita, il ramo di lavoro torna a `-beta` sulla prossima. Se si
+salta quel passo, chi lavora in locale vede il numero di quella che è GIÀ
+uscita e non sa più se quello che ha davanti contiene le modifiche di oggi
+oppure no — «altrimenti non so mai se abbiamo aggiornato qualcosa in locale»
+(l'utente, 26/08/2026, dopo che è successo con la 1.5.5). Vale per il locale
+quanto per il test: il numero serve proprio a distinguere. Se le note in
 `CHANGELOG.md` parlano di una versione e l'app ne dice un'altra, chi segnala
 un problema dichiara un numero che non esiste.
 

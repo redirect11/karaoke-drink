@@ -184,9 +184,10 @@ export default function StaffDrawer({ role, active = null, onSelect = null, flot
   const groupTiles = groups.filter((g) => !g.has_child_groups)
 
   // Chi vede quali voci lo decide sezioni.js: non tutte sono di tutto il
-  // gestionale (il Bilancio è dell'admin), e il filtro sta dove sta
-  // l'elenco.
-  const base = vociPerRuolo(role)
+  // gestionale (il Bilancio è dell'admin) e non tutte ci sono in questa
+  // installazione (le funzioni premium, REQ-LIC-001). Il filtro sta dove
+  // sta l'elenco, e le impostazioni gliele passa chi le ha già in mano.
+  const base = vociPerRuolo(role, settings)
   const items = isGestore(role) && devToolsEnabled ? [...base, ['dev', '🛠', 'Dev']] : base
 
   function go(id) {
