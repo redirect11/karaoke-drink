@@ -4,19 +4,17 @@
 
 ### Per chi sta al banco
 
-- **Dopo un aggiornamento l'app non resta più con la pagina bianca.**
-  Pubblicando la 1.5.7 chi aveva l'app già aperta sul telefono se l'è
-  trovata completamente bianca: nessun errore, niente. Il motivo stava
-  nella configurazione del sito, non nel programma — il telefono teneva in
-  memoria per un'ora la pagina vecchia, che andava a cercare pezzi
-  dell'aggiornamento precedente ormai sostituiti. Adesso la pagina viene
-  ricontrollata a ogni apertura, quindi un aggiornamento si prende subito e
-  per intero. Chi si trovasse ancora la pagina bianca da prima: basta
-  chiudere e riaprire l'app.
+- **Sul telefono la vista comande adesso scorre.** Con gli stati di
+  preparazione accesi, passando alle comande non si riusciva a scorrere in
+  nessun modo: le corsie restavano ferme e la pagina nemmeno si muoveva.
+  Adesso scorre la pagina, come nella lista dei conti. Non era una novità
+  di questo aggiornamento: c'era da agosto, ed è venuta fuori adesso perché
+  quella vista si è cominciata a usare da poco.
 
-- **E l'app si apre più in fretta.** Le parti del programma che non
-  cambiano fra un aggiornamento e l'altro adesso restano sul dispositivo
-  invece di essere riscaricate ogni ora.
+- **L'app si apre più in fretta e consuma meno dati.** Le parti del
+  programma che non cambiano fra un aggiornamento e l'altro adesso restano
+  sul dispositivo invece di essere riscaricate ogni ora: sono più di due
+  megabyte per apparecchio, che in una serata si moltiplicano.
 
 
 ## 1.5.7 — 7 settembre 2026

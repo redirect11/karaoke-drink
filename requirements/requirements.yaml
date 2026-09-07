@@ -11121,16 +11121,26 @@ requirements:
       contenuto nel nome, si tengono per un anno e si dichiarano immutabili:
       a parità di nome quel file non cambia mai, quindi richiederlo è tempo
       buttato.
-      PERCHÉ NON È UN DETTAGLIO DI PRESTAZIONI. Senza queste righe la cache
-      di default di Firebase Hosting tiene la PAGINA per un'ora: dopo una
-      pubblicazione il telefono continua a usare quella vecchia, che chiede
-      i file del rilascio precedente — e quelli, avendo l'impronta nel nome,
-      non esistono più. La riscrittura `**` → `/index.html` (che serve
-      all'app, per le sue pagine interne) fa il resto: un file mancante non
-      risponde «non c'è», risponde 200 con dentro dell'HTML. Il browser
-      prova a eseguire HTML come JavaScript e si ferma lì: pagina bianca,
-      nessun errore a schermo, e si sistema da sola solo allo scadere
-      dell'ora. È BUG-103, visto in produzione il 07/09/2026.
+      IL GUADAGNO CERTO SONO I SOLDI E IL TEMPO: senza queste righe i file
+      sotto `/assets/` uscivano con un'ora di cache, quindi ogni dispositivo
+      riscaricava circa 2,2 MB ogni ora per riavere byte identici. Al banco,
+      con tre o quattro apparecchi accesi tutta la sera e un telefono in
+      rete mobile, è spreco puro — ed è il motivo per cui l'impronta nel
+      nome esiste.
+      E C'È UN RISCHIO IN MENO, che va raccontato per quello che è: POSSIBILE
+      MA NON OSSERVATO. Con la pagina tenuta un'ora, un browser che dopo una
+      pubblicazione continuasse a usare quella vecchia chiederebbe i file del
+      rilascio precedente, che non esistono più; e siccome la riscrittura
+      `**` → `/index.html` manda qualunque indirizzo inesistente sulla
+      pagina, quei file non risponderebbero «non c'è» ma 200 con dentro
+      dell'HTML — verificato a mano — e il browser, provando a eseguire HTML
+      come JavaScript, mostrerebbe una pagina bianca senza nessun errore.
+      Il 07/09/2026 una pagina bianca in produzione c'è stata davvero, e per
+      qualche ora è stata attribuita a questo. NON ERA QUESTO: era il browser
+      di chi guardava, che mostrava bianche anche altre pagine. Il rischio
+      qui sopra resta teorico, e resta scritto perché il meccanismo è reale;
+      ma non è mai stato visto succedere, e va detto invece che archiviare
+      una spiegazione comoda.
       Un test legge `firebase.json` e verifica le due metà — le intestazioni
       e la riscrittura — perché questa regola non ha nessuna schermata che
       la mostri: chi riordinasse quel file toglierebbe tre righe senza
