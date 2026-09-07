@@ -1,6 +1,6 @@
 # Cosa è cambiato
 
-## 1.5.7-beta
+## 1.5.7 — 7 settembre 2026
 
 ### Per chi sta al banco
 
