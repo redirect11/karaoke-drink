@@ -199,8 +199,12 @@ describe('la preselezione: il giro del magazzino è già fatto', () => {
   it('dall’ordine si toglie una riga, e la spunta in tabella si spegne', async () => {
     const user = userEvent.setup()
     render(<PurchaseOrdersPanel />)
-    await screen.findAllByText('Campari')
-    await user.click(within(carrello()).getByRole('button', { name: 'Togli Campari dall’ordine' }))
+    // SI ASPETTA IL TASTO CHE SI STA PER PREMERE, non «Campari» in tabella:
+    // il carrello lo riempie un ALTRO effetto (la precompilazione di quello
+    // che sta finendo), e nella corsa con la coverage — che è più lenta —
+    // la tabella era pronta e l'ordine no. Il test ballava.
+    const togli = await screen.findByRole('button', { name: 'Togli Campari dall’ordine' })
+    await user.click(togli)
     await waitFor(() => expect(screen.getByLabelText('Ordina Campari (Nova)')).not.toBeChecked())
   })
 })
