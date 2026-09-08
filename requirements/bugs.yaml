@@ -4634,3 +4634,60 @@ bugs:
     generate_issue: true
     labels: [bug, coda, telefono]
     test_cases: []
+
+  - id: BUG-105
+    title: "«La stampante non risponde» a raffica, e la stampa diventa lenta"
+    area: "src/lib/printer.js (ascoltaLaStampante, FRESCHEZZA_COLLEGAMENTO)"
+    severity: critica
+    priority: P1
+    description: >
+      Segnalato da Flavio dal banco la notte dell'08/09/2026, con la foto
+      dell'avviso: «esce spesso questo avviso e la stampa e' molto lenta»,
+      «ci mette molti secondi per stampare la chiusura dell ordine». In
+      produzione girava la 1.5.7.
+      E' UN DANNO CHE ABBIAMO FATTO NOI, due giorni prima, curando BUG-102.
+      Li' si era acceso `startMonitor()` per far dire alla stampante da se'
+      se era viva.
+      PERCHE' NON PUO' FUNZIONARE DA LI'. `startMonitor()` interroga la
+      stampante su un canale HTTP suo (`/cgi-bin/epos/service.cgi`), e per il
+      browser quella e' una richiesta verso un'ALTRA ORIGINE: l'app sta su un
+      dominio pubblico, la stampante e' un indirizzo sulla rete del locale.
+      Una richiesta cosi' ha bisogno del permesso esplicito dell'apparecchio
+      (CORS) e la stampante non lo dà. Il collegamento delle stampe invece e'
+      un WebSocket, che quel permesso non lo chiede: per questo la carta
+      usciva mentre il monitor giurava che non rispondeva.
+      E IL DANNO NON ERA L'AVVISO FALSO. Ogni dieci secondi il monitor
+      falliva, alzava `onpoweroff`, e il nostro gestore BUTTAVA IL
+      COLLEGAMENTO (era la decisione giusta per un monitor che dice il vero).
+      Quindi ogni stampa doveva rifare la stretta di mano — che con un
+      certificato auto-firmato su iPad costa secondi. Avvisi a raffica e
+      stampe lente erano la stessa cosa vista da due lati.
+      LA CURA. 1) IL MONITOR NON SI ACCENDE. I gestori (`onpoweroff`,
+      `onoffline`, `ononline`, coperchio, carta) restano attaccati: non
+      costano niente e sono gia' pronti se un domani l'app girasse sulla
+      stessa rete della stampante, o se le si desse il permesso che le manca.
+      A dire se il collegamento e' vivo resta il canale che l'app usa
+      DAVVERO: gli invii senza risposta (tre di fila = strada chiusa), che
+      sono una prova vera perche' passano dalla stessa strada delle stampe.
+      2) LA FINESTRA DI FRESCHEZZA DA DUE MINUTI A DIECI. Due erano troppo
+      pochi: al banco fra un conto e l'altro passano spesso piu' di due
+      minuti, e con la stretta di mano che costa secondi ogni scontrino se li
+      pagava. Dieci lasciano fuori tutto il servizio — i conti si chiudono
+      piu' spesso di cosi' — e tengono dentro il caso per cui la regola
+      esiste: la chiusura di cassa, che arriva dopo ore di silenzio.
+      LA LEZIONE, scritta perche' non si ripeta: una diagnostica che vive su
+      un canale DIVERSO da quello che si vuole diagnosticare puo' sbagliarsi
+      in modo indipendente — e se le si da' il potere di buttare il
+      collegamento, il suo errore diventa un guasto vero. Il monitor era
+      stato acceso dopo aver verificato sul codice dell'SDK che non poteva
+      rompere niente (non tocca il WebSocket, non alza `onreceive`, nessuna
+      stampa lo aspetta): tutto giusto, e non bastava, perche' il controllo
+      mancante non era nell'SDK ma nella TOPOLOGIA — app pubblica, stampante
+      in rete locale. Quello si vede solo al banco.
+    status: fixed
+    in_produzione: false
+    generate_issue: true
+    labels: [bug, stampa]
+    test_cases:
+      - tests/unit/stampanteCheNonRisponde.test.js
+

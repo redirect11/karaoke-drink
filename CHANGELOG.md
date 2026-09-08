@@ -4,6 +4,16 @@
 
 ### Per chi sta al banco
 
+- **Via l'avviso «la stampante non risponde» che compariva di continuo, e
+  la stampa torna veloce.** Nell'aggiornamento precedente l'app aveva
+  cominciato a interrogare la stampante ogni dieci secondi per accorgersi in
+  anticipo se si fosse scollegata. Quella domanda però non arriva mai a
+  destinazione — l'app e la stampante stanno su due reti diverse — così
+  l'app dava per persa una stampante che funzionava benissimo: avvisi falsi
+  a ripetizione, e ogni stampa costretta a ricollegarsi da capo, con secondi
+  di attesa. Adesso quella domanda non si fa più: a dire se la stampante c'è
+  restano le stampe stesse, che è il canale che conta.
+
 - **Sul telefono la vista comande adesso scorre.** Con gli stati di
   preparazione accesi, passando alle comande non si riusciva a scorrere in
   nessun modo: le corsie restavano ferme e la pagina nemmeno si muoveva.

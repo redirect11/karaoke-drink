@@ -5,7 +5,7 @@
 > `requirements/bugs.yaml` (i difetti), poi si rigenera con
 > `node scripts/requisiti.mjs --documento`.
 >
-> Generato il 7 settembre 2026.
+> Generato il 8 settembre 2026.
 
 Qui c'è scritto **cosa fa Tana Drink**, area per area: la cassa di «La Tana
 del Coniglio», quella che si usa al banco mentre il locale è pieno. Non è un
@@ -2003,7 +2003,9 @@ ASSUNZIONE — DICHIARATA, NON CONFERMATA (comunicata all'utente il 20/08): gli 
 
 #### REQ-STAMPA-018 — Se la stampante è viva lo dice lei, non l'SDK
 
-La stampante viene INTERROGATA da sé (`startMonitor` dell'SDK Epson, una domanda lunga ogni dieci secondi) e quello che risponde si ascolta: `onpoweroff` quando smette di rispondere, `onoffline` quando risponde ma non è in grado di stampare, `oncoveropen`, `onpaperend`, `ononline` quando torna. Prima di BUG-102 l'app non ascoltava nessuno di questi segnali: sapeva solo la risposta ai singoli invii.
+I segnali che la stampante alza da sé — `onpoweroff` quando smette di rispondere, `onoffline` quando risponde ma non è in grado di stampare, `oncoveropen`, `onpaperend`, `ononline` quando torna — sono ascoltati. Prima di BUG-102 l'app non ne ascoltava nessuno: sapeva solo la risposta ai singoli invii.
+
+MA L'INTERROGAZIONE PERIODICA (`startMonitor`) NON SI ACCENDE, e la ragione è in BUG-105: passa da un canale HTTP diverso da quello delle stampe, e verso un'altra origine — l'app sta su un dominio pubblico, la stampante su una rete locale — quindi fallisce sempre e dichiara morto un collegamento che sta benissimo. Accesa il 06/09, tolta l'08/09 dopo una serata di avvisi falsi e stampe lente. I gestori restano attaccati perché non costano niente e sono pronti se un domani la topologia cambiasse; oggi a farli scattare non c'è nessuno, e a dire se il collegamento è vivo resta il canale che l'app usa davvero.
 
 NON RISPONDE PIÙ = SI MOLLA IL COLLEGAMENTO, così la stampa dopo rifà la stretta di mano invece di parlare al vuoto. Carta finita, coperchio aperto e fuori linea NO: lì la stampante ci parla, il collegamento è buono, e buttarlo sarebbe una riconnessione inutile in mezzo al servizio. Si avvisa e basta. `isConnected()` VALE SOLO AL CONTRARIO. Quando dice di no la caduta è certa; quando dice di sì non prova niente, perché nel codice Epson risponde così anche mentre sta soltanto PROVANDO a riconnettersi. È il motivo per cui il pallino restava verde con la stampante muta.
 
@@ -2013,9 +2015,7 @@ LA RETE PER QUANDO IL MONITOR NON C'È (firmware vecchio, domanda lunga bloccata
 
 PRIMA DI STAMPARE SI GUARDA COM'È MESSO IL COLLEGAMENTO, e si guarda chiedendolo alla STAMPANTE. Il monitor da solo non basta per la stampa che conta: se il collegamento muore tre secondi prima della chiusura di cassa, dieci secondi non fanno in tempo — e la chiusura è proprio la stampa che arriva dopo il buco più lungo, perché durante il servizio le comande si susseguono e il collegamento resta caldo, mentre fra l'ultimo scontrino e la chiusura passano ore.
 
-IL SEGNALE COSTA ZERO. A ogni giro il monitor scrive sulla testina lo stato che la stampante ha risposto, e quando smette di rispondere ci accende dentro `ASB_NO_RESPONSE`. Leggerlo prima di stampare non aspetta niente e non aggiunge traffico, e non è un'opinione dell'SDK: è quello che ha detto lei, al massimo un giro fa. La costante si prende dall'oggetto, non scritta a mano.
-
-LA RETE DI RISERVA È IL TEMPO. Senza monitor (firmware che non lo sostiene, richiesta bloccata) quello stato non si aggiorna mai e il controllo tace: allora vale l'ultima volta che la stampante ha RISPOSTO, e oltre `FRESCHEZZA_COLLEGAMENTO` (due minuti) si riparte da zero comunque. Provato vuol dire una cosa sola — ha risposto a un invio — o una stretta di mano appena riuscita, che è di adesso. Un invio mandato e mai confermato NON è una prova: è il silenzio da cui nasce questo difetto.
+IL SEGNALE COSTA ZERO. A ogni giro il monitor scrive sulla testina lo stato che la stampante ha risposto, e quando smette di rispondere ci accende dentro `ASB_NO_RESPONSE`. Leggerlo prima di stampare non aspetta niente e non aggiunge traffico, e non è un'opinione dell'SDK: è quello che ha detto lei, al massimo un giro fa. La costante si prende dall'oggetto, non scritta a mano. E COL MONITOR SPENTO (BUG-105) È IL TEMPO A RISPONDERE, sempre: quello stato non lo aggiorna nessuno e il controllo qui sopra tace, quindi vale l'ultima volta che la stampante ha RISPOSTO, e oltre `FRESCHEZZA_COLLEGAMENTO` (dieci minuti) si riparte da zero. Dieci e non due: al banco fra un conto e l'altro passano spesso più di due minuti, e ogni ripartenza costa una stretta di mano da secondi. Provato vuol dire una cosa sola — ha risposto a un invio — o una stretta di mano appena riuscita, che è di adesso. Un invio mandato e mai confermato NON è una prova: è il silenzio da cui nasce questo difetto.
 
 IN TUTTI E DUE I CASI SI FA QUELLO CHE FA «TEST STAMPA»: si butta il collegamento e se ne apre uno nuovo. È l'unico gesto che non chiede niente a nessuno. E LÌ SI CHIUDE, NON SI ABBANDONA. Di regola `scordaConnessione` non chiama `disconnect()` — ci si arriva quando il collegamento è appeso, e quella chiamata può appendersi a sua volta — ma qui il collegamento può benissimo essere sano, e abbandonarlo lascerebbe sulla stampante una sessione mezza aperta finché non scade da sé. Una alla volta non è un problema; ripetuta a ogni pausa sì, perché di sessioni CONTEMPORANEE l'apparecchio ne regge poche. Il numero di connessioni non è invece un argomento contro il rifarle una dopo l'altra: quelle restano una alla volta.
 

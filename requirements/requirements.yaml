@@ -11040,12 +11040,20 @@ requirements:
     title: "Se la stampante è viva lo dice lei, non l'SDK"
     area: "src/lib/printer.js (ascoltaLaStampante, avviaBattito, preparaStampante, smettiDiAscoltare)"
     description: >
-      La stampante viene INTERROGATA da sé (`startMonitor` dell'SDK Epson,
-      una domanda lunga ogni dieci secondi) e quello che risponde si
-      ascolta: `onpoweroff` quando smette di rispondere, `onoffline` quando
-      risponde ma non è in grado di stampare, `oncoveropen`, `onpaperend`,
-      `ononline` quando torna. Prima di BUG-102 l'app non ascoltava nessuno
-      di questi segnali: sapeva solo la risposta ai singoli invii.
+      I segnali che la stampante alza da sé — `onpoweroff` quando smette di
+      rispondere, `onoffline` quando risponde ma non è in grado di stampare,
+      `oncoveropen`, `onpaperend`, `ononline` quando torna — sono ascoltati.
+      Prima di BUG-102 l'app non ne ascoltava nessuno: sapeva solo la
+      risposta ai singoli invii.
+      MA L'INTERROGAZIONE PERIODICA (`startMonitor`) NON SI ACCENDE, e la
+      ragione è in BUG-105: passa da un canale HTTP diverso da quello delle
+      stampe, e verso un'altra origine — l'app sta su un dominio pubblico, la
+      stampante su una rete locale — quindi fallisce sempre e dichiara morto
+      un collegamento che sta benissimo. Accesa il 06/09, tolta l'08/09 dopo
+      una serata di avvisi falsi e stampe lente. I gestori restano attaccati
+      perché non costano niente e sono pronti se un domani la topologia
+      cambiasse; oggi a farli scattare non c'è nessuno, e a dire se il
+      collegamento è vivo resta il canale che l'app usa davvero.
       NON RISPONDE PIÙ = SI MOLLA IL COLLEGAMENTO, così la stampa dopo rifà
       la stretta di mano invece di parlare al vuoto. Carta finita, coperchio
       aperto e fuori linea NO: lì la stampante ci parla, il collegamento è
@@ -11078,11 +11086,12 @@ requirements:
       aspetta niente e non aggiunge traffico, e non è un'opinione dell'SDK: è
       quello che ha detto lei, al massimo un giro fa. La costante si prende
       dall'oggetto, non scritta a mano.
-      LA RETE DI RISERVA È IL TEMPO. Senza monitor (firmware che non lo
-      sostiene, richiesta bloccata) quello stato non si aggiorna mai e il
-      controllo tace: allora vale l'ultima volta che la stampante ha
-      RISPOSTO, e oltre `FRESCHEZZA_COLLEGAMENTO` (due minuti) si riparte da
-      zero comunque. Provato vuol dire una cosa sola — ha risposto a un invio
+      E COL MONITOR SPENTO (BUG-105) È IL TEMPO A RISPONDERE, sempre: quello
+      stato non lo aggiorna nessuno e il controllo qui sopra tace, quindi
+      vale l'ultima volta che la stampante ha RISPOSTO, e oltre
+      `FRESCHEZZA_COLLEGAMENTO` (dieci minuti) si riparte da zero. Dieci e
+      non due: al banco fra un conto e l'altro passano spesso più di due
+      minuti, e ogni ripartenza costa una stretta di mano da secondi. Provato vuol dire una cosa sola — ha risposto a un invio
       — o una stretta di mano appena riuscita, che è di adesso. Un invio
       mandato e mai confermato NON è una prova: è il silenzio da cui nasce
       questo difetto.
