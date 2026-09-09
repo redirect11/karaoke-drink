@@ -731,7 +731,13 @@ function stampanteHaRisposto(andataBene) {
 // LA FINESTRA E' UN NUMERO SOLO, e sta qui perche' si possa cambiare senza
 // andare a cercare: a zero, si rifa' la stretta di mano prima di ogni
 // singola stampa.
-const FRESCHEZZA_COLLEGAMENTO = 120000
+// Due minuti erano troppo pochi: al banco fra un conto e l'altro passano
+// spesso più di due minuti, e con la stretta di mano che costa secondi
+// (certificato auto-firmato, iPad) ogni scontrino se li pagava. Dieci
+// minuti lasciano fuori tutto il servizio — i conti si chiudono più spesso
+// di così — e tengono dentro il caso per cui questa regola esiste: la
+// chiusura di cassa, che arriva dopo ore di silenzio.
+const FRESCHEZZA_COLLEGAMENTO = 600000
 let _provataAlle = 0
 
 // SI CHIEDE ALLA STAMPANTE, NON ALL'SDK — ed è la differenza fra le due
@@ -801,14 +807,34 @@ function ascoltaLaStampante(prn) {
     _guasto = null
     _inviiMuti = 0
   }
-  try {
-    prn.interval = INTERVALLO_MONITOR
-    prn.startMonitor?.()
-  } catch {
-    // Firmware che non lo sostiene, o richiesta bloccata: si resta come
-    // prima, con la rete degli invii senza risposta. Non è un motivo per
-    // non stampare.
-  }
+  // IL MONITOR RESTA SPENTO, e non è una dimenticanza (BUG-105).
+  //
+  // Acceso il 06/09 in buona fede, tolto il 08/09 dopo una serata al banco:
+  // «esce spesso questo avviso e la stampa è molto lenta, ci mette molti
+  // secondi per stampare la chiusura dell'ordine».
+  //
+  // PERCHÉ NON PUÒ FUNZIONARE DA QUI. `startMonitor()` interroga la
+  // stampante su un canale HTTP suo (`/cgi-bin/epos/service.cgi`), e per il
+  // browser è una richiesta verso un'ALTRA ORIGINE: l'app sta su un dominio
+  // pubblico, la stampante è un indirizzo sulla rete del locale. Una
+  // richiesta così ha bisogno del permesso esplicito dell'apparecchio, e la
+  // stampante non lo dà. Il collegamento delle stampe invece è un
+  // WebSocket, che quel permesso non lo chiede: ecco perché la carta usciva
+  // mentre il monitor giurava che non rispondeva.
+  //
+  // E IL DANNO NON ERA SOLO L'AVVISO FALSO. Ogni dieci secondi il monitor
+  // falliva, alzava `onpoweroff`, e noi buttavamo il collegamento: la
+  // stampa dopo doveva rifare la stretta di mano, che con un certificato
+  // auto-firmato su iPad costa secondi. Avvisi a raffica e stampe lente
+  // erano la stessa cosa vista da due lati.
+  //
+  // I GESTORI RESTANO ATTACCATI QUI SOPRA apposta: non costano niente e
+  // sono già pronti se un domani l'app girasse sulla stessa rete della
+  // stampante — o se si desse alla stampante il permesso che le manca. A
+  // dire se il collegamento è vivo resta il canale che l'app usa davvero:
+  // gli invii senza risposta (INVII_MUTI_PRIMA_DI_MOLLARE), che sono una
+  // prova vera perché passano dalla stessa strada delle stampe.
+  void INTERVALLO_MONITOR
 }
 
 function fermaIlMonitor(prn) {
