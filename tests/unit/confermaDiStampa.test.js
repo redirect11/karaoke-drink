@@ -52,20 +52,32 @@ function accendiLaStampante() {
         cb('OK')
       }
       createDevice(_nome, _tipo, _opzioni, cb) {
+        const comandi = []
+        const scrive = () => comandi.push(1)
         const testina = {
           ALIGN_LEFT: 'l', ALIGN_CENTER: 'c', ALIGN_RIGHT: 'r',
           COLOR_1: 1, CUT_FEED: 1,
-          addTextLang: () => {}, addTextSmooth: () => {}, addTextAlign: () => {},
-          addTextSize: () => {}, addTextStyle: () => {}, addText: () => {},
-          addFeedLine: () => {}, addCut: () => {}, addImage: () => {},
-          addImageUrl: () => {}, clearCommandBuffer: () => {},
+          addTextLang: scrive, addTextSmooth: scrive, addTextAlign: scrive,
+          addTextSize: scrive, addTextStyle: scrive, addText: scrive,
+          addFeedLine: scrive, addCut: scrive, addImage: scrive,
+          addImageUrl: scrive,
+          clearCommandBuffer: () => {
+            comandi.length = 0
+          },
           send: () => {
+            // Un invio senza comandi è il battito (BUG-107), non carta:
+            // qui si contano i FOGLI, quindi il battito resta fuori.
+            if (comandi.length === 0) {
+              const res = rispostaPer(invii.length, testina, true)
+              if (res) testina.onreceive?.(res)
+              return
+            }
+            comandi.length = 0
             invii.push({ testina })
             const res = rispostaPer(invii.length, testina)
             if (res) testina.onreceive?.(res)
           },
           onreceive: null,
-          ondisconnect: null,
         }
         testine.push(testina)
         cb(testina, 'OK')
