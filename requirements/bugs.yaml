@@ -4691,3 +4691,49 @@ bugs:
     test_cases:
       - tests/unit/stampanteCheNonRisponde.test.js
 
+  - id: BUG-106
+    title: "La finestra di validita' del collegamento era un buco di dieci minuti"
+    area: "src/lib/printer.js (FRESCHEZZA_COLLEGAMENTO)"
+    severity: grave
+    priority: P1
+    description: >
+      Sollevato in revisione il 09/09/2026, prima che la 1.5.8 arrivasse in
+      produzione: «deve essere molto piu' breve la finestra, anche meno di un
+      minuto. Non possiamo aspettare 10 minuti. Metti che per qualche motivo
+      il collegamento cade dopo 2 secondi, poi la prossima stampa funzionera'
+      tra 10 minuti. Non mi sembra un meccanismo cosi' robusto».
+      L'OBIEZIONE E' FONDATA, e il difetto e' di ragionamento. La finestra
+      era stata allungata da due a dieci minuti guardando la LENTEZZA
+      segnalata da Flavio — cioe' il costo delle strette di mano. Ma quel
+      sintomo era spiegato per intero da BUG-105 (il monitor che invalidava
+      il collegamento ogni dieci secondi), e la finestra non c'entrava:
+      finche' il monitor girava, la connessione era gia' stata buttata a
+      prescindere dal suo valore. Si e' quindi tarato un numero su un
+      sintomo che non lo riguardava.
+      COSA E' DAVVERO QUESTA FINESTRA: non un'attesa prima di stampare —
+      nessuna stampa aspetta mai, il numero decide solo SE rifare la stretta
+      di mano prima di mandare — ma la quantita' di tempo in cui si crede a
+      un collegamento SENZA AVERNE PROVA. Allungarla riduce le strette di
+      mano e allarga il buco in cui una stampa parte verso un collegamento
+      morto e si perde in silenzio.
+      LA SCELTA, esplicita: al banco il foglio perso costa piu' dei due
+      secondi. Uno scontrino che non esce lo si scopre col cliente davanti;
+      una stampa un po' piu' lenta la si vede e basta. Quindi UN MINUTO. Il
+      prezzo dichiarato: nelle ore lente ogni stampa che arriva dopo piu' di
+      un minuto di silenzio si paga una stretta di mano; durante il servizio
+      non si paga niente.
+      E RESTA UNA SCOMMESSA SUL TEMPO. La misura giusta e' chiedere alla
+      stampante se c'e', e chiederlo SUL CANALE DELLE STAMPE — non su un
+      canale a parte, che e' l'errore di BUG-105. L'SDK lo permette:
+      `getPrintJobStatus()` manda un lavoro VUOTO e la stampante risponde,
+      sullo stesso WebSocket. Un battito cosi', ogni mezzo minuto, renderebbe
+      la finestra inutile: il collegamento sarebbe provato invece che
+      presunto. Resta da verificare al banco una cosa sola, che da qui non si
+      puo' sapere: se un lavoro vuoto faccia uscire carta.
+    status: fixed
+    in_produzione: false
+    generate_issue: true
+    labels: [bug, stampa]
+    test_cases:
+      - tests/unit/stampanteCheNonRisponde.test.js
+

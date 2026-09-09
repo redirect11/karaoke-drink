@@ -11089,9 +11089,19 @@ requirements:
       E COL MONITOR SPENTO (BUG-105) È IL TEMPO A RISPONDERE, sempre: quello
       stato non lo aggiorna nessuno e il controllo qui sopra tace, quindi
       vale l'ultima volta che la stampante ha RISPOSTO, e oltre
-      `FRESCHEZZA_COLLEGAMENTO` (dieci minuti) si riparte da zero. Dieci e
-      non due: al banco fra un conto e l'altro passano spesso più di due
-      minuti, e ogni ripartenza costa una stretta di mano da secondi. Provato vuol dire una cosa sola — ha risposto a un invio
+      `FRESCHEZZA_COLLEGAMENTO` (un minuto) si riparte da zero.
+      UN MINUTO E NON DIECI (BUG-106): questa finestra è il tempo in cui si
+      crede a un collegamento SENZA PROVA, quindi allungarla non fa
+      risparmiare — allarga il buco in cui una stampa parte verso un
+      collegamento morto e si perde in silenzio. Al banco il foglio perso
+      costa più dei due secondi della stretta di mano. Il numero non è
+      un'attesa: nessuna stampa aspetta mai, decide solo se ricollegarsi
+      prima di mandare.
+      E RESTA UNA SCOMMESSA SUL TEMPO. La misura giusta è chiedere alla
+      stampante se c'è, sul CANALE DELLE STAMPE — `getPrintJobStatus()`
+      manda un lavoro vuoto e lei risponde sullo stesso WebSocket. Un
+      battito così renderebbe questa finestra inutile. Non è acceso perché
+      resta da verificare al banco se un lavoro vuoto faccia uscire carta. Provato vuol dire una cosa sola — ha risposto a un invio
       — o una stretta di mano appena riuscita, che è di adesso. Un invio
       mandato e mai confermato NON è una prova: è il silenzio da cui nasce
       questo difetto.
