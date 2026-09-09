@@ -731,13 +731,28 @@ function stampanteHaRisposto(andataBene) {
 // LA FINESTRA E' UN NUMERO SOLO, e sta qui perche' si possa cambiare senza
 // andare a cercare: a zero, si rifa' la stretta di mano prima di ogni
 // singola stampa.
-// Due minuti erano troppo pochi: al banco fra un conto e l'altro passano
-// spesso più di due minuti, e con la stretta di mano che costa secondi
-// (certificato auto-firmato, iPad) ogni scontrino se li pagava. Dieci
-// minuti lasciano fuori tutto il servizio — i conti si chiudono più spesso
-// di così — e tengono dentro il caso per cui questa regola esiste: la
-// chiusura di cassa, che arriva dopo ore di silenzio.
-const FRESCHEZZA_COLLEGAMENTO = 600000
+// UN MINUTO, E IL NUMERO VA LETTO PER QUELLO CHE È: non un'attesa prima di
+// stampare — nessuna stampa aspetta mai — ma la QUANTITÀ DI TEMPO IN CUI
+// SIAMO DISPOSTI A CREDERE A UN COLLEGAMENTO SENZA AVERNE PROVA.
+//
+// Perché breve. Questa finestra è una scommessa sul tempo, non una
+// verifica: se il collegamento cade due secondi dopo l'ultima stampa, fino
+// alla scadenza l'app crede a una cosa falsa, e i fogli mandati in quel
+// buco si perdono in silenzio. Allungarla riduce le strette di mano e
+// allarga la finestra in cui si può perdere una stampa. Al banco il foglio
+// perso costa più dei due secondi: uno scontrino che non esce lo si scopre
+// col cliente davanti, mentre una stampa un po' più lenta la si vede e
+// basta.
+//
+// Il prezzo, dichiarato: nelle ore lente ogni stampa che arriva dopo più di
+// un minuto di silenzio si paga una stretta di mano — uno o due secondi.
+// Durante il servizio, con le comande una dietro l'altra, non si paga
+// niente.
+//
+// E resta una scommessa. La misura giusta è chiedere alla stampante se c'è,
+// sul canale delle stampe: finché non lo si fa, questo numero è il meno
+// peggio, non la soluzione.
+const FRESCHEZZA_COLLEGAMENTO = 60000
 let _provataAlle = 0
 
 // SI CHIEDE ALLA STAMPANTE, NON ALL'SDK — ed è la differenza fra le due
