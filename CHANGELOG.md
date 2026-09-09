@@ -1,5 +1,17 @@
 # Cosa è cambiato
 
+## 1.5.9
+
+### Per chi sta al banco
+
+- **Se il collegamento con la stampante cade, l'app se ne accorge entro un
+  minuto.** Prima poteva continuare a credere per dieci minuti a un
+  collegamento non più attivo, e in quel periodo una stampa poteva partire
+  a vuoto senza che nessuno lo sapesse. Adesso, se dall'ultima risposta
+  della stampante è passato più di un minuto, il collegamento viene rifatto
+  prima di stampare. Non c'è nessuna attesa in più: la stampa parte subito
+  come sempre.
+
 ## 1.5.8 — 7 settembre 2026
 
 ### Per chi sta al banco

@@ -424,12 +424,12 @@ describe('e niente di tutto questo rompe quello che c’era', () => {
 // Quindi prima di stampare, se il collegamento non è stato PROVATO di
 // recente, si fa quello che fa «Test stampa»: si butta e si rifà la stretta
 // di mano. Provato vuol dire una cosa sola: la stampante ha risposto.
-// LA FINESTRA È PASSATA DA DUE MINUTI A DIECI (BUG-105). Due erano troppo
-// pochi: al banco fra un conto e l'altro passano spesso più di due minuti, e
-// con la stretta di mano che costa secondi ogni scontrino se li pagava.
-// Dieci lasciano fuori tutto il servizio — i conti si chiudono più spesso di
-// così — e tengono dentro il caso per cui questa regola esiste: la chiusura
-// di cassa, che arriva dopo ore di silenzio.
+// LA FINESTRA È UN MINUTO (BUG-106). Era stata portata a dieci guardando la
+// lentezza, ed era la lettura sbagliata: questa finestra è il tempo in cui
+// si crede a un collegamento SENZA PROVA, e allungarla allarga il buco in
+// cui una stampa si perde in silenzio. «Metti che il collegamento cade due
+// secondi dopo: la prossima stampa funzionerà fra dieci minuti» — ed è
+// esattamente così che si comportava.
 describe('dopo una pausa lunga la stretta di mano si rifà, come fa «Test stampa»', () => {
   it('due stampe di fila non ne rifanno nessuna', async () => {
     const P = await import('../../src/lib/printer.js')
@@ -445,13 +445,13 @@ describe('dopo una pausa lunga la stretta di mano si rifà, come fa «Test stamp
     expect(invii).toHaveLength(2)
   })
 
-  it('dopo dieci minuti senza risposte, la stampa dopo riparte da zero', async () => {
+  it('dopo un minuto senza risposte, la stampa dopo riparte da zero', async () => {
     const P = await import('../../src/lib/printer.js')
     await P.printTest()
     await respira()
 
     // Il buco fra l'ultimo scontrino e la chiusura di cassa.
-    await vi.advanceTimersByTimeAsync(601000)
+    await vi.advanceTimersByTimeAsync(61000)
     await P.printTest()
     await respira()
 
@@ -461,12 +461,12 @@ describe('dopo una pausa lunga la stretta di mano si rifà, come fa «Test stamp
     expect(invii[1].testina).toBe(ultima())
   })
 
-  it('ma cinque minuti dopo no: durante il servizio non si tocca niente', async () => {
+  it('ma dopo trenta secondi no: durante il servizio non si tocca niente', async () => {
     const P = await import('../../src/lib/printer.js')
     await P.printTest()
     await respira()
 
-    await vi.advanceTimersByTimeAsync(300000)
+    await vi.advanceTimersByTimeAsync(30000)
     await P.printTest()
     await respira()
 
@@ -479,7 +479,7 @@ describe('dopo una pausa lunga la stretta di mano si rifà, come fa «Test stamp
     const P = await import('../../src/lib/printer.js')
     await P.printTest()
     await respira()
-    await vi.advanceTimersByTimeAsync(601000)
+    await vi.advanceTimersByTimeAsync(61000)
     await P.printTest()
     await respira()
     expect(testine).toHaveLength(2)
@@ -498,7 +498,7 @@ describe('dopo una pausa lunga la stretta di mano si rifà, come fa «Test stamp
     await P.printTest()
     await respira()
 
-    await vi.advanceTimersByTimeAsync(601000)
+    await vi.advanceTimersByTimeAsync(61000)
     rispostaPer = () => OK
     await P.printTest()
     await respira()
@@ -567,7 +567,7 @@ describe('lo stato della stampante si legge prima di stampare', () => {
     await respira()
     expect(testine).toHaveLength(1)
 
-    await vi.advanceTimersByTimeAsync(601000)
+    await vi.advanceTimersByTimeAsync(61000)
     await P.printTest()
     await respira()
 
