@@ -1,5 +1,32 @@
 # Cosa è cambiato
 
+## 1.5.8 — 7 settembre 2026
+
+### Per chi sta al banco
+
+- **Via l'avviso «la stampante non risponde» che compariva di continuo, e
+  la stampa torna veloce.** Nell'aggiornamento precedente l'app aveva
+  cominciato a interrogare la stampante ogni dieci secondi per accorgersi in
+  anticipo se si fosse scollegata. Quella domanda però non arriva mai a
+  destinazione — l'app e la stampante stanno su due reti diverse — così
+  l'app dava per persa una stampante che funzionava benissimo: avvisi falsi
+  a ripetizione, e ogni stampa costretta a ricollegarsi da capo, con secondi
+  di attesa. Adesso quella domanda non si fa più: a dire se la stampante c'è
+  restano le stampe stesse, che è il canale che conta.
+
+- **Sul telefono la vista comande adesso scorre.** Con gli stati di
+  preparazione accesi, passando alle comande non si riusciva a scorrere in
+  nessun modo: le corsie restavano ferme e la pagina nemmeno si muoveva.
+  Adesso scorre la pagina, come nella lista dei conti. Non era una novità
+  di questo aggiornamento: c'era da agosto, ed è venuta fuori adesso perché
+  quella vista si è cominciata a usare da poco.
+
+- **L'app si apre più in fretta e consuma meno dati.** Le parti del
+  programma che non cambiano fra un aggiornamento e l'altro adesso restano
+  sul dispositivo invece di essere riscaricate ogni ora: sono più di due
+  megabyte per apparecchio, che in una serata si moltiplicano.
+
+
 ## 1.5.7 — 7 settembre 2026
 
 ### Per chi sta al banco

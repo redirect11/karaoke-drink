@@ -5,7 +5,7 @@
 > `requirements/bugs.yaml` (i difetti), poi si rigenera con
 > `node scripts/requisiti.mjs --documento`.
 >
-> Generato il 7 settembre 2026.
+> Generato il 8 settembre 2026.
 
 Qui c'è scritto **cosa fa Tana Drink**, area per area: la cassa di «La Tana
 del Coniglio», quella che si usa al banco mentre il locale è pieno. Non è un
@@ -22,12 +22,12 @@ fallire la suite, e un requisito che cita un test inesistente pure.
 
 | | Quante | Cosa vuol dire |
 |---|---|---|
-| ✅ | 192 | fatto e coperto dai test |
+| ✅ | 193 | fatto e coperto dai test |
 | ⚠️  | 15 | fatto ma nessun test lo verifica |
 | ⬜ | 20 | da fare |
 | 🗑 | 7 | non più valido |
 
-**234 voci** in tutto. **207** descrivono il sistema com'è oggi e
+**235 voci** in tutto. **208** descrivono il sistema com'è oggi e
 stanno in «[Cosa fa il sistema](#cosa-fa-il-sistema)»; **20** sono lavori
 previsti e stanno in un capitolo a parte, perché un impegno preso non è una
 cosa che l'app fa; **10** difetti noti sono ancora aperti.
@@ -59,7 +59,7 @@ come «vero oggi», non come «garantito».
 | [Dati e ambienti](#dati-e-ambienti) | 2 | — | Il modello dei dati, gli ambienti (test e produzione) e il modo di travasarli. |
 | [Intelligenza artificiale](#intelligenza-artificiale) | — | 1 | Dove l’intelligenza artificiale entra nel lavoro del locale. |
 | [Interfaccia](#interfaccia) | 23 | 1 | Le regole dell’interfaccia: tema, navigazione, spazi, cosa si vede e cosa si toglie. |
-| [Come si lavora al progetto](#come-si-lavora-al-progetto) | 14 | 1 | Non è comportamento dell’app: è il metodo con cui la si costruisce. |
+| [Come si lavora al progetto](#come-si-lavora-al-progetto) | 15 | 1 | Non è comportamento dell’app: è il metodo con cui la si costruisce. |
 | [STAT](#stat) | 1 | — |  |
 | [LIC](#lic) | 1 | — |  |
 
@@ -2003,7 +2003,9 @@ ASSUNZIONE — DICHIARATA, NON CONFERMATA (comunicata all'utente il 20/08): gli 
 
 #### REQ-STAMPA-018 — Se la stampante è viva lo dice lei, non l'SDK
 
-La stampante viene INTERROGATA da sé (`startMonitor` dell'SDK Epson, una domanda lunga ogni dieci secondi) e quello che risponde si ascolta: `onpoweroff` quando smette di rispondere, `onoffline` quando risponde ma non è in grado di stampare, `oncoveropen`, `onpaperend`, `ononline` quando torna. Prima di BUG-102 l'app non ascoltava nessuno di questi segnali: sapeva solo la risposta ai singoli invii.
+I segnali che la stampante alza da sé — `onpoweroff` quando smette di rispondere, `onoffline` quando risponde ma non è in grado di stampare, `oncoveropen`, `onpaperend`, `ononline` quando torna — sono ascoltati. Prima di BUG-102 l'app non ne ascoltava nessuno: sapeva solo la risposta ai singoli invii.
+
+MA L'INTERROGAZIONE PERIODICA (`startMonitor`) NON SI ACCENDE, e la ragione è in BUG-105: passa da un canale HTTP diverso da quello delle stampe, e verso un'altra origine — l'app sta su un dominio pubblico, la stampante su una rete locale — quindi fallisce sempre e dichiara morto un collegamento che sta benissimo. Accesa il 06/09, tolta l'08/09 dopo una serata di avvisi falsi e stampe lente. I gestori restano attaccati perché non costano niente e sono pronti se un domani la topologia cambiasse; oggi a farli scattare non c'è nessuno, e a dire se il collegamento è vivo resta il canale che l'app usa davvero.
 
 NON RISPONDE PIÙ = SI MOLLA IL COLLEGAMENTO, così la stampa dopo rifà la stretta di mano invece di parlare al vuoto. Carta finita, coperchio aperto e fuori linea NO: lì la stampante ci parla, il collegamento è buono, e buttarlo sarebbe una riconnessione inutile in mezzo al servizio. Si avvisa e basta. `isConnected()` VALE SOLO AL CONTRARIO. Quando dice di no la caduta è certa; quando dice di sì non prova niente, perché nel codice Epson risponde così anche mentre sta soltanto PROVANDO a riconnettersi. È il motivo per cui il pallino restava verde con la stampante muta.
 
@@ -2013,9 +2015,7 @@ LA RETE PER QUANDO IL MONITOR NON C'È (firmware vecchio, domanda lunga bloccata
 
 PRIMA DI STAMPARE SI GUARDA COM'È MESSO IL COLLEGAMENTO, e si guarda chiedendolo alla STAMPANTE. Il monitor da solo non basta per la stampa che conta: se il collegamento muore tre secondi prima della chiusura di cassa, dieci secondi non fanno in tempo — e la chiusura è proprio la stampa che arriva dopo il buco più lungo, perché durante il servizio le comande si susseguono e il collegamento resta caldo, mentre fra l'ultimo scontrino e la chiusura passano ore.
 
-IL SEGNALE COSTA ZERO. A ogni giro il monitor scrive sulla testina lo stato che la stampante ha risposto, e quando smette di rispondere ci accende dentro `ASB_NO_RESPONSE`. Leggerlo prima di stampare non aspetta niente e non aggiunge traffico, e non è un'opinione dell'SDK: è quello che ha detto lei, al massimo un giro fa. La costante si prende dall'oggetto, non scritta a mano.
-
-LA RETE DI RISERVA È IL TEMPO. Senza monitor (firmware che non lo sostiene, richiesta bloccata) quello stato non si aggiorna mai e il controllo tace: allora vale l'ultima volta che la stampante ha RISPOSTO, e oltre `FRESCHEZZA_COLLEGAMENTO` (due minuti) si riparte da zero comunque. Provato vuol dire una cosa sola — ha risposto a un invio — o una stretta di mano appena riuscita, che è di adesso. Un invio mandato e mai confermato NON è una prova: è il silenzio da cui nasce questo difetto.
+IL SEGNALE COSTA ZERO. A ogni giro il monitor scrive sulla testina lo stato che la stampante ha risposto, e quando smette di rispondere ci accende dentro `ASB_NO_RESPONSE`. Leggerlo prima di stampare non aspetta niente e non aggiunge traffico, e non è un'opinione dell'SDK: è quello che ha detto lei, al massimo un giro fa. La costante si prende dall'oggetto, non scritta a mano. E COL MONITOR SPENTO (BUG-105) È IL TEMPO A RISPONDERE, sempre: quello stato non lo aggiorna nessuno e il controllo qui sopra tace, quindi vale l'ultima volta che la stampante ha RISPOSTO, e oltre `FRESCHEZZA_COLLEGAMENTO` (dieci minuti) si riparte da zero. Dieci e non due: al banco fra un conto e l'altro passano spesso più di due minuti, e ogni ripartenza costa una stretta di mano da secondi. Provato vuol dire una cosa sola — ha risposto a un invio — o una stretta di mano appena riuscita, che è di adesso. Un invio mandato e mai confermato NON è una prova: è il silenzio da cui nasce questo difetto.
 
 IN TUTTI E DUE I CASI SI FA QUELLO CHE FA «TEST STAMPA»: si butta il collegamento e se ne apre uno nuovo. È l'unico gesto che non chiede niente a nessuno. E LÌ SI CHIUDE, NON SI ABBANDONA. Di regola `scordaConnessione` non chiama `disconnect()` — ci si arriva quando il collegamento è appeso, e quella chiamata può appendersi a sua volta — ma qui il collegamento può benissimo essere sano, e abbandonarlo lascerebbe sulla stampante una sessione mezza aperta finché non scade da sé. Una alla volta non è un problema; ripetuta a ogni pausa sì, perché di sessioni CONTEMPORANEE l'apparecchio ne regge poche. Il numero di connessioni non è invece un argomento contro il rifarle una dopo l'altra: quelle restano una alla volta.
 
@@ -2662,6 +2662,18 @@ OGNI PROVA È DOPPIA, ed è il punto di questo requisito: che l'abuso sia blocca
 STANNO PER CONTO LORO, fuori da `npm test`: senza emulatore acceso non partirebbero e renderebbero rossa la CI per un motivo che non è un difetto. Si lanciano con `npm run test:regole`, dopo aver acceso gli emulatori (vedi docs/ambiente-locale.md). Per la stessa ragione non contano per la copertura: quello che misurano non è codice nostro.
 
 **Dove**: `tests/regole/, vitest.regole.config.mjs, firestore.rules` · **Lo dimostrano**: `tests/regole/counters.test.js`, `tests/regole/orders.test.js`
+
+#### REQ-DEV-016 — Quello che dice quali pezzi caricare non si tiene in cache
+
+`index.html` e `sw.js` sono i due file che dicono all'app QUALI pezzi andare a prendere, e si ricontrollano a ogni apertura (`no-cache`, che non vuol dire «non salvarlo» ma «prima di usarlo chiedi se è cambiato»). I file sotto `/assets/`, che hanno l'impronta del contenuto nel nome, si tengono per un anno e si dichiarano immutabili: a parità di nome quel file non cambia mai, quindi richiederlo è tempo buttato.
+
+IL GUADAGNO CERTO SONO I SOLDI E IL TEMPO: senza queste righe i file sotto `/assets/` uscivano con un'ora di cache, quindi ogni dispositivo riscaricava circa 2,2 MB ogni ora per riavere byte identici. Al banco, con tre o quattro apparecchi accesi tutta la sera e un telefono in rete mobile, è spreco puro — ed è il motivo per cui l'impronta nel nome esiste. E C'È UN RISCHIO IN MENO, che va raccontato per quello che è:
+
+POSSIBILE MA NON OSSERVATO. Con la pagina tenuta un'ora, un browser che dopo una pubblicazione continuasse a usare quella vecchia chiederebbe i file del rilascio precedente, che non esistono più; e siccome la riscrittura `**` → `/index.html` manda qualunque indirizzo inesistente sulla pagina, quei file non risponderebbero «non c'è» ma 200 con dentro dell'HTML — verificato a mano — e il browser, provando a eseguire HTML come JavaScript, mostrerebbe una pagina bianca senza nessun errore. Il 07/09/2026 una pagina bianca in produzione c'è stata davvero, e per qualche ora è stata attribuita a questo.
+
+NON ERA QUESTO: era il browser di chi guardava, che mostrava bianche anche altre pagine. Il rischio qui sopra resta teorico, e resta scritto perché il meccanismo è reale; ma non è mai stato visto succedere, e va detto invece che archiviare una spiegazione comoda. Un test legge `firebase.json` e verifica le due metà — le intestazioni e la riscrittura — perché questa regola non ha nessuna schermata che la mostri: chi riordinasse quel file toglierebbe tre righe senza sapere cosa fanno, e il danno si vedrebbe un mese dopo, su un telefono, senza niente da leggere.
+
+**Dove**: `firebase.json (hosting.headers)` · **Lo dimostrano**: `tests/unit/cachePubblicazione.test.js`
 
 ### STAT
 

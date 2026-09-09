@@ -4586,3 +4586,108 @@ bugs:
     test_cases:
       - tests/unit/stampanteCheNonRisponde.test.js
 
+  - id: BUG-104
+    title: "Nella vista comande, sul telefono, non scorre niente"
+    area: "src/index.css (@container corsie)"
+    severity: grave
+    priority: P1
+    description: >
+      Segnalato il 07/09/2026: «quello che non scrolla sono le comande sulla
+      coda ordini. Quando ho lo stato della preparazione attivo e vado nella
+      vista delle comande, queste non scrollano». Dal browser del telefono,
+      non solo dall'app installata.
+      IL MECCANISMO: due soglie che non si incastrano. Sopra i 901px
+      (`@media`) la lavagna diventa alta quanto la finestra, taglia quello
+      che esce, e le corsie ricevono `flex: 1` e `min-height: 0` — cioe'
+      l'altezza dentro cui scorrere. Sotto i 900px (`@container`) alle
+      corsie veniva dato `overflow-y: auto` E BASTA: nessuna altezza che le
+      contenesse. Quindi diventavano un contenitore scorrevole SENZA NIENTE
+      DA SCORRERE (cresce quanto il suo contenuto), e insieme prendevano
+      `overscroll-behavior: contain`, che vieta al gesto di passare alla
+      pagina. Sul telefono il dito sta sempre sopra le corsie, perche'
+      riempiono lo schermo: il gesto non muoveva le corsie e non muoveva la
+      pagina. Non si muoveva niente.
+      NON E' UNA REGRESSIONE DELLA 1.5.7, verificato perche' era il sospetto
+      di chi l'ha segnalato: le regole delle corsie non sono cambiate di una
+      riga fra la 1.5.5 e la 1.5.7, e il blocco incriminato e' nato il
+      19/08/2026 con `7fbb155` («sul telefono le corsie si impilano, non si
+      stringono», REQ-CODA-004), cioe' PRIMA della 1.5.5. Era rotto anche
+      nella versione che girava al bar fino al 7 settembre. Non era emerso
+      perche' la vista comande con gli stati di preparazione e' usata da
+      poco.
+      LA CURA, ed e' l'idea di chi l'ha segnalato: «non puo' funzionare come
+      per la lista ordini lo scroll?». Si', e infatti la lista dei conti
+      (`.order-grid`) e' una griglia e basta — nessun `overflow`, nessuna
+      altezza massima — e a scorrere e' la pagina. Sul telefono le corsie
+      impilate sono una lista lunga, quindi si tolgono le due righe e scorre
+      la pagina come li'.
+      PERCHE' NON L'ALTRA STRADA (dare anche al telefono la lavagna alta
+      quanto la finestra): su uno schermo stretto vorrebbe dire un'area di
+      scorrimento minuscola sotto un'intestazione fissa, e una catena di
+      `min-height: 0` da tenere in piedi che si rompe al primo ritocco.
+      NON C'E' UN TEST, ed e' bene dirlo: lo scorrimento e' comportamento del
+      motore di resa, e in jsdom non esiste — un test che lo «provasse»
+      proverebbe il mock. Si verifica dal telefono, ed e' quello che si e'
+      fatto.
+    status: fixed
+    in_produzione: false
+    generate_issue: true
+    labels: [bug, coda, telefono]
+    test_cases: []
+
+  - id: BUG-105
+    title: "«La stampante non risponde» a raffica, e la stampa diventa lenta"
+    area: "src/lib/printer.js (ascoltaLaStampante, FRESCHEZZA_COLLEGAMENTO)"
+    severity: critica
+    priority: P1
+    description: >
+      Segnalato da Flavio dal banco la notte dell'08/09/2026, con la foto
+      dell'avviso: «esce spesso questo avviso e la stampa e' molto lenta»,
+      «ci mette molti secondi per stampare la chiusura dell ordine». In
+      produzione girava la 1.5.7.
+      E' UN DANNO CHE ABBIAMO FATTO NOI, due giorni prima, curando BUG-102.
+      Li' si era acceso `startMonitor()` per far dire alla stampante da se'
+      se era viva.
+      PERCHE' NON PUO' FUNZIONARE DA LI'. `startMonitor()` interroga la
+      stampante su un canale HTTP suo (`/cgi-bin/epos/service.cgi`), e per il
+      browser quella e' una richiesta verso un'ALTRA ORIGINE: l'app sta su un
+      dominio pubblico, la stampante e' un indirizzo sulla rete del locale.
+      Una richiesta cosi' ha bisogno del permesso esplicito dell'apparecchio
+      (CORS) e la stampante non lo dà. Il collegamento delle stampe invece e'
+      un WebSocket, che quel permesso non lo chiede: per questo la carta
+      usciva mentre il monitor giurava che non rispondeva.
+      E IL DANNO NON ERA L'AVVISO FALSO. Ogni dieci secondi il monitor
+      falliva, alzava `onpoweroff`, e il nostro gestore BUTTAVA IL
+      COLLEGAMENTO (era la decisione giusta per un monitor che dice il vero).
+      Quindi ogni stampa doveva rifare la stretta di mano — che con un
+      certificato auto-firmato su iPad costa secondi. Avvisi a raffica e
+      stampe lente erano la stessa cosa vista da due lati.
+      LA CURA. 1) IL MONITOR NON SI ACCENDE. I gestori (`onpoweroff`,
+      `onoffline`, `ononline`, coperchio, carta) restano attaccati: non
+      costano niente e sono gia' pronti se un domani l'app girasse sulla
+      stessa rete della stampante, o se le si desse il permesso che le manca.
+      A dire se il collegamento e' vivo resta il canale che l'app usa
+      DAVVERO: gli invii senza risposta (tre di fila = strada chiusa), che
+      sono una prova vera perche' passano dalla stessa strada delle stampe.
+      2) LA FINESTRA DI FRESCHEZZA DA DUE MINUTI A DIECI. Due erano troppo
+      pochi: al banco fra un conto e l'altro passano spesso piu' di due
+      minuti, e con la stretta di mano che costa secondi ogni scontrino se li
+      pagava. Dieci lasciano fuori tutto il servizio — i conti si chiudono
+      piu' spesso di cosi' — e tengono dentro il caso per cui la regola
+      esiste: la chiusura di cassa, che arriva dopo ore di silenzio.
+      LA LEZIONE, scritta perche' non si ripeta: una diagnostica che vive su
+      un canale DIVERSO da quello che si vuole diagnosticare puo' sbagliarsi
+      in modo indipendente — e se le si da' il potere di buttare il
+      collegamento, il suo errore diventa un guasto vero. Il monitor era
+      stato acceso dopo aver verificato sul codice dell'SDK che non poteva
+      rompere niente (non tocca il WebSocket, non alza `onreceive`, nessuna
+      stampa lo aspetta): tutto giusto, e non bastava, perche' il controllo
+      mancante non era nell'SDK ma nella TOPOLOGIA — app pubblica, stampante
+      in rete locale. Quello si vede solo al banco.
+    status: fixed
+    in_produzione: false
+    generate_issue: true
+    labels: [bug, stampa]
+    test_cases:
+      - tests/unit/stampanteCheNonRisponde.test.js
+

@@ -30,9 +30,6 @@ import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 let testine
 let invii
 let rispostaPer
-// Come si comporta `startMonitor` della testina: normalmente si accende,
-// ma un firmware vecchio lancia — e in quel caso si deve stampare uguale.
-let monitorRotto
 // I collegamenti chiusi per bene: `disconnect()` è la differenza fra
 // chiudere e abbandonare, e sulla stampante vera è la sessione che si
 // libera invece di restare mezza aperta.
@@ -42,7 +39,6 @@ function accendiLaStampante() {
   testine = []
   invii = []
   chiusure = []
-  monitorRotto = false
   window.epson = {
     ePOSDevice: class {
       constructor() {
@@ -71,7 +67,6 @@ function accendiLaStampante() {
           // stampante per conto di nessuno.
           monitorAcceso: false,
           startMonitor() {
-            if (monitorRotto) throw new Error('firmware senza monitor')
             this.monitorAcceso = true
             return true
           },
@@ -144,22 +139,36 @@ async function avvisi() {
   return stato.tutte
 }
 
-describe('la stampante viene interrogata, e quello che dice si ascolta', () => {
-  it('il monitor si accende alla stretta di mano, ogni dieci secondi', async () => {
+// ── IL MONITOR RESTA SPENTO (BUG-105) ────────────────────────────────
+//
+// Acceso il 06/09 in buona fede, tolto il 08/09 dopo una serata al banco:
+// «esce spesso questo avviso e la stampa è molto lenta, ci mette molti
+// secondi per stampare la chiusura dell'ordine».
+//
+// Non poteva funzionare da lì: `startMonitor()` interroga la stampante su
+// un canale HTTP suo, e per il browser è una richiesta verso un'ALTRA
+// ORIGINE — l'app sta su un dominio pubblico, la stampante è un indirizzo
+// sulla rete del locale. Serve il permesso esplicito dell'apparecchio, e la
+// stampante non lo dà. Il collegamento delle stampe è un WebSocket, che
+// quel permesso non lo chiede: per questo la carta usciva mentre il monitor
+// giurava che non rispondeva.
+//
+// E il danno non era l'avviso falso: ogni dieci secondi il monitor
+// falliva, alzava `onpoweroff`, e il collegamento veniva buttato. La stampa
+// dopo rifaceva la stretta di mano — che con un certificato auto-firmato su
+// iPad costa secondi. Avvisi a raffica e stampe lente erano la stessa cosa
+// vista da due lati.
+describe('il monitor non si accende', () => {
+  it('nessuna interrogazione parte alla stretta di mano', async () => {
     const P = await import('../../src/lib/printer.js')
     await P.printTest()
     await respira()
 
-    expect(ultima().monitorAcceso).toBe(true)
-    expect(ultima().interval).toBe(10000)
+    expect(ultima().monitorAcceso).toBe(false)
   })
 
-  it('un firmware che non lo sostiene non impedisce di stampare', async () => {
-    monitorRotto = true
+  it('e la stampa esce come sempre', async () => {
     const P = await import('../../src/lib/printer.js')
-
-    // L'eccezione di `startMonitor` non deve arrivare alla carta: resta la
-    // rete degli invii senza risposta, e il foglio esce.
     await P.printTest()
     await respira()
     expect(invii).toHaveLength(1)
@@ -415,7 +424,13 @@ describe('e niente di tutto questo rompe quello che c’era', () => {
 // Quindi prima di stampare, se il collegamento non è stato PROVATO di
 // recente, si fa quello che fa «Test stampa»: si butta e si rifà la stretta
 // di mano. Provato vuol dire una cosa sola: la stampante ha risposto.
-describe('dopo una pausa la stretta di mano si rifà, come fa «Test stampa»', () => {
+// LA FINESTRA È PASSATA DA DUE MINUTI A DIECI (BUG-105). Due erano troppo
+// pochi: al banco fra un conto e l'altro passano spesso più di due minuti, e
+// con la stretta di mano che costa secondi ogni scontrino se li pagava.
+// Dieci lasciano fuori tutto il servizio — i conti si chiudono più spesso di
+// così — e tengono dentro il caso per cui questa regola esiste: la chiusura
+// di cassa, che arriva dopo ore di silenzio.
+describe('dopo una pausa lunga la stretta di mano si rifà, come fa «Test stampa»', () => {
   it('due stampe di fila non ne rifanno nessuna', async () => {
     const P = await import('../../src/lib/printer.js')
     await P.printTest()
@@ -430,13 +445,13 @@ describe('dopo una pausa la stretta di mano si rifà, come fa «Test stampa»', 
     expect(invii).toHaveLength(2)
   })
 
-  it('dopo due minuti senza risposte, la stampa dopo riparte da zero', async () => {
+  it('dopo dieci minuti senza risposte, la stampa dopo riparte da zero', async () => {
     const P = await import('../../src/lib/printer.js')
     await P.printTest()
     await respira()
 
     // Il buco fra l'ultimo scontrino e la chiusura di cassa.
-    await vi.advanceTimersByTimeAsync(121000)
+    await vi.advanceTimersByTimeAsync(601000)
     await P.printTest()
     await respira()
 
@@ -446,12 +461,12 @@ describe('dopo una pausa la stretta di mano si rifà, come fa «Test stampa»', 
     expect(invii[1].testina).toBe(ultima())
   })
 
-  it('ma prima del limite no', async () => {
+  it('ma cinque minuti dopo no: durante il servizio non si tocca niente', async () => {
     const P = await import('../../src/lib/printer.js')
     await P.printTest()
     await respira()
 
-    await vi.advanceTimersByTimeAsync(60000)
+    await vi.advanceTimersByTimeAsync(300000)
     await P.printTest()
     await respira()
 
@@ -464,7 +479,7 @@ describe('dopo una pausa la stretta di mano si rifà, come fa «Test stampa»', 
     const P = await import('../../src/lib/printer.js')
     await P.printTest()
     await respira()
-    await vi.advanceTimersByTimeAsync(121000)
+    await vi.advanceTimersByTimeAsync(601000)
     await P.printTest()
     await respira()
     expect(testine).toHaveLength(2)
@@ -483,7 +498,7 @@ describe('dopo una pausa la stretta di mano si rifà, come fa «Test stampa»', 
     await P.printTest()
     await respira()
 
-    await vi.advanceTimersByTimeAsync(121000)
+    await vi.advanceTimersByTimeAsync(601000)
     rispostaPer = () => OK
     await P.printTest()
     await respira()
@@ -542,17 +557,17 @@ describe('lo stato della stampante si legge prima di stampare', () => {
     expect(chiusure).toHaveLength(0)
   })
 
-  it('senza monitor lo stato non si aggiorna, e a rispondere resta la finestra', async () => {
-    // Firmware che non sostiene il monitor: `status` non lo aggiorna
-    // nessuno, quindi il controllo qui sopra tace per sempre. È
-    // esattamente il caso per cui la finestra è rimasta.
-    monitorRotto = true
+  it('col monitor spento lo stato non si aggiorna, e a rispondere resta la finestra', async () => {
+    // È il caso di TUTTI I GIORNI da BUG-105 in poi: il monitor non parte,
+    // quindi `status` non lo aggiorna nessuno e il controllo qui sopra tace
+    // per sempre. A dire quando rifare la stretta di mano resta la finestra
+    // — ed è per questo che non è stata tolta insieme al monitor.
     const P = await import('../../src/lib/printer.js')
     await P.printTest()
     await respira()
     expect(testine).toHaveLength(1)
 
-    await vi.advanceTimersByTimeAsync(121000)
+    await vi.advanceTimersByTimeAsync(601000)
     await P.printTest()
     await respira()
 

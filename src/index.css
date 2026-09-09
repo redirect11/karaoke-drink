@@ -8106,15 +8106,23 @@ body.pagina-piena .inv-scheda {
   }
 }
 
-/* Impilate dentro una lavagna alta quanto la finestra (vedi il blocco a
-   901px): a scorrere dev'essere la pila, non la pagina — la pagina lì non
-   scorre, la lavagna è a tutto schermo e taglia quello che esce. */
-@container corsie (max-width: 899.98px) {
-  .corsie {
-    overflow-y: auto;
-    overscroll-behavior: contain;
-  }
-}
+/* SUL TELEFONO SCORRE LA PAGINA, come nella lista dei conti (BUG-104).
+   Qui c'era il contrario: le corsie prendevano `overflow-y: auto` e
+   `overscroll-behavior: contain`, cioè diventavano un contenitore
+   scorrevole a cui era vietato passare il gesto alla pagina. Ma l'altezza
+   che rende scorrevole quel contenitore — la lavagna alta quanto la
+   finestra e `flex: 1; min-height: 0` sulle corsie — sta nel blocco a
+   901px, che sul telefono non si accende MAI. Risultato: le corsie non
+   avevano niente da scorrere, e alla pagina il gesto non arrivava. Non si
+   muoveva nulla, e col dito sempre sopra le corsie — che riempiono lo
+   schermo — non c'era modo di accorgersi che era una regola e non un
+   blocco dell'app.
+   La cura non e' dare anche al telefono la lavagna a tutta finestra: su uno
+   schermo stretto vorrebbe dire un'area di scorrimento minuscola sotto
+   un'intestazione fissa, e una catena di `min-height: 0` da tenere in piedi
+   che si rompe al primo ritocco. Impilate, le corsie sono una lista lunga:
+   e una lista lunga la scorre la pagina. `.order-grid` fa cosi' da sempre e
+   non ha mai dato problemi. */
 
 /* Tutte le corsie affiancate, e ognuna col suo scorrimento. */
 @container corsie (min-width: 900px) {
