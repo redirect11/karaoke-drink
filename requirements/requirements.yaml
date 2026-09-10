@@ -11058,6 +11058,45 @@ requirements:
     labels: [menu, ux]
     test_cases: []
 
+  - id: REQ-MENU-015
+    title: "Il ghiaccio nelle ricette passa a una volta e mezzo"
+    area: "scripts/ghiaccio-per-uno-e-mezzo.js, scripts/lib-ghiaccio.js"
+    description: >
+      Chiesto da Flavio il 09/09/2026, in un audio: «bisognerebbe
+      moltiplicare tutte le quantita' di ghiaccio per 1,5. Quindi se ho 100
+      grammi diventano 150, se ho 200 diventano 300. Se e' possibile farlo
+      in automatico bene, altrimenti lo faccio a mano». La dose scritta
+      nelle ricette era piu' bassa del consumo vero al banco, e il magazzino
+      del ghiaccio scendeva meno di quanto ne uscisse davvero.
+      E' UNO SCRIPT DI MANUTENZIONE, non una funzione dell'app: si fa una
+      volta, su dati che esistono gia'. Tocca SOLO le righe di ricetta
+      (`recipe_items`) che puntano all'articolo del ghiaccio, e di quelle
+      solo la quantita'; la ricetta in parole, il resto degli ingredienti e
+      l'articolo in magazzino restano com'erano. Il magazzino gia' scalato
+      non si ricalcola (lo snapshot resta quello che era).
+      NON E' UN «PER 1,5» CIECO, ed e' la scelta che conta. Uno script che
+      moltiplica si puo' lanciare due volte per sbaglio, e la seconda volta
+      100 grammi vanno a 225 senza che nessuno lo veda. Le dosi si
+      riconoscono da una TABELLA — 100 → 150, 200 → 300 — e una riga gia' a
+      150 o 300 si lascia stare: rilanciato, lo script non fa niente. Una
+      dose che non sta in tabella (un 220, un 80) si SEGNALA e non si tocca;
+      per moltiplicare anche quelle c'e' `--anche-fuori-tabella`, da usare
+      una volta sola guardando l'anteprima, perche' su quelle righe il «gia'
+      fatto» non si riconosce.
+      L'ANTEPRIMA E' IL DEFAULT: senza `--apply` non scrive niente, e stampa
+      ricetta per ricetta cosa cambierebbe. Se di «ghiaccio» in magazzino ce
+      n'e' piu' d'uno, si ferma e chiede quale (`--ghiaccio <id>`). Il
+      progetto e' `tana-drink-test` se non si dice altro: la produzione si
+      nomina a mano, dopo il backup.
+      SUL TEST (10/09/2026): 87 ricette riscritte; 3 righe erano gia' a 150
+      o 300, 3 fuori tabella (Bramble 220, Rusty Nail 80, Black Russian 70)
+      lasciate a Flavio.
+    status: implemented
+    generate_issue: false
+    labels: [menu, magazzino, script]
+    test_cases:
+      - tests/unit/ghiaccioPerUnoEMezzo.test.js
+
   - id: REQ-STAMPA-018
     title: "Se la stampante è viva lo dice lei, sul canale delle stampe"
     area: "src/lib/printer.js (battitoDellaStampante, avviaBattito, ascoltaLaStampante, getPrinter, preparaStampante, smettiDiAscoltare)"

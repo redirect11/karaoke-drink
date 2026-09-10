@@ -16,6 +16,14 @@
   Il filtro cambia solo cosa si vede in tabella: quello che è già
   nell'ordine ci resta.
 
+### Per chi amministra
+
+- **Il ghiaccio nelle ricette passa a una volta e mezzo** (100 g → 150,
+  200 g → 300) con uno script di manutenzione,
+  `scripts/ghiaccio-per-uno-e-mezzo.js`: anteprima di serie, scrive solo
+  con `--apply`, e rilanciato per sbaglio non moltiplica una seconda volta.
+  Le dosi fuori tabella le segnala e le lascia decidere a mano.
+
 ## 1.5.10
 
 ### Per chi sta al banco
