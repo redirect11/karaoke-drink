@@ -4648,42 +4648,43 @@ bugs:
       E' UN DANNO CHE ABBIAMO FATTO NOI, due giorni prima, curando BUG-102.
       Li' si era acceso `startMonitor()` per far dire alla stampante da se'
       se era viva.
-      PERCHE' NON PUO' FUNZIONARE DA LI'. `startMonitor()` interroga la
-      stampante su un canale HTTP suo (`/cgi-bin/epos/service.cgi`), e per il
-      browser quella e' una richiesta verso un'ALTRA ORIGINE: l'app sta su un
-      dominio pubblico, la stampante e' un indirizzo sulla rete del locale.
-      Una richiesta cosi' ha bisogno del permesso esplicito dell'apparecchio
-      (CORS) e la stampante non lo dà. Il collegamento delle stampe invece e'
-      un WebSocket, che quel permesso non lo chiede: per questo la carta
-      usciva mentre il monitor giurava che non rispondeva.
-      E IL DANNO NON ERA L'AVVISO FALSO. Ogni dieci secondi il monitor
-      falliva, alzava `onpoweroff`, e il nostro gestore BUTTAVA IL
-      COLLEGAMENTO (era la decisione giusta per un monitor che dice il vero).
-      Quindi ogni stampa doveva rifare la stretta di mano — che con un
-      certificato auto-firmato su iPad costa secondi. Avvisi a raffica e
-      stampe lente erano la stessa cosa vista da due lati.
+      IL FATTO, visto al banco: ogni dieci secondi il monitor falliva,
+      alzava `onpoweroff`, e il nostro gestore BUTTAVA IL COLLEGAMENTO (era
+      la decisione giusta per un monitor che dice il vero). Quindi ogni
+      stampa doveva rifare la stretta di mano — che con un certificato
+      auto-firmato su iPad costa secondi. Avvisi a raffica e stampe lente
+      erano la stessa cosa vista da due lati. E la carta usciva: il monitor
+      diceva il falso.
+      PERCHE' FALLISSE E' UN'IPOTESI, e nella prima stesura di questa voce
+      era scritta come una certezza: sbagliato, e corretto il 10/09 (con
+      BUG-107). L'ipotesi: `startMonitor()` interroga la stampante su un
+      canale HTTP suo (`/cgi-bin/epos/service.cgi`), verso un'altra origine
+      — l'app sta su un dominio pubblico, la stampante su una rete locale —
+      e con intestazioni (`SOAPAction`, `If-Modified-Since`) che per il
+      browser fanno di quella richiesta una richiesta «da autorizzare
+      prima»; se la stampante non risponde a quel permesso, la richiesta
+      muore prima di partire. E' l'ipotesi piu' semplice, ma NON e'
+      verificata: la stretta di mano di socket.io — la strada delle stampe —
+      passa dalla stessa origine, senza quelle intestazioni, e funziona.
+      Quindi non e' «la stampante blocca tutto», al piu' «blocca quel tipo di
+      richiesta». L'alternativa: la richiesta arriva, la stampante risponde
+      `status="0"`, e l'SDK lo tratta come «nessuna risposta». Da qui non si
+      distingue; si distinguerebbe solo con la console del browser aperta al
+      banco mentre il monitor gira. Non serve saperlo per andare avanti.
       LA CURA. 1) IL MONITOR NON SI ACCENDE. I gestori (`onpoweroff`,
       `onoffline`, `ononline`, coperchio, carta) restano attaccati: non
-      costano niente e sono gia' pronti se un domani l'app girasse sulla
-      stessa rete della stampante, o se le si desse il permesso che le manca.
-      A dire se il collegamento e' vivo resta il canale che l'app usa
-      DAVVERO: gli invii senza risposta (tre di fila = strada chiusa), che
-      sono una prova vera perche' passano dalla stessa strada delle stampe.
-      2) LA FINESTRA DI FRESCHEZZA DA DUE MINUTI A DIECI. Due erano troppo
-      pochi: al banco fra un conto e l'altro passano spesso piu' di due
-      minuti, e con la stretta di mano che costa secondi ogni scontrino se li
-      pagava. Dieci lasciano fuori tutto il servizio — i conti si chiudono
-      piu' spesso di cosi' — e tengono dentro il caso per cui la regola
-      esiste: la chiusura di cassa, che arriva dopo ore di silenzio.
+      costano niente e sono gia' pronti se un domani il monitor tornasse
+      utile. 2) LA FINESTRA DI FRESCHEZZA DA DUE MINUTI A DIECI — poi
+      riportata a uno da BUG-106, e resa rete di riserva dal battito di
+      BUG-107.
       LA LEZIONE, scritta perche' non si ripeta: una diagnostica che vive su
       un canale DIVERSO da quello che si vuole diagnosticare puo' sbagliarsi
       in modo indipendente — e se le si da' il potere di buttare il
       collegamento, il suo errore diventa un guasto vero. Il monitor era
       stato acceso dopo aver verificato sul codice dell'SDK che non poteva
       rompere niente (non tocca il WebSocket, non alza `onreceive`, nessuna
-      stampa lo aspetta): tutto giusto, e non bastava, perche' il controllo
-      mancante non era nell'SDK ma nella TOPOLOGIA — app pubblica, stampante
-      in rete locale. Quello si vede solo al banco.
+      stampa lo aspetta): tutto giusto, e non bastava. La domanda «sei
+      viva?» va fatta sul canale delle stampe, ed e' quello che fa BUG-107.
     status: fixed
     in_produzione: false
     generate_issue: true
@@ -4730,6 +4731,79 @@ bugs:
       la finestra inutile: il collegamento sarebbe provato invece che
       presunto. Resta da verificare al banco una cosa sola, che da qui non si
       puo' sapere: se un lavoro vuoto faccia uscire carta.
+    status: fixed
+    in_produzione: false
+    generate_issue: true
+    labels: [bug, stampa]
+    test_cases:
+      - tests/unit/stampanteCheNonRisponde.test.js
+
+  - id: BUG-107
+    title: "Una stampante che sparisce in silenzio non la scopriva nessuno, e i ganci dell'SDK erano sull'oggetto sbagliato"
+    area: "src/lib/printer.js (battitoDellaStampante, avviaBattito, getPrinter)"
+    severity: grave
+    priority: P1
+    description: >
+      Sollevato in revisione il 10/09/2026, dopo BUG-106: «davvero non c'e'
+      un modo per pingare la stampante per vedere se risponde? Un modo per
+      capire se non risponde dovrebbe esserci: magari si scollega e cambia
+      IP, oppure qualcosa la bugga». L'obiezione e' fondata, e la risposta
+      e' venuta leggendo per intero il codice dell'SDK Epson (ePOS 2.27.0) e
+      il manuale ePOS-Print XML.
+      DUE DIFETTI, insieme.
+      1) IL GANCIO SUL CHIODO SBAGLIATO. Fin dal primo giorno l'app
+      attaccava `ondisconnect` all'oggetto STAMPANTE (`devobj`). Nell'SDK
+      quell'evento — e `onreconnecting`, `onreconnect` — lo alza solo
+      `ePOSDevice`, il dispositivo: nel suo `cleanup()`, dopo aver esaurito
+      i cinque tentativi di riconnessione (uno ogni tre secondi). Sulla
+      stampante quel gestore non e' scattato MAI. Tutte le cadute RUMOROSE
+      — stampante spenta, cavo staccato con la stampante che chiude il
+      socket — l'SDK le sapeva e noi no: le scoprivamo dopo, dalla stampa
+      che non usciva.
+      2) LE CADUTE SILENZIOSE NON LE SA NEMMENO L'SDK. Una stampante che
+      sparisce senza chiudere niente — indirizzo cambiato dal router, Wi-Fi
+      caduto, cavo tolto dal lato sbagliato — non alza nessun evento: il
+      browser non se ne accorge finche' non prova a MANDARE qualcosa. E il
+      battito di socket.io in questa versione dell'SDK non aiuta: il client
+      si limita a rispondere ai battiti della stampante, e il suo
+      `heartbeatTimeout` e' assegnato e mai letto. E' la sera del 05/09:
+      verde, socket morto, nessun evento. L'unico modo di scoprire una morte
+      silenziosa e' mandare qualcosa e vedere se torna.
+      LA CURA. 1) `ondisconnect` e `onreconnecting` attaccati a
+      `ePOSDevice`. Su `onreconnecting` si molla, si CHIUDE (cosi' l'SDK
+      smette di riprovarci: in quel quarto di minuto `isConnected()` dice di
+      si' e una stampa prenderebbe una strada che non arriva) e si avvisa;
+      la stampa dopo rifa' la stretta di mano, il gesto che sappiamo
+      funzionare. `ondisconnect` fa lo stesso senza chiudere (e' gia'
+      chiuso), e trova di regola il dispositivo gia' dimenticato: un gancio
+      di un dispositivo buttato non fa niente. Attenzione alla rientranza:
+      `disconnect()` dell'SDK alza `ondisconnect` nello stesso giro, quindi
+      `scordaConnessione` DIMENTICA PRIMA DI CHIUDERE, o la nostra chiusura
+      passerebbe per una caduta.
+      2) IL BATTITO: ogni mezzo minuto un lavoro di stampa VUOTO sullo
+      stesso WebSocket delle stampe. Non e' un'invenzione: e' il modo
+      ufficiale Epson di chiedere lo stato senza stampare (manuale
+      ePOS-Print XML, p. 56: «To check the printer status without printing,
+      send empty print data»; e il monitor stesso, dentro, manda esattamente
+      un documento vuoto). Si mette in fila nella coda delle stampe (il
+      builder e' uno solo, BUG-086), si conta e si ascolta come una stampa:
+      una risposta azzera i muti e rinfresca la prova; tre silenzi di fila
+      — la regola di BUG-102 — buttano il collegamento e lo dicono, entro un
+      minuto e mezzo. Un lavoro vuoto che risponde «carta finita» avvisa
+      senza buttare niente. Il battito NON riapre un collegamento mollato
+      (la stretta di mano costa: la fa la prima stampa che serve) e NON
+      entra nel registro delle stampe.
+      3) LA FINESTRA DI UN MINUTO (BUG-106) RESTA COME RETE DI RISERVA: col
+      battito che risponde non scade mai; scade solo nel minuto e mezzo in
+      cui i battiti sono muti e il contatore non ha ancora deciso, e allora
+      la stampa che arriva in quel buco riparte da zero.
+      PERCHE' SUL CANALE DELLE STAMPE e non su uno a parte: e' la lezione di
+      BUG-105. Una risposta al battito prova che la strada da cui escono gli
+      scontrini e' aperta ADESSO — non «la stampante e' accesa», che era la
+      domanda del monitor e non ci serviva.
+      DA VERIFICARE AL BANCO una cosa sola, che da qui non si puo' sapere:
+      che un lavoro vuoto NON faccia uscire carta. Il manuale dice di no;
+      la stampante lo confermera'.
     status: fixed
     in_produzione: false
     generate_issue: true

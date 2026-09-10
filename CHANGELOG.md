@@ -1,5 +1,23 @@
 # Cosa è cambiato
 
+## 1.5.10
+
+### Per chi sta al banco
+
+- **L'app chiede alla stampante se c'è, ogni mezzo minuto, sulla stessa
+  strada da cui escono gli scontrini.** È una domanda di stato — non
+  stampa niente, non fa uscire carta — e se la stampante non risponde a tre
+  di fila l'app molla il collegamento e lo dice: una stampante che si
+  scollega in silenzio (cavo, Wi-Fi, indirizzo cambiato) si scopre entro un
+  minuto e mezzo, senza aspettare che una stampa vada a vuoto. Se invece
+  la stampante risponde «carta finita» o «coperchio aperto», lo si sa
+  prima di battere il conto.
+
+- **Quando il collegamento cade in modo visibile — stampante spenta, cavo
+  staccato — l'app se ne accorge subito.** Il segnale che il sistema Epson
+  manda in quel caso era in ascolto sull'oggetto sbagliato, e non è mai
+  arrivato. Adesso arriva: si avvisa e la stampa dopo si ricollega da sola.
+
 ## 1.5.9
 
 ### Per chi sta al banco
