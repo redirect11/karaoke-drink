@@ -150,6 +150,19 @@ describe('cercare un prodotto senza sapere di chi è', () => {
     const trovate = filtraCatalogo(righe, { supplierId: 'none' })
     expect(trovate.map((r) => r.item_name)).toEqual(['Gin Mare'])
   })
+
+  // Flavio, 09/09: «mettere anche il filtro per assortimento» sul nuovo
+  // ordine. Vale la regola del magazzino: lista vuota = tutti; un prodotto
+  // senza stato è «in assortimento».
+  it('per assortimento: la lista vuota non filtra, chi non ha stato è in assortimento', () => {
+    const premium = { ...GIN, status: 'premium' }
+    const tutte = catalogoOrdinabile({ items: [CAMPARI, premium], listini, suppliers: FORNITORI })
+    expect(filtraCatalogo(tutte, { assortimenti: [] })).toHaveLength(3)
+    expect(filtraCatalogo(tutte, { assortimenti: ['premium'] }).map((r) => r.item_name)).toEqual(['Gin Mare'])
+    const inAssortimento = filtraCatalogo(tutte, { assortimenti: ['assortimento'] })
+    expect(new Set(inAssortimento.map((r) => r.item_name))).toEqual(new Set(['Campari']))
+    expect(inAssortimento).toHaveLength(2)
+  })
 })
 
 // IL FORNITORE PROPOSTO È QUELLO DELL'ULTIMO ACQUISTO, NON IL PIÙ

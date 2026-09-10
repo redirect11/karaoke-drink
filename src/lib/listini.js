@@ -17,7 +17,7 @@ import { categoryColor, CATEGORY_PALETTE } from './categoryColors.js'
 // Il contenuto di un pezzo e il perché non si può ricavare stanno in
 // `inventory.js` e si LEGGONO da lì: sono fatti del prodotto, non del
 // listino, e riscriverli qui vorrebbe dire due verità da tenere allineate.
-import { contentBase, formatQty, fromBaseQty, motivoNonMigrabile } from './inventory.js'
+import { assortimentoDi, contentBase, formatQty, fromBaseQty, motivoNonMigrabile } from './inventory.js'
 
 // ── I TRE LIVELLI DELLA RIGA D'ORDINE ────────────────────────────────
 //
@@ -376,12 +376,22 @@ export function fornitoriPerArticolo(items, listini) {
 // schermata di oggi parte dal fornitore ed è proprio ciò di cui Flavio si
 // lamenta. Il filtro fornitore resta, ma è una VISTA sul catalogo, non la
 // porta d'ingresso.
-export function filtraCatalogo(righe, { query = '', supplierId = 'all' } = {}) {
+//
+// L'ASSORTIMENTO È UN FILTRO ANCHE QUI (Flavio, vocale del 09/09/2026): «se
+// mi devo controllare tutti i premium, tutti quelli in linea, tutti quelli
+// in assortimento, fuori assortimento, stacco già il filtro che me lo fa
+// vedere». Da quando la tabella parte vuota è il modo per passare in
+// rassegna una famiglia alla volta. Stessa regola di `filterItems`: lista
+// vuota = nessun filtro, si vede tutto.
+export function filtraCatalogo(righe, { query = '', supplierId = 'all', assortimenti = [] } = {}) {
   const q = String(query || '').trim().toLowerCase()
+  const perAssortimento = Array.isArray(assortimenti) && assortimenti.length > 0
   return (righe || []).filter((r) => {
     if (q && !(r.item_name || '').toLowerCase().includes(q)) return false
-    if (supplierId === 'none') return !r.supplier_id
-    if (supplierId !== 'all' && r.supplier_id !== supplierId) return false
+    if (supplierId === 'none') {
+      if (r.supplier_id) return false
+    } else if (supplierId !== 'all' && r.supplier_id !== supplierId) return false
+    if (perAssortimento && !assortimenti.includes(assortimentoDi(r.item))) return false
     return true
   })
 }

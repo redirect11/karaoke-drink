@@ -1,5 +1,21 @@
 # Cosa è cambiato
 
+## 1.6.0-beta
+
+### Per chi sta al banco
+
+- **«Nuovo ordine» si apre vuoto.** Prima la schermata arrivava con già
+  spuntato tutto quello sotto soglia e in assortimento — a magazzino pieno
+  erano ottantasei righe da togliere una alla volta prima di cominciare.
+  Adesso non è spuntato niente; la proposta di prima è un tasto, «Spunta
+  quello che manca», che dice quante righe aggiungerebbe e si somma a
+  quello che si è già scelto senza toccare i pezzi scritti a mano.
+
+- **In «Nuovo ordine» si filtra per assortimento** — in assortimento, in
+  linea, premium, fuori assortimento — con la stessa tendina del magazzino.
+  Il filtro cambia solo cosa si vede in tabella: quello che è già
+  nell'ordine ci resta.
+
 ## 1.5.10
 
 ### Per chi sta al banco

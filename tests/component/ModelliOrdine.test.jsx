@@ -117,12 +117,13 @@ const carrello = () => screen.getByLabelText('Ordine in composizione')
 // ritrova la stringa raddoppiata. Qui non si sta provando la tastiera.
 const scrivi = (campo, testo) => fireEvent.change(campo, { target: { value: testo } })
 
-async function apriComposizione() {
+async function apriComposizione(user) {
   render(<PurchaseOrdersPanel vista="nuovo" />)
   await waitFor(() => expect(screen.getByText('Nuovo ordine')).toBeInTheDocument())
-  // La preselezione ha già spuntato quello che manca: è il punto di partenza
-  // su cui il modello si somma.
-  await waitFor(() => expect(within(carrello()).getByText(/Campari/)).toBeInTheDocument())
+  // Si spunta quello che manca (dal 09/09 la tabella si apre vuota, ed è un
+  // tasto): è il punto di partenza su cui il modello si somma.
+  await user.click(screen.getByRole('button', { name: /Spunta quello che manca/ }))
+  expect(within(carrello()).getByText(/Campari/)).toBeInTheDocument()
 }
 
 beforeEach(() => {
@@ -135,7 +136,7 @@ beforeEach(() => {
 describe('salvare un modello mentre si compone', () => {
   it('conserva prodotti, fornitore e quantità — e nessun prezzo', async () => {
     const user = userEvent.setup()
-    await apriComposizione()
+    await apriComposizione(user)
 
     // Il tasto dice quante righe salva: si salva mentre la tabella è piena
     // di righe che nell'ordine non ci sono.
@@ -163,8 +164,8 @@ describe('salvare un modello mentre si compone', () => {
 
   it('senza niente selezionato non c’è modello da salvare', async () => {
     const user = userEvent.setup()
-    await apriComposizione()
-    // Si svuota l'ordine togliendo le due righe preselezionate.
+    await apriComposizione(user)
+    // Si svuota l'ordine togliendo le due righe appena spuntate.
     for (const nome of ['Campari', 'Gin Mare']) {
       await user.click(within(carrello()).getByRole('button', { name: `Togli ${nome} dall’ordine` }))
     }
@@ -181,7 +182,7 @@ describe('usare un modello salvato', () => {
   // precompilazione guarda le scorte, il modello l'abitudine.
   it('si somma alla precompilazione invece di sostituirla', async () => {
     const user = userEvent.setup()
-    await apriComposizione()
+    await apriComposizione(user)
     scrivi(screen.getByLabelText('Modelli d’ordine'), 'mod-1')
     await user.click(screen.getByRole('button', { name: 'Usa il modello' }))
 
@@ -197,7 +198,7 @@ describe('usare un modello salvato', () => {
   // trovarsi un ordine più corto senza spiegazione».
   it('dice cosa non è stato ripreso, e perché', async () => {
     const user = userEvent.setup()
-    await apriComposizione()
+    await apriComposizione(user)
     scrivi(screen.getByLabelText('Modelli d’ordine'), 'mod-1')
     await user.click(screen.getByRole('button', { name: 'Usa il modello' }))
 
@@ -211,7 +212,7 @@ describe('usare un modello salvato', () => {
 
   it('si rinomina e si elimina', async () => {
     const user = userEvent.setup()
-    await apriComposizione()
+    await apriComposizione(user)
     scrivi(screen.getByLabelText('Modelli d’ordine'), 'mod-1')
 
     await user.click(screen.getByRole('button', { name: 'Rinomina' }))

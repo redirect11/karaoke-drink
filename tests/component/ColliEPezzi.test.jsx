@@ -119,13 +119,15 @@ describe('la riga di chi vende a collo', () => {
     expect(within(carrello()).getAllByText('50,10 €').length).toBeGreaterThan(0)
   })
 
-  // LA PRESELEZIONE NON CHIEDE OTTO CARTONI. Ne mancano sedici bottiglie —
-  // soglia 8, riportata al doppio — e da FONT quelle sedici stanno in un
-  // cartone solo.
-  it('la preselezione propone un cartone, non sedici', async () => {
+  // «SPUNTA QUELLO CHE MANCA» NON CHIEDE OTTO CARTONI. Ne mancano sedici
+  // bottiglie — soglia 8, riportata al doppio — e da FONT quelle sedici
+  // stanno in un cartone solo.
+  it('«Spunta quello che manca» propone un cartone, non sedici', async () => {
+    const user = userEvent.setup()
     render(<PurchaseOrdersPanel />)
     await screen.findAllByText('Bjorne')
-    await waitFor(() => expect(screen.getByLabelText('Colli di Bjorne (FONT)')).toHaveValue(1))
+    await user.click(screen.getByRole('button', { name: /Spunta quello che manca/ }))
+    expect(screen.getByLabelText('Colli di Bjorne (FONT)')).toHaveValue(1)
     // 25,05 e non 400,80: è il difetto da cui questa voce è nata.
     expect(within(carrello()).getAllByText('25,05 €').length).toBeGreaterThan(0)
   })

@@ -87,14 +87,13 @@ beforeEach(() => {
   stato.creati = 0
 })
 
-// Si arriva al riepilogo con quello che la preselezione ha già spuntato:
-// Campari da Nova, Gin da Enofel.
+// Si arriva al riepilogo con quello che «Spunta quello che manca» mette
+// nell'ordine: Campari da Nova, Gin da Enofel.
 async function apriRiepilogo(user) {
   render(<PurchaseOrdersPanel />)
   await screen.findAllByText('Campari')
-  await waitFor(() =>
-    expect(screen.getByRole('button', { name: /Rivedi e conferma/ })).toBeEnabled()
-  )
+  await user.click(screen.getByRole('button', { name: /Spunta quello che manca/ }))
+  expect(screen.getByRole('button', { name: /Rivedi e conferma/ })).toBeEnabled()
   await user.click(screen.getByRole('button', { name: /Rivedi e conferma/ }))
 }
 

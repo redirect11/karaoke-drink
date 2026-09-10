@@ -164,11 +164,32 @@ describe('una tabella sola', () => {
   })
 })
 
-describe('la preselezione: il giro del magazzino è già fatto', () => {
-  it('esauriti e sotto soglia partono spuntati, chi è pieno no', async () => {
+// ── LA TABELLA SI APRE VUOTA, E «QUELLO CHE MANCA» E' UN TASTO ──────
+//
+// Fino alla 1.5 la schermata si apriva con l'ordine già compilato: tutto
+// quello sotto soglia, più l'assortimento senza un ordine. Flavio, 09/09:
+// «mi dà già ottantasei prodotti precompilati [...] e me li devo levare uno
+// alla volta». Un aiuto che va tolto a mano riga per riga non è un aiuto.
+// Il conto delle scorte resta, dietro un tasto che dice quante righe
+// spunterebbe: è un gesto, e come il modello si SOMMA a quello che c'è.
+describe('la tabella parte vuota, e «Spunta quello che manca» è un gesto', () => {
+  it('all’apertura nessuna riga è spuntata e l’ordine di fianco è vuoto', async () => {
     render(<PurchaseOrdersPanel />)
     await screen.findAllByText('Campari')
-    await waitFor(() => expect(screen.getByLabelText('Ordina Campari (Nova)')).toBeChecked())
+    expect(screen.getByLabelText('Ordina Campari (Nova)')).not.toBeChecked()
+    expect(screen.getByLabelText('Ordina Gin Mare (Enofel)')).not.toBeChecked()
+    expect(within(carrello()).queryByText(/Campari/)).not.toBeInTheDocument()
+    // Il tasto dice quante righe spunterebbe: Campari e Gin, non il Rum
+    // pieno né l'Amaro fuori linea.
+    expect(screen.getByRole('button', { name: /Spunta quello che manca/ })).toHaveTextContent('(2)')
+  })
+
+  it('col tasto, esauriti e sotto soglia si spuntano, chi è pieno no', async () => {
+    const user = userEvent.setup()
+    render(<PurchaseOrdersPanel />)
+    await screen.findAllByText('Campari')
+    await user.click(screen.getByRole('button', { name: /Spunta quello che manca/ }))
+    expect(screen.getByLabelText('Ordina Campari (Nova)')).toBeChecked()
     expect(screen.getByLabelText('Ordina Gin Mare (Enofel)')).toBeChecked()
     expect(screen.getByLabelText('Ordina Rum Zacapa (senza fornitore)')).not.toBeChecked()
     // Un prodotto su due listini si spunta UNA volta sola, se no lo si
@@ -180,17 +201,21 @@ describe('la preselezione: il giro del magazzino è già fatto', () => {
   // dell'ordine» (utente, 27/08). Ma in tabella c'è: si può sempre
   // aggiungere a mano, ed è così che rientra.
   it('il fuori linea è in tabella ma non spuntato', async () => {
+    const user = userEvent.setup()
     render(<PurchaseOrdersPanel />)
     await screen.findAllByText('Campari')
+    await user.click(screen.getByRole('button', { name: /Spunta quello che manca/ }))
     const spunta = screen.getByLabelText('Ordina Amaro Lucano (senza fornitore)')
     expect(spunta).not.toBeChecked()
     expect(spunta.closest('.inv-row')).toHaveTextContent('fuori linea')
   })
 
-  it('l’ordine di fianco è già diviso per fornitore', async () => {
+  it('l’ordine di fianco è diviso per fornitore', async () => {
+    const user = userEvent.setup()
     render(<PurchaseOrdersPanel />)
     await screen.findAllByText('Campari')
-    await waitFor(() => expect(within(carrello()).getByText('Nova')).toBeInTheDocument())
+    await user.click(screen.getByRole('button', { name: /Spunta quello che manca/ }))
+    expect(within(carrello()).getByText('Nova')).toBeInTheDocument()
     expect(within(carrello()).getByText('Enofel')).toBeInTheDocument()
     expect(within(carrello()).getByText(/× Campari/)).toBeInTheDocument()
     expect(within(carrello()).getByText(/× Gin Mare/)).toBeInTheDocument()
@@ -199,13 +224,57 @@ describe('la preselezione: il giro del magazzino è già fatto', () => {
   it('dall’ordine si toglie una riga, e la spunta in tabella si spegne', async () => {
     const user = userEvent.setup()
     render(<PurchaseOrdersPanel />)
-    // SI ASPETTA IL TASTO CHE SI STA PER PREMERE, non «Campari» in tabella:
-    // il carrello lo riempie un ALTRO effetto (la precompilazione di quello
-    // che sta finendo), e nella corsa con la coverage — che è più lenta —
-    // la tabella era pronta e l'ordine no. Il test ballava.
-    const togli = await screen.findByRole('button', { name: 'Togli Campari dall’ordine' })
-    await user.click(togli)
-    await waitFor(() => expect(screen.getByLabelText('Ordina Campari (Nova)')).not.toBeChecked())
+    await screen.findAllByText('Campari')
+    await user.click(screen.getByRole('button', { name: /Spunta quello che manca/ }))
+    await user.click(screen.getByRole('button', { name: 'Togli Campari dall’ordine' }))
+    expect(screen.getByLabelText('Ordina Campari (Nova)')).not.toBeChecked()
+  })
+
+  // Come il modello (REQ-MAG-039): si somma, e quello che si è già scritto
+  // a mano vince. Se no il tasto cancellerebbe il lavoro fatto prima.
+  it('si somma a quello che c’è già, senza toccare i pezzi scritti a mano', async () => {
+    const user = userEvent.setup()
+    render(<PurchaseOrdersPanel />)
+    await screen.findAllByText('Campari')
+    scriviCampo(screen.getByLabelText('Pezzi di Campari (Nova)'), '7')
+    await user.type(screen.getByLabelText('Pezzi di Rum Zacapa (senza fornitore)'), '3')
+    await user.click(screen.getByRole('button', { name: /Spunta quello che manca/ }))
+    expect(screen.getByLabelText('Pezzi di Campari (Nova)')).toHaveValue(7)
+    expect(screen.getByLabelText('Ordina Gin Mare (Enofel)')).toBeChecked()
+    expect(within(carrello()).getByText('3× Rum Zacapa')).toBeInTheDocument()
+  })
+})
+
+// ── IL FILTRO PER ASSORTIMENTO (REQ-MAG-036) ─────────────────────────
+//
+// Flavio, 09/09: «mettere anche il filtro per assortimento, se è in
+// assortimento, premium, in linea o fuori assortimento», così l'ordine si
+// compone un pezzo alla volta — prima i premium, poi la linea — invece di
+// scorrere ottanta righe. La tendina è la stessa del magazzino.
+describe('il filtro per assortimento', () => {
+  it('scelto «Premium» in tabella resta solo il Rum, e l’ordine non cambia', async () => {
+    const user = userEvent.setup()
+    render(<PurchaseOrdersPanel />)
+    await screen.findAllByText('Campari')
+    await user.type(screen.getByLabelText('Pezzi di Campari (Nova)'), '2')
+    await user.click(screen.getByRole('button', { name: '⚗️ Assortimento' }))
+    await user.click(screen.getByRole('button', { name: /Premium/ }))
+    expect(righe().map((r) => r.textContent)).toEqual(expect.arrayContaining([expect.stringContaining('Rum Zacapa')]))
+    expect(screen.queryByLabelText('Ordina Campari (Nova)')).not.toBeInTheDocument()
+    expect(screen.queryByLabelText('Ordina Amaro Lucano (senza fornitore)')).not.toBeInTheDocument()
+    // La riga filtrata via resta nell'ordine: il filtro guarda, non toglie.
+    expect(within(carrello()).getByText('2× Campari')).toBeInTheDocument()
+  })
+
+  it('«Togli il filtro» riporta tutte le righe', async () => {
+    const user = userEvent.setup()
+    render(<PurchaseOrdersPanel />)
+    await screen.findAllByText('Campari')
+    await user.click(screen.getByRole('button', { name: '⚗️ Assortimento' }))
+    await user.click(screen.getByRole('button', { name: /Fuori assortimento/ }))
+    expect(screen.queryByLabelText('Ordina Campari (Nova)')).not.toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: /Togli il filtro/ }))
+    expect(screen.getByLabelText('Ordina Campari (Nova)')).toBeInTheDocument()
   })
 })
 
@@ -268,11 +337,12 @@ describe('i campi si compilano sulla riga', () => {
   // ordinato a quel fornitore» (Flavio): due righe dello stesso prodotto
   // allo stesso fornitore sono un doppione, e un doppione si paga due volte.
   it('un fornitore già usato per quel prodotto non si può riscegliere', async () => {
+    const user = userEvent.setup()
     render(<PurchaseOrdersPanel />)
     await screen.findAllByText('Campari')
-    // La preselezione arriva un attimo dopo il primo disegno: è lei a
-    // mettere il Campari di Nova nell'ordine, ed è per quello che Nova si
+    // Il Campari di Nova entra nell'ordine, ed è per quello che Nova si
     // spegne sull'altra riga.
+    await user.click(screen.getByLabelText('Ordina Campari (Nova)'))
     const opzione = () =>
       [...screen.getByLabelText('Fornitore per Campari (Enofel)').options].find((o) => o.value === 'nova')
     await waitFor(() => expect(opzione()).toBeDisabled())
@@ -312,7 +382,8 @@ describe('il tocco sulla riga', () => {
     render(<PurchaseOrdersPanel />)
     await screen.findAllByText('Campari')
     const spunta = screen.getByLabelText('Ordina Campari (Nova)')
-    expect(spunta).toBeChecked() // preselezionato: è esaurito
+    await user.click(spunta)
+    expect(spunta).toBeChecked()
     await user.click(screen.getByLabelText('Pezzi di Campari (Nova)'))
     expect(spunta).toBeChecked()
     await user.click(screen.getByLabelText('Totale di Campari (Nova)'))

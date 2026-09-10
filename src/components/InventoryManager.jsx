@@ -61,7 +61,6 @@ import {
   contenutoDelPezzo,
   inventorySummary,
   filterItems,
-  ASSORTIMENTI,
   assortimentoDi,
   ETICHETTA_ASSORTIMENTO,
   mancaNellaScheda,
@@ -89,6 +88,8 @@ import SortTh from './SortTh.jsx'
 import SectionPanels from './SectionPanels.jsx'
 import { IconFornitore } from './Icons.jsx'
 import Tendina from './Tendina.jsx'
+import FiltroAssortimento from './FiltroAssortimento.jsx'
+import { ASSORTIMENTO_NOME, toggleVoce } from '../lib/assortimento.js'
 import ConfirmDialog from './ConfirmDialog.jsx'
 import { useSottosezioni } from '../lib/sottosezioni.js'
 import { usePaginaPiena } from '../lib/paginaPiena.js'
@@ -111,32 +112,8 @@ const GESTIONE_LABEL = { pz: 'pezzi', g: 'peso', ml: 'liquidi', U: 'unità gener
 // linea" non porta niente: è la normalità, e un segno su tutto non segna nulla.
 // Il chip del filtro porta lo STESSO segno che compare nella riga: è lì che
 // si impara cosa vuol dire il bollino, senza una legenda a parte da cercare.
-const ASSORTIMENTO_LABEL = {
-  assortimento: <>📦 In assortimento</>,
-  linea: <>🍾 In linea</>,
-  premium: <>👑 Premium</>,
-  out: (
-    <>
-      <span className="badge-empty">OUT</span> Fuori assortimento
-    </>
-  ),
-}
-// Gli stessi nomi, in parole: servono al tasto della tendina, che deve dire
-// cosa è scelto senza doversi aprire.
-const ASSORTIMENTO_NOME = {
-  assortimento: 'In assortimento',
-  linea: 'In linea',
-  premium: 'Premium',
-  out: 'Fuori assortimento',
-}
-const ASSORTIMENTO_TITOLO = {
-  assortimento: 'Si tiene, senza niente di speciale',
-  linea: 'I primi da controllare prima di una serata',
-  // «Bottiglie premium» dava per scontato che qui dentro ci fossero solo
-  // bottiglie: un gestionale deve restare generico (REQ-MAG-019).
-  premium: 'I prodotti buoni',
-  out: 'Fuori assortimento: non si ricompra',
-}
+// Le etichette e le voci del filtro stanno in `FiltroAssortimento.jsx`,
+// perché lo stesso filtro sta anche nel nuovo ordine al fornitore.
 // Il segno della SCHEDA DA COMPLETARE (REQ-MAG-032), accanto al nome come la
 // coroncina del premium: un prodotto nato da una consegna si riconosce
 // scorrendo la lista, senza doverlo aprire.
@@ -447,8 +424,7 @@ function ProductsPanel() {
   // Assortimento: si possono tenere accesi PIÙ valori insieme (linea +
   // premium, linea + out…). Vuoto = si vede tutto.
   const [assortimenti, setAssortimenti] = useState([])
-  const toggleAssortimento = (k) =>
-    setAssortimenti((cur) => (cur.includes(k) ? cur.filter((x) => x !== k) : [...cur, k]))
+  const toggleAssortimento = (k) => setAssortimenti((cur) => toggleVoce(cur, k))
 
   // Riga espansa + carico in corso
   const [invView, setInvView] = useState('lista') // 'lista' | 'card' — default LISTA
@@ -1055,22 +1031,7 @@ function ProductsPanel() {
               <strong>{n}</strong>
             </button>
           ))}
-          <div className="tendina-titolo">Assortimento</div>
-          {ASSORTIMENTI.map((k) => {
-            const quanti = items.filter((it) => assortimentoDi(it) === k).length
-            return (
-              <button
-                key={k}
-                type="button"
-                className={`tendina-voce${assortimenti.includes(k) ? ' scelta' : ''}`}
-                onClick={() => toggleAssortimento(k)}
-                title={ASSORTIMENTO_TITOLO[k]}
-              >
-                <span>{ASSORTIMENTO_LABEL[k]}</span>
-                <strong>{quanti}</strong>
-              </button>
-            )
-          })}
+          <FiltroAssortimento items={items} scelti={assortimenti} onToggle={toggleAssortimento} />
           {(assortimenti.length > 0 || statusFilter !== 'all') && (
             <button
               type="button"

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   catalogoOrdinabile,
   filtraCatalogo,
@@ -37,6 +37,9 @@ import { formatPrice } from '../lib/orderStatus.js'
 import SortTh from './SortTh.jsx'
 import RiepilogoOrdini from './RiepilogoOrdini.jsx'
 import ModelliOrdine from './ModelliOrdine.jsx'
+import Tendina from './Tendina.jsx'
+import FiltroAssortimento from './FiltroAssortimento.jsx'
+import { riassuntoAssortimento, toggleVoce } from '../lib/assortimento.js'
 
 // ── NUOVO ORDINE: UNA TABELLA SOLA, E L'ORDINE DI FIANCO (REQ-MAG-036) ─
 //
@@ -72,6 +75,8 @@ export default function NuovoOrdinePanel({
 }) {
   const [query, setQuery] = useState('')
   const [filtroFornitore, setFiltroFornitore] = useState('all')
+  const [assortimenti, setAssortimenti] = useState([])
+  const toggleAssortimento = (k) => setAssortimenti((cur) => toggleVoce(cur, k))
   const [sort, setSort] = useState({ col: 'nome', dir: 'asc' })
   const toggleSort = (col) =>
     setSort((s) => (s.col === col ? { col, dir: s.dir === 'asc' ? 'desc' : 'asc' } : { col, dir: 'asc' }))
@@ -90,9 +95,6 @@ export default function NuovoOrdinePanel({
   // fornitore appena confermato sparirebbe nell'istante della conferma.
   const [inRevisione, setInRevisione] = useState(null)
   const [confermati, setConfermati] = useState({})
-  // La preselezione si fa UNA VOLTA SOLA: il magazzino si ricarica anche
-  // dopo un salvataggio, e rifarla cancellerebbe le spunte tolte a mano.
-  const preselezionato = useRef(false)
 
   // FUORI LINEA IN TABELLA SÌ, PRESELEZIONATO NO. Prima gli `out` erano
   // esclusi dal catalogo: così però non c'era modo di farli rientrare, e
@@ -104,36 +106,40 @@ export default function NuovoOrdinePanel({
   const perChiave = useMemo(() => new Map(catalogo.map((r) => [r.key, r])), [catalogo])
 
   const visibili = useMemo(
-    () => ordinaCatalogo(filtraCatalogo(catalogo, { query, supplierId: filtroFornitore }), sort),
-    [catalogo, query, filtroFornitore, sort]
+    () =>
+      ordinaCatalogo(
+        filtraCatalogo(catalogo, { query, supplierId: filtroFornitore, assortimenti }),
+        sort
+      ),
+    [catalogo, query, filtroFornitore, assortimenti, sort]
   )
   const finestra = useMemo(() => visibili.slice(0, mostrate), [visibili, mostrate])
 
-  useEffect(() => {
-    if (preselezionato.current || catalogo.length === 0) return
-    preselezionato.current = true
-    const pre = preselezioneIniziale(catalogo)
+  // QUELLO CHE MANCA SI SPUNTA A RICHIESTA, NON ALL'APERTURA. La tabella
+  // partiva con gli esauriti e i sotto soglia già spuntati, e al banco
+  // erano ottantasei righe da togliere una a una prima di ordinare
+  // (Flavio, vocale del 09/09/2026: «ogni volta che faccio nuovo ordine
+  // appaiono questi 86 prodotti che devo eliminare [...] compare vuoto»).
+  // Il magazzino ha molti prodotti a giacenza zero mai inventariati, e per
+  // la preselezione sono tutti «esauriti»: la proposta è giusta nel
+  // ragionamento e sbagliata nei numeri. Resta come gesto — un tasto che
+  // dice quante righe spunterebbe — e si somma a quello che c'è già, come
+  // fa un modello: quello che è stato scritto a mano vince.
+  const daSpuntare = useMemo(() => preselezioneIniziale(catalogo), [catalogo])
+  function spuntaQuelloCheManca() {
     const iniziali = {}
-    for (const [key, qty] of pre) {
+    for (const [key, qty] of daSpuntare) {
       iniziali[key] = { qty: String(qty), supplier_id: perChiave.get(key)?.supplier_id ?? null }
     }
-    // LA PRESELEZIONE SI AGGIUNGE, NON SOSTITUISCE: quello che è già stato
-    // scritto vince. Prima qui c'era `setSelezioni(iniziali)`, che buttava via
-    // l'intero stato — e questo effetto gira DOPO il primo disegno delle
-    // righe, quindi chiunque tocchi un campo in quella finestra si vedeva
-    // sparire quello che aveva appena scritto, senza un errore e senza un
-    // segno. L'ha trovato la CI, dove la macchina è più lenta: due colli
-    // scritti tornavano a uno. Sul tablet del banco, con 388 prodotti e 367
-    // listini da mettere in fila, quella finestra non è zero.
     setSelezioni((prev) => uniscePreselezione(iniziali, prev))
-  }, [catalogo, perChiave])
+  }
 
   // Cambiando filtro, ricerca o ordinamento si riparte dalla prima finestra:
   // restare a quattrocento righe caricate dopo aver cercato «campari» vuol
   // dire disegnare tutto il magazzino per mostrarne due.
   useEffect(() => {
     setMostrate(PASSO_RIGHE)
-  }, [query, filtroFornitore, sort])
+  }, [query, filtroFornitore, assortimenti, sort])
 
   const scelte = useMemo(
     () => righeScelte(selezioni, { perChiave, listini, suppliers }),
@@ -283,8 +289,8 @@ export default function NuovoOrdinePanel({
     <div className="card ordine-composizione">
       <strong>Nuovo ordine</strong>
       <p className="muted small" style={{ marginTop: 4 }}>
-        Sono già spuntati i prodotti esauriti o sotto la soglia di riordino.
-        Il fornitore e i pezzi si cambiano sulla riga; a destra l’ordine in
+        Spunta i prodotti da ordinare, o scrivi quanti pezzi ne servono. Il
+        fornitore e i pezzi si cambiano sulla riga; a destra l’ordine in
         composizione, diviso per fornitore.
       </p>
 
@@ -320,6 +326,38 @@ export default function NuovoOrdinePanel({
               <option key={s.id} value={s.id}>{s.name}</option>
             ))}
           </select>
+        </span>
+        <span>
+          <label>Assortimento</label>
+          <Tendina
+            etichetta="Filtra per assortimento"
+            attivo={assortimenti.length > 0}
+            riassunto={`⚗️ ${riassuntoAssortimento(assortimenti)}`}
+          >
+            <FiltroAssortimento items={items} scelti={assortimenti} onToggle={toggleAssortimento} />
+            {assortimenti.length > 0 && (
+              <button
+                type="button"
+                className="btn ghost small block"
+                style={{ marginTop: 6 }}
+                onClick={() => setAssortimenti([])}
+              >
+                ✕ Togli il filtro
+              </button>
+            )}
+          </Tendina>
+        </span>
+        <span>
+          <label>Quello che manca</label>
+          <button
+            type="button"
+            className="btn ghost small"
+            onClick={spuntaQuelloCheManca}
+            disabled={daSpuntare.size === 0}
+            title="Spunta i prodotti esauriti o sotto la soglia di riordino, e quelli in assortimento senza un ordine"
+          >
+            ☑ Spunta quello che manca ({daSpuntare.size})
+          </button>
         </span>
       </div>
 

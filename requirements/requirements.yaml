@@ -7462,6 +7462,26 @@ requirements:
       spuntati di partenza i prodotti FINITI o SOTTO LA SOGLIA di riordino
       impostata sul prodotto. Chi apre la schermata trova gia' fatto il lavoro
       di girare il magazzino.
+      RIPENSATA IL 09/09/2026, dopo un anno di uso: la schermata SI APRE
+      VUOTA. Flavio, in un audio: «quando vado a creare un nuovo ordine mi
+      da' gia' ottantasei prodotti precompilati, e non e' una cosa buona,
+      perche' me li devo levare uno alla volta». Con un magazzino vero — e
+      con la regola di REQ-MAG-039 che spunta anche l'assortimento senza un
+      ordine — la proposta era diventata un lavoro di cancellazione, riga per
+      riga, prima di poter cominciare. Il conto delle scorte non e' sparito:
+      e' diventato un TASTO, «Spunta quello che manca (N)», nella riga dei
+      filtri, che dice quante righe spunterebbe e resta spento quando non ce
+      ne sono. Si SOMMA a quello che c'e' gia' come fa un modello, e i pezzi
+      scritti a mano vincono: un aiuto che si chiede e' un aiuto, uno che
+      arriva da solo ottantasei volte e' un ostacolo.
+      IL FILTRO PER ASSORTIMENTO (09/09/2026), stesse parole: «mettere anche
+      il filtro per assortimento, se e' in assortimento, premium, in linea o
+      fuori assortimento». E' la stessa tendina del magazzino (REQ-MAG-007),
+      con lo stesso componente (`FiltroAssortimento`) e la stessa regola:
+      nessuna scelta = tutto; chi non ha uno stato e' «in assortimento». Il
+      filtro GUARDA e non toglie: una riga gia' nell'ordine resta nell'ordine
+      anche se il filtro la nasconde. Serve a comporre a pezzi — prima i
+      premium, poi la linea — invece di scorrere ottanta righe.
       NON SI PRECOMPILA CHI E' FUORI LINEA: «se e' fuori linea non viene
       considerato nella precompilazione dell'ordine» (utente, 27/08). Un
       prodotto `out` si puo' sempre ordinare a mano — e' cosi' che rientra —
@@ -7544,8 +7564,9 @@ requirements:
       IL FUORI LINEA ADESSO E' IN TABELLA. Prima gli `out` erano esclusi dal
       catalogo ordinabile (REQ-MAG-007, «non si ricompra»): cosi' pero' non
       c'era modo di farli rientrare, e ordinarne uno e' esattamente il gesto
-      con cui rientrano. Restano fuori dalla PRESELEZIONE, che e' quello che
-      l'utente ha chiesto, e portano scritto «fuori linea» accanto al nome.
+      con cui rientrano. Restano fuori da «Spunta quello che manca», che e'
+      quello che l'utente ha chiesto, e portano scritto «fuori linea» accanto
+      al nome.
       IL TOTALE SI CORREGGE, IL €/pz NO. La colonna del prezzo unitario e' il
       LISTINO di quel fornitore e resta di sola lettura: e' il dato che dice
       quanto ci si aspetta di pagare, e non deve mettersi a ballare mentre si
@@ -7553,8 +7574,8 @@ requirements:
       prezzo che finisce sull'ordine (totale / pezzi). Cambiando i pezzi o il
       fornitore la correzione si perde: valeva per QUEI pezzi da QUEL
       fornitore.
-      LA PRESELEZIONE PRENDE UNA RIGA SOLA PER PRODOTTO — quella del
-      fornitore dell'ULTIMO ACQUISTO — perche' lo stesso Campari su due
+      «SPUNTA QUELLO CHE MANCA» PRENDE UNA RIGA SOLA PER PRODOTTO — quella
+      del fornitore dell'ULTIMO ACQUISTO — perche' lo stesso Campari su due
       listini ha due righe, e spuntarle tutte e due vorrebbe dire comprarlo
       due volte.
       I DUE SUGGERIMENTI DI REQ-MAG-029 (chi e' l'ultimo acquisto, chi e' il
@@ -7576,6 +7597,7 @@ requirements:
     priority: P2
     test_cases:
       - tests/unit/composizioneOrdine.test.js
+      - tests/unit/listini.test.js
       - tests/component/NuovoOrdineTabella.test.jsx
 
   - id: REQ-MAG-037
