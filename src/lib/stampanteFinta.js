@@ -202,8 +202,13 @@ export function creaStampanteFinta(titolo = 'Stampa') {
         finta.onreceive?.({ success: false, code: 'ASB_NO_PAPER', status: 0 })
         return finta
       }
-      const logo = pezzi.find((p) => p.tipo === 'logo')?.url || null
-      mostra(componi(pezzi), titolo, logo)
+      // UN LAVORO VUOTO È UNA DOMANDA, NON UNA STAMPA: è il battito
+      // (BUG-107), il modo Epson di chiedere lo stato senza far uscire
+      // carta. La vera risponde e basta; anche la finta, senza facsimile.
+      if (pezzi.length) {
+        const logo = pezzi.find((p) => p.tipo === 'logo')?.url || null
+        mostra(componi(pezzi), titolo, logo)
+      }
       pezzi.length = 0
       // Stampante muta: la carta esce e la conferma non arriva mai. È il
       // caso peggiore da riconoscere, e il solo che questa simulazione
@@ -214,7 +219,6 @@ export function creaStampanteFinta(titolo = 'Stampa') {
       return finta
     },
     onreceive: null,
-    ondisconnect: null,
   }
   return finta
 }

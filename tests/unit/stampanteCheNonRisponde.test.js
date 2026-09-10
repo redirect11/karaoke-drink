@@ -14,9 +14,13 @@
 // «ok», e ogni invio finiva in un collegamento che non c'era più: nessun
 // errore, nessun blocco, nessuna carta.
 //
-// LA CURA: si smette di chiedere all'SDK e si ascolta la STAMPANTE, che
-// quei fatti li dice da sé (`startMonitor` + `onpoweroff` / `onoffline` /
-// `ononline` / coperchio / carta). L'app non ascoltava nessuno di questi.
+// LA CURA, in tre giri. Primo (BUG-102): si smette di chiedere all'SDK e si
+// ascolta la STAMPANTE. Secondo (BUG-105): l'interrogazione dell'SDK, che
+// passava da un canale suo, dichiarava morta una stampante viva, e si
+// spegne. Terzo (BUG-107): la domanda si fa sul CANALE DELLE STAMPE — un
+// lavoro vuoto ogni mezzo minuto, il modo Epson di chiedere lo stato senza
+// far uscire carta — e i ganci dell'SDK per il socket che cade vengono
+// attaccati all'oggetto giusto, dove per un anno non erano stati.
 //
 // Questi test guardano la cosa dal lato del DANNO: che il collegamento
 // morto venga mollato, che qualcuno lo venga a sapere, e — la parte che
@@ -34,30 +38,48 @@ let rispostaPer
 // chiudere e abbandonare, e sulla stampante vera è la sessione che si
 // libera invece di restare mezza aperta.
 let chiusure
+// I dispositivi (`ePOSDevice`) creati: è su QUESTI che l'SDK alza
+// `ondisconnect` e `onreconnecting`, non sulla testina (BUG-107).
+let dispositivi
 
 function accendiLaStampante() {
   testine = []
   invii = []
   chiusure = []
+  dispositivi = []
   window.epson = {
     ePOSDevice: class {
       constructor() {
         this.DEVICE_TYPE_PRINTER = 'printer'
+        this.ondisconnect = null
+        this.onreconnecting = null
+        this.onreconnect = null
+        dispositivi.push(this)
       }
       connect(_ip, _porta, cb) {
         cb('OK')
       }
       createDevice(_nome, _tipo, _opzioni, cb) {
+        // Il builder dell'SDK accumula comandi e `send()` li manda tutti:
+        // un invio SENZA comandi è il battito, e la differenza fra i due
+        // è tutto ciò che questi test devono poter vedere.
+        const comandi = []
+        const scrive = () => comandi.push(1)
         const testina = {
           ALIGN_LEFT: 'l', ALIGN_CENTER: 'c', ALIGN_RIGHT: 'r',
           COLOR_1: 1, CUT_FEED: 1,
-          addTextLang: () => {}, addTextSmooth: () => {}, addTextAlign: () => {},
-          addTextSize: () => {}, addTextStyle: () => {}, addText: () => {},
-          addFeedLine: () => {}, addCut: () => {}, addImage: () => {},
-          addImageUrl: () => {}, clearCommandBuffer: () => {},
+          addTextLang: scrive, addTextSmooth: scrive, addTextAlign: scrive,
+          addTextSize: scrive, addTextStyle: scrive, addText: scrive,
+          addFeedLine: scrive, addCut: scrive, addImage: scrive,
+          addImageUrl: scrive,
+          clearCommandBuffer: () => {
+            comandi.length = 0
+          },
           send: () => {
-            invii.push({ testina })
-            const res = rispostaPer(invii.length, testina)
+            const vuoto = comandi.length === 0
+            comandi.length = 0
+            invii.push({ testina, vuoto })
+            const res = rispostaPer(invii.length, testina, vuoto)
             if (res) testina.onreceive?.(res)
           },
           // Il monitor vero è una domanda lunga alla stampante. Qui basta
@@ -75,7 +97,6 @@ function accendiLaStampante() {
             return true
           },
           onreceive: null,
-          ondisconnect: null,
           // Come nell'SDK vero: la costante sta sull'oggetto, e `status` è
           // quello che la STAMPANTE ha risposto all'ultimo giro del
           // monitor. Accendendoci il segno «nessuna risposta» si finge
@@ -88,6 +109,9 @@ function accendiLaStampante() {
       }
       disconnect() {
         chiusure.push(this)
+        // Come nell'SDK vero: chiudere alza `ondisconnect` NELLO STESSO
+        // GIRO. Chi chiude deve aspettarselo.
+        this.ondisconnect?.()
       }
       isConnected() {
         // IL PUNTO DI TUTTA LA FACCENDA: l'SDK dice sempre di sì. È quello
@@ -103,6 +127,11 @@ const respira = async (giri = 40) => {
   for (let i = 0; i < giri; i++) await Promise.resolve()
 }
 const ultima = () => testine[testine.length - 1]
+const ultimoDispositivo = () => dispositivi[dispositivi.length - 1]
+// Stampe e battiti passano dalla stessa `send()`: li distingue solo il
+// fatto che il battito non ha comandi dentro.
+const stampe = () => invii.filter((i) => !i.vuoto)
+const battiti = () => invii.filter((i) => i.vuoto)
 
 beforeEach(() => {
   // Il printer è un singleton di modulo: ogni prova riparte da capo.
@@ -145,19 +174,20 @@ async function avvisi() {
 // «esce spesso questo avviso e la stampa è molto lenta, ci mette molti
 // secondi per stampare la chiusura dell'ordine».
 //
-// Non poteva funzionare da lì: `startMonitor()` interroga la stampante su
-// un canale HTTP suo, e per il browser è una richiesta verso un'ALTRA
-// ORIGINE — l'app sta su un dominio pubblico, la stampante è un indirizzo
-// sulla rete del locale. Serve il permesso esplicito dell'apparecchio, e la
-// stampante non lo dà. Il collegamento delle stampe è un WebSocket, che
-// quel permesso non lo chiede: per questo la carta usciva mentre il monitor
-// giurava che non rispondeva.
+// Il danno, visto al banco: ogni dieci secondi il monitor falliva, alzava
+// `onpoweroff`, e il collegamento veniva buttato. La stampa dopo rifaceva
+// la stretta di mano — che con un certificato auto-firmato su iPad costa
+// secondi. Avvisi a raffica e stampe lente erano la stessa cosa vista da
+// due lati.
 //
-// E il danno non era l'avviso falso: ogni dieci secondi il monitor
-// falliva, alzava `onpoweroff`, e il collegamento veniva buttato. La stampa
-// dopo rifaceva la stretta di mano — che con un certificato auto-firmato su
-// iPad costa secondi. Avvisi a raffica e stampe lente erano la stessa cosa
-// vista da due lati.
+// PERCHÉ FALLISSE È UN'IPOTESI (vedi `ascoltaLaStampante` in printer.js):
+// `startMonitor()` interroga la stampante su un canale HTTP suo, verso
+// un'altra origine e con intestazioni che chiedono al browser un permesso
+// preventivo che la stampante forse non dà. Non è verificato — la stretta
+// di mano di socket.io passa dalla stessa origine e funziona. Quel che
+// conta è la lezione: una diagnostica su un canale DIVERSO da quello delle
+// stampe può sbagliarsi per conto suo, e se può buttare il collegamento il
+// suo errore diventa un guasto vero. Da qui il battito (più sotto).
 describe('il monitor non si accende', () => {
   it('nessuna interrogazione parte alla stretta di mano', async () => {
     const P = await import('../../src/lib/printer.js')
@@ -295,8 +325,8 @@ describe('un guaio della carta non è un collegamento morto', () => {
 })
 
 describe('tre invii che nessuno raccoglie sono una strada chiusa', () => {
-  // La rete per quando il monitor non c'è: firmware vecchio, o la domanda
-  // lunga bloccata dal browser.
+  // La regola vale per le stampe e, più sotto, per i battiti: passano
+  // dalla stessa strada.
   it('uno solo no: «non lo sappiamo» resta la risposta onesta', async () => {
     rispostaPer = () => undefined
     const P = await import('../../src/lib/printer.js')
@@ -413,24 +443,180 @@ describe('e niente di tutto questo rompe quello che c’era', () => {
   })
 })
 
-// ── E LA STAMPA CHE CONTA PARTE SU UN COLLEGAMENTO PROVATO ───────────
+// ── IL BATTITO: UN LAVORO VUOTO SUL CANALE DELLE STAMPE (BUG-107) ─────
 //
-// Il monitor scopre la morte del collegamento, ma col suo giro: se muore
-// tre secondi prima della chiusura di cassa, dieci secondi non fanno in
-// tempo. E la chiusura è proprio la stampa che arriva dopo il buco più
-// lungo — durante il servizio le comande si susseguono, fra l'ultimo
-// scontrino e la chiusura passano ore.
+// Una stampante che sparisce in silenzio — cavo staccato, indirizzo
+// cambiato dal router, Wi-Fi caduto — non chiude nessun socket: il browser
+// non se ne accorge finché non prova a MANDARE qualcosa. È la sera del
+// 05/09: verde, socket morto, nessun evento. L'unico modo di scoprirlo è
+// mandare qualcosa e vedere se torna.
 //
-// Quindi prima di stampare, se il collegamento non è stato PROVATO di
-// recente, si fa quello che fa «Test stampa»: si butta e si rifà la stretta
-// di mano. Provato vuol dire una cosa sola: la stampante ha risposto.
-// LA FINESTRA È UN MINUTO (BUG-106). Era stata portata a dieci guardando la
-// lentezza, ed era la lettura sbagliata: questa finestra è il tempo in cui
-// si crede a un collegamento SENZA PROVA, e allungarla allarga il buco in
-// cui una stampa si perde in silenzio. «Metti che il collegamento cade due
-// secondi dopo: la prossima stampa funzionerà fra dieci minuti» — ed è
-// esattamente così che si comportava.
-describe('dopo una pausa lunga la stretta di mano si rifà, come fa «Test stampa»', () => {
+// Quel qualcosa è un documento VUOTO, ed è il modo ufficiale Epson di
+// chiedere lo stato senza stampare (manuale ePOS-Print XML, p. 56: «To
+// check the printer status without printing, send empty print data»).
+// Passa dallo stesso WebSocket delle stampe, si conta e si ascolta come
+// una stampa: una risposta prova che la strada è aperta ADESSO, tre
+// silenzi di fila la chiudono.
+describe('il battito', () => {
+  it('ogni mezzo minuto parte un lavoro vuoto, sulla stessa testina', async () => {
+    const P = await import('../../src/lib/printer.js')
+    await P.printTest()
+    await respira()
+    expect(battiti()).toHaveLength(0)
+
+    await vi.advanceTimersByTimeAsync(30000)
+    expect(battiti()).toHaveLength(1)
+    expect(battiti()[0].testina).toBe(ultima())
+
+    await vi.advanceTimersByTimeAsync(60000)
+    expect(battiti()).toHaveLength(3)
+    // E non ha fatto nascere nessun collegamento nuovo.
+    expect(testine).toHaveLength(1)
+  })
+
+  it('non entra nel registro delle stampe', async () => {
+    // Un rigo ogni mezzo minuto renderebbe il registro illeggibile: il
+    // battito è diagnostica, non una stampa.
+    const P = await import('../../src/lib/printer.js')
+    await P.printTest()
+    await respira()
+    await vi.advanceTimersByTimeAsync(90000)
+    expect(battiti()).toHaveLength(3)
+
+    const { statoRegistro } = await import('../../src/lib/registroStampe.js')
+    expect(statoRegistro().voci).toHaveLength(1)
+  })
+
+  it('finché risponde, il collegamento resta quello: niente strette di mano', async () => {
+    // Era la finestra di un minuto a farle rifare (BUG-106): col battito
+    // che risponde la prova è sempre fresca e la finestra non scade mai.
+    const P = await import('../../src/lib/printer.js')
+    await P.printTest()
+    await respira()
+
+    await vi.advanceTimersByTimeAsync(121000)
+    await P.printTest()
+    await respira()
+
+    expect(testine).toHaveLength(1)
+    expect(stampe()).toHaveLength(2)
+  })
+
+  it('un battito muto da solo non molla niente', async () => {
+    const P = await import('../../src/lib/printer.js')
+    await P.printTest()
+    await respira()
+
+    rispostaPer = () => undefined
+    await vi.advanceTimersByTimeAsync(36000)
+
+    expect(P.guastoStampante()).toBe(null)
+    expect(await avvisi()).toHaveLength(0)
+  })
+
+  it('tre battiti muti di fila: si molla e si dice', async () => {
+    // Il caso del 05/09, scoperto da solo entro un minuto e mezzo: tre
+    // battiti muti più i cinque secondi d'ascolto dell'ultimo.
+    const P = await import('../../src/lib/printer.js')
+    await P.printTest()
+    await respira()
+
+    rispostaPer = () => undefined
+    await vi.advanceTimersByTimeAsync(96000)
+    expect(battiti()).toHaveLength(3)
+
+    expect(P.guastoStampante()).toBe('la stampante non risponde')
+    expect((await avvisi())[0].body).toContain('non risponde')
+
+    // E la stampa dopo rifà la stretta di mano invece di parlare al vuoto.
+    rispostaPer = () => OK
+    await P.printTest()
+    await respira()
+    expect(testine).toHaveLength(2)
+    expect(stampe()[1].testina).toBe(ultima())
+  })
+
+  it('un collegamento mollato non lo riapre il battito', async () => {
+    // La stretta di mano costa e la fa la prima stampa che serve: un
+    // battito che riaprisse da sé rifarebbe la stretta di mano ogni mezzo
+    // minuto verso una stampante spenta.
+    const P = await import('../../src/lib/printer.js')
+    await P.printTest()
+    await respira()
+    ultima().onpoweroff()
+    await respira()
+    expect(testine).toHaveLength(1)
+
+    await vi.advanceTimersByTimeAsync(120000)
+
+    expect(testine).toHaveLength(1)
+    expect(battiti()).toHaveLength(0)
+  })
+
+  it('se risponde «non ce la faccio», si dice ma il collegamento resta', async () => {
+    // Carta finita scoperta dal battito, non dalla stampa: chi sta al banco
+    // lo sa PRIMA di battere il conto.
+    const P = await import('../../src/lib/printer.js')
+    await P.printTest()
+    await respira()
+
+    rispostaPer = () => ({ success: false, code: 'ASB_NO_PAPER', status: 0 })
+    await vi.advanceTimersByTimeAsync(30000)
+
+    expect(P.guastoStampante()).toBe('la carta è finita')
+    expect((await avvisi())[0].body).toContain('carta')
+    await P.printTest()
+    await respira()
+    expect(testine).toHaveLength(1)
+  })
+
+  it('lo stesso guaio detto dalla stampa e poi dal battito è un avviso solo', async () => {
+    // La carta finisce: la stampa fallisce e lo dice; mezzo minuto dopo il
+    // battito la trova ancora finita. È un fatto solo, con due titoli
+    // diversi sarebbero due strisce uguali — e chi le legge smetterebbe.
+    rispostaPer = () => ({ success: false, code: 'ASB_NO_PAPER', status: 0 })
+    const P = await import('../../src/lib/printer.js')
+    await P.printTest()
+    await respira()
+    expect(await avvisi()).toHaveLength(1)
+
+    await vi.advanceTimersByTimeAsync(30000)
+    expect(battiti()).toHaveLength(1)
+    expect(await avvisi()).toHaveLength(1)
+  })
+
+  it('e non sfasa il conto delle risposte: ogni esito resta sul suo foglio', async () => {
+    // Il battito si conta come un invio: se non lo facesse, la sua
+    // risposta finirebbe addosso alla stampa dopo, e nel registro un esito
+    // sul foglio sbagliato.
+    rispostaPer = (n, testina, vuoto) => {
+      if (vuoto) return OK
+      return n === 1 ? OK : { success: false, code: 'ASB_NO_PAPER', status: 0 }
+    }
+    const P = await import('../../src/lib/printer.js')
+    await P.printTest()
+    await respira()
+    await vi.advanceTimersByTimeAsync(60000)
+    await P.printTest()
+    await respira()
+
+    const { statoRegistro } = await import('../../src/lib/registroStampe.js')
+    const voci = statoRegistro().voci
+    expect(voci).toHaveLength(2)
+    // Il registro tiene l'ultima voce in cima.
+    expect(voci.map((v) => v.esito)).toEqual(['fallita', 'riuscita'])
+  })
+})
+
+// ── LA FINESTRA DI UN MINUTO RESTA COME RETE DI RISERVA (BUG-106) ────
+//
+// Prima del battito era la regola: prima di stampare, se la stampante non
+// aveva risposto da più di un minuto, si rifaceva la stretta di mano. Col
+// battito che risponde la finestra non scade mai; scade solo quando i
+// battiti sono muti — nel minuto e mezzo che il contatore dei muti impiega
+// a decidere — e allora la stampa che arriva in quel buco riparte da zero
+// invece di partire verso il vuoto. È l'ultima difesa, non la prima.
+describe('la finestra di un minuto, quando i battiti sono muti', () => {
   it('due stampe di fila non ne rifanno nessuna', async () => {
     const P = await import('../../src/lib/printer.js')
     await P.printTest()
@@ -442,23 +628,43 @@ describe('dopo una pausa lunga la stretta di mano si rifà, come fa «Test stamp
     // comanda era proprio quello che faceva fallire la prima stampa quando
     // l'eccezione del certificato era scaduta.
     expect(testine).toHaveLength(1)
-    expect(invii).toHaveLength(2)
+    expect(stampe()).toHaveLength(2)
   })
 
-  it('dopo un minuto senza risposte, la stampa dopo riparte da zero', async () => {
+  it('la stampa che arriva nel buco riparte da zero', async () => {
     const P = await import('../../src/lib/printer.js')
     await P.printTest()
     await respira()
 
-    // Il buco fra l'ultimo scontrino e la chiusura di cassa.
+    // Due battiti muti: non bastano ancora a mollare, ma dall'ultima
+    // risposta è passato più di un minuto.
+    rispostaPer = () => undefined
     await vi.advanceTimersByTimeAsync(61000)
+    expect(P.guastoStampante()).toBe(null)
+    rispostaPer = () => OK
     await P.printTest()
     await respira()
 
     expect(testine).toHaveLength(2)
     // E il foglio è uscito dalla testina NUOVA: prima finiva in quella
     // vecchia, cioè da nessuna parte.
-    expect(invii[1].testina).toBe(ultima())
+    expect(stampe()[1].testina).toBe(ultima())
+  })
+
+  it('e quel collegamento si chiude, non si abbandona', async () => {
+    const P = await import('../../src/lib/printer.js')
+    await P.printTest()
+    await respira()
+    rispostaPer = () => undefined
+    await vi.advanceTimersByTimeAsync(61000)
+    rispostaPer = () => OK
+    await P.printTest()
+    await respira()
+
+    // Abbandonarlo lascerebbe sulla stampante una sessione mezza aperta
+    // finché non scade da sé: una alla volta non è un problema, ripetuto a
+    // ogni pausa sì, perché di sessioni insieme ne regge poche.
+    expect(chiusure).toHaveLength(1)
   })
 
   it('ma dopo trenta secondi no: durante il servizio non si tocca niente', async () => {
@@ -466,7 +672,9 @@ describe('dopo una pausa lunga la stretta di mano si rifà, come fa «Test stamp
     await P.printTest()
     await respira()
 
+    rispostaPer = () => undefined
     await vi.advanceTimersByTimeAsync(30000)
+    rispostaPer = () => OK
     await P.printTest()
     await respira()
 
@@ -476,6 +684,7 @@ describe('dopo una pausa lunga la stretta di mano si rifà, come fa «Test stamp
   it('la stretta di mano appena fatta vale come prova', async () => {
     // Senza questo, la prima stampa dopo una riconnessione troverebbe il
     // collegamento già scaduto e ne farebbe un'altra, all'infinito.
+    rispostaPer = (_n, _t, vuoto) => (vuoto ? undefined : OK)
     const P = await import('../../src/lib/printer.js')
     await P.printTest()
     await respira()
@@ -507,43 +716,27 @@ describe('dopo una pausa lunga la stretta di mano si rifà, come fa «Test stamp
   })
 })
 
-// ── E PRIMA DI STAMPARE SI GUARDA COSA HA DETTO LEI ──────────────────
+// ── E PRIMA DI STAMPARE SI GUARDA COSA HA SCRITTO LEI ────────────────
 //
-// La finestra dei due minuti da sola non basta, ed è l'osservazione di chi
-// l'ha vista in faccia: se il collegamento muore tre secondi prima della
-// chiusura di cassa, né i dieci secondi del monitor né i due minuti fanno
-// in tempo. Ma non serve indovinare — il monitor a ogni giro scrive sulla
-// testina lo stato che la stampante ha risposto, e leggerlo costa zero.
-describe('lo stato della stampante si legge prima di stampare', () => {
+// L'SDK scrive sulla testina lo stato che la stampante ha risposto al
+// monitor, e quando smette di rispondere ci accende il segno «nessuna
+// risposta». Col monitor spento (BUG-105) oggi quel segno non lo accende
+// nessuno; leggerlo costa zero e resta per il giorno in cui tornasse
+// utile. Se c'è, vale subito: non si aspetta né un battito né la finestra.
+describe('lo stato scritto sulla testina si legge prima di stampare', () => {
   it('se ha detto di non rispondere, si riparte da zero senza aspettare', async () => {
     const P = await import('../../src/lib/printer.js')
     await P.printTest()
     await respira()
     const prima = ultima()
 
-    // Il monitor ha appena scoperto che non risponde: il segno resta
-    // scritto sulla testina. Non passa nemmeno un secondo.
+    // Il segno resta scritto sulla testina. Non passa nemmeno un secondo.
     prima.status = prima.ASB_NO_RESPONSE
     await P.printTest()
     await respira()
 
     expect(testine).toHaveLength(2)
-    expect(invii[1].testina).toBe(ultima())
-  })
-
-  it('e quel collegamento si chiude, non si abbandona', async () => {
-    const P = await import('../../src/lib/printer.js')
-    await P.printTest()
-    await respira()
-    ultima().status = ultima().ASB_NO_RESPONSE
-
-    await P.printTest()
-    await respira()
-
-    // Abbandonarlo lascerebbe sulla stampante una sessione mezza aperta
-    // finché non scade da sé: una alla volta non è un problema, ripetuto a
-    // ogni pausa sì, perché di sessioni insieme ne regge poche.
-    expect(chiusure).toHaveLength(1)
+    expect(stampe()[1].testina).toBe(ultima())
   })
 
   it('se invece sta bene non si tocca niente', async () => {
@@ -556,21 +749,102 @@ describe('lo stato della stampante si legge prima di stampare', () => {
     expect(testine).toHaveLength(1)
     expect(chiusure).toHaveLength(0)
   })
+})
 
-  it('col monitor spento lo stato non si aggiorna, e a rispondere resta la finestra', async () => {
-    // È il caso di TUTTI I GIORNI da BUG-105 in poi: il monitor non parte,
-    // quindi `status` non lo aggiorna nessuno e il controllo qui sopra tace
-    // per sempre. A dire quando rifare la stretta di mano resta la finestra
-    // — ed è per questo che non è stata tolta insieme al monitor.
+// ── I GANCI DELL'SDK, SULL'OGGETTO GIUSTO (BUG-107) ──────────────────
+//
+// L'SDK Epson avvisa quando il socket cade: `onreconnecting` mentre ci
+// riprova da solo (cinque volte ogni tre secondi), `ondisconnect` quando
+// si arrende. Li alza sul DISPOSITIVO (`ePOSDevice`), e fin dal primo
+// giorno l'app li aveva attaccati alla TESTINA, dove non scattano mai.
+// Tutte le cadute rumorose — stampante spenta, cavo staccato con la
+// stampante che chiude — l'SDK le sapeva e noi no.
+describe("i ganci dell'SDK stanno sul dispositivo, non sulla testina", () => {
+  it('sono attaccati al dispositivo', async () => {
     const P = await import('../../src/lib/printer.js')
     await P.printTest()
     await respira()
-    expect(testine).toHaveLength(1)
 
-    await vi.advanceTimersByTimeAsync(61000)
+    expect(typeof ultimoDispositivo().ondisconnect).toBe('function')
+    expect(typeof ultimoDispositivo().onreconnecting).toBe('function')
+    // E non più alla testina, che non li alzerebbe mai.
+    expect(ultima().ondisconnect).toBeUndefined()
+  })
+
+  it('«sto provando a ricollegarmi»: si molla, si chiude e si dice', async () => {
+    // In quel quarto di minuto `isConnected()` dice di sì e una stampa
+    // prenderebbe una strada che non arriva. Non si aspetta: si chiude,
+    // così l'SDK smette di provarci, e la stampa dopo riparte da zero.
+    const P = await import('../../src/lib/printer.js')
+    await P.printTest()
+    await respira()
+
+    ultimoDispositivo().onreconnecting()
+    await respira()
+
+    expect(chiusure).toHaveLength(1)
+    expect(P.guastoStampante()).toBe('la stampante non risponde')
+    expect((await avvisi())[0].body).toContain('non risponde')
+
+    await P.printTest()
+    await respira()
+    expect(testine).toHaveLength(2)
+    expect(stampe()[1].testina).toBe(ultima())
+  })
+
+  it('«mi sono arreso»: si molla e si dice, senza chiudere quel che è già chiuso', async () => {
+    const P = await import('../../src/lib/printer.js')
+    await P.printTest()
+    await respira()
+
+    ultimoDispositivo().ondisconnect()
+    await respira()
+
+    expect(chiusure).toHaveLength(0)
+    expect(P.guastoStampante()).toBe('la stampante non risponde')
+
+    await P.printTest()
+    await respira()
+    expect(testine).toHaveLength(2)
+  })
+
+  it('il gancio di un dispositivo già buttato non fa niente', async () => {
+    // `ondisconnect` arriva DOPO `onreconnecting`, a dispositivo già
+    // dimenticato — e magari dopo che la stampa seguente ne ha aperto uno
+    // nuovo. Buttare quello nuovo per una caduta di quello vecchio sarebbe
+    // un secondo danno.
+    const P = await import('../../src/lib/printer.js')
+    await P.printTest()
+    await respira()
+    const vecchio = ultimoDispositivo()
+    vecchio.onreconnecting()
+    await respira()
+    await P.printTest()
+    await respira()
+    expect(testine).toHaveLength(2)
+
+    vecchio.ondisconnect()
+    await respira()
     await P.printTest()
     await respira()
 
     expect(testine).toHaveLength(2)
+    expect(chiusure).toHaveLength(1)
+  })
+
+  it('chiudere noi non passa per una caduta', async () => {
+    // `disconnect()` dell'SDK alza `ondisconnect` nello stesso giro: se il
+    // gestore prendesse la nostra chiusura per una caduta, ogni «Test
+    // stampa» farebbe partire un avviso di stampante che non risponde.
+    const P = await import('../../src/lib/printer.js')
+    await P.printTest()
+    await respira()
+
+    P.disconnectPrinter()
+    await respira()
+
+    expect(chiusure).toHaveLength(1)
+    expect(P.guastoStampante()).toBe(null)
+    expect(await avvisi()).toHaveLength(0)
   })
 })

@@ -448,28 +448,30 @@ function scordaConnessione({ chiudendo = false } = {}) {
   // da sé. Una alla volta non è un problema; ripetuto a ogni pausa, sì:
   // l'apparecchio di sessioni contemporanee ne regge poche. Lì si chiude,
   // dentro un try perché non deve poter fermare la stampa che segue.
-  if (chiudendo) {
-    try {
-      _device?.disconnect()
-    } catch {
-      /* già caduta, o SDK in uno stato strano: si abbandona e basta */
-    }
-  }
+  //
+  // PRIMA SI DIMENTICA, POI SI CHIUDE. `disconnect()` dell'SDK richiama
+  // `ondisconnect` nello stesso giro, e quel gestore torna qui: se trovasse
+  // ancora il dispositivo in memoria lo prenderebbe per una caduta vera e
+  // rifarebbe tutto una seconda volta. Svuotando prima, il gestore vede che
+  // quel dispositivo non è più il nostro e lascia perdere.
+  const dispositivo = _device
   _printer = null
   _device = null
   _connectPromise = null
   dimenticaLAscolto()
+  if (chiudendo) {
+    try {
+      dispositivo?.disconnect()
+    } catch {
+      /* già caduta, o SDK in uno stato strano: si abbandona e basta */
+    }
+  }
 }
 
 // Termina la connessione corrente (se attiva).
 export function disconnectPrinter() {
   fermaBattito()
-  fermaIlMonitor(_printer)
-  try { _device?.disconnect() } catch { /* ignora */ }
-  _device = null
-  _printer = null
-  _connectPromise = null
-  dimenticaLAscolto()
+  scordaConnessione({ chiudendo: true })
 }
 
 // ── LA RISPOSTA DELLA STAMPANTE È DIAGNOSTICA (REQ-STAMPA-016, BUG-098)
@@ -654,32 +656,49 @@ function raccontaLaRisposta(idLavoro, che, res) {
 // finiva in un collegamento che non c'era più. Nessun errore, nessun
 // blocco, nessuna carta.
 //
-// LA CURA È SMETTERE DI CHIEDERLO ALL'SDK. La stampante quei fatti li dice
-// da sé — `startMonitor()` la fa interrogare a intervalli e alza
-// `onpoweroff` quando smette di rispondere, `onoffline` quando risponde ma
-// è fuori linea, `ononline` quando torna, più coperchio e carta. L'app non
-// ascoltava NESSUNO di questi: ascoltava solo la risposta ai singoli invii.
+// LA CURA È SMETTERE DI CHIEDERLO ALL'SDK E CHIEDERLO A LEI — sul canale
+// delle stampe, che è l'unico la cui risposta vale qualcosa. Il primo
+// tentativo (BUG-102, 06/09) era `startMonitor()` dell'SDK, che la
+// interroga su un canale HTTP suo: due sere dopo dichiarava morta ogni dieci
+// secondi una stampante che stampava benissimo (BUG-105). Il secondo è
+// questo, e non è un'invenzione nostra: È IL MODO UFFICIALE EPSON di
+// chiedere lo stato. Dal manuale ePOS-Print XML, pagina 56: «To check the
+// printer status without printing, send empty print data». Un documento
+// senza comandi — niente testo, niente avanzamento, niente taglio — e la
+// stampante risponde con l'esito e lo stato: carta, coperchio, fuori
+// linea. Il monitor stesso, dentro, manda esattamente questo (nel codice
+// Epson `sendStartMonitorCommand` parte da `new ePOSBuilder().toString()`,
+// cioè un documento vuoto); qui lo si manda sullo STESSO WebSocket delle
+// stampe invece che su un canale a parte.
 //
-// PERCHÉ IL MONITOR NON PUÒ ROMPERE NIENTE, che è la condizione con cui è
-// stato acceso. Non passa dal WebSocket delle stampe ma da una richiesta
-// sua; quando fallisce alza `onstatuschange`/`onpoweroff` e NON butta giù
-// il collegamento (nel codice Epson quella strada chiama `fireStatusEvent`,
-// non `fireErrorEvent` — è l'altra che farebbe `cleanup()`); non alza
-// `onreceive`, quindi non sballa il conto invii/risposte da cui dipende il
-// registro; e nessuna stampa lo aspetta, mai.
+// COSA DIMOSTRA UNA RISPOSTA: che la strada da cui escono gli scontrini è
+// aperta ADESSO — non che «la stampante è accesa», che è la domanda a cui
+// rispondeva il monitor e che non ci serviva. E cosa dimostra un silenzio:
+// niente, da solo (una risposta può perdersi); tre di fila sono un
+// collegamento morto, e allora si molla e si dice.
 //
-// L'INTERROGAZIONE È UNA DOMANDA LUNGA, non un martellamento: la richiesta
-// resta aperta fino a dieci secondi e la stampante risponde appena qualcosa
-// cambia — un coperchio aperto si sa in un secondo, e a riposo il traffico
-// è una richiesta ogni dieci secondi scarsi.
-const INTERVALLO_MONITOR = 10000
+// PERCHÉ SERVE, se il WebSocket chiuso già alza `ondisconnect`. Perché lo
+// alza solo se il socket SI CHIUDE. Una stampante che sparisce in silenzio
+// — cavo staccato, indirizzo cambiato dal router, Wi-Fi caduto — non chiude
+// niente: il browser non se ne accorge finché non prova a MANDARE qualcosa,
+// e il battito di socket.io in questa versione dell'SDK non aiuta (il
+// client si limita a rispondere ai battiti della stampante, e il suo
+// `heartbeatTimeout` è assegnato e mai letto). È la sera del 05/09: verde,
+// socket morto, nessun evento. L'unico modo di scoprire una morte
+// silenziosa è mandare qualcosa e vedere se torna.
+//
+// OGNI MEZZO MINUTO. Un collegamento caduto si scopre entro un minuto e
+// mezzo abbondante (tre battiti muti più l'ascolto), che è il tempo fra
+// due comande in una serata piena; e a riposo è un pacchetto di poche
+// centinaia di byte ogni trenta secondi, su una rete locale.
+const INTERVALLO_BATTITO = 30000
 
 // Quanti invii di fila possono restare senza risposta prima di dire che la
 // strada è chiusa. UNO non vuol dire niente — una risposta può perdersi, e
 // «non lo sappiamo» è la risposta onesta (BUG-098). TRE di fila no: quello
 // è un collegamento che non c'è più, e continuare a mandarci fogli dentro è
-// esattamente quello che è successo il 05/09. Serve da rete quando il
-// monitor non c'è (firmware vecchio, richiesta bloccata dal browser).
+// esattamente quello che è successo il 05/09. Vale per le stampe e per i
+// battiti allo stesso modo: passano dalla stessa strada.
 const INVII_MUTI_PRIMA_DI_MOLLARE = 3
 
 // L'ultimo guaio noto della STAMPANTE — non di una stampa. È quello che
@@ -703,65 +722,47 @@ function stampanteHaRisposto(andataBene) {
 
 // ── LA STAMPA CHE CONTA PARTE SU UN COLLEGAMENTO PROVATO ─────────────
 //
-// Il monitor scopre che la stampante non risponde piu', ma ci mette il suo
-// giro: se il collegamento muore tre secondi prima della chiusura di cassa,
-// dieci secondi non fanno in tempo. E la chiusura e' proprio la stampa che
-// arriva dopo il buco piu' lungo — durante il servizio le comande si
-// susseguono e il collegamento resta caldo, fra l'ultimo scontrino e la
-// chiusura passano ore.
+// PROVATO vuol dire UNA COSA SOLA: la stampante ha risposto a un invio —
+// una stampa o un battito, che passano dalla stessa strada. Non «l'SDK
+// dice che il socket e' su» (mente, BUG-102): l'SDK sa che un socket e'
+// caduto solo se qualcuno glielo chiude in faccia, e una stampante che
+// sparisce in silenzio non chiude niente.
 //
-// Quindi prima di stampare, se il collegamento non e' stato PROVATO di
+// Quindi prima di stampare, se il collegamento non e' stato provato di
 // recente, si fa quello che fa il tasto «Test stampa»: si butta e si rifa'
-// la stretta di mano. E' l'unico gesto che non chiede niente a nessuno —
-// chiedere «sei vivo?» all'SDK e' esattamente cio' che non funziona.
-//
-// PROVATO vuol dire UNA COSA SOLA: la stampante ha risposto a un invio. Non
-// «l'SDK dice che il socket e' su» (mente, BUG-102) e nemmeno «il monitor
-// gira»: il monitor alza `onstatuschange` solo quando lo stato CAMBIA, per
-// cui una stampante sana e ferma non dice niente, e prenderlo per battito
-// sarebbe un altro modo di credere a un silenzio.
+// la stretta di mano. E' l'unico gesto che non chiede niente a nessuno.
 //
 // PERCHE' NON PRIMA DI OGNI STAMPA, che era la proposta di partenza. La
 // connessione si tiene viva apposta: rifare la stretta di mano ogni volta
 // faceva fallire la prima stampa quando l'eccezione del certificato era
 // scaduta — cioe' in servizio, col cliente davanti — la stampante regge
 // poche connessioni, e ogni riconnessione azzera il conto degli invii senza
-// risposta, che e' la terza rete. Con la finestra si paga solo dove serve.
+// risposta. Con la finestra si paga solo dove serve.
 //
-// LA FINESTRA E' UN NUMERO SOLO, e sta qui perche' si possa cambiare senza
-// andare a cercare: a zero, si rifa' la stretta di mano prima di ogni
-// singola stampa.
 // UN MINUTO, E IL NUMERO VA LETTO PER QUELLO CHE È: non un'attesa prima di
 // stampare — nessuna stampa aspetta mai — ma la QUANTITÀ DI TEMPO IN CUI
-// SIAMO DISPOSTI A CREDERE A UN COLLEGAMENTO SENZA AVERNE PROVA.
+// SIAMO DISPOSTI A CREDERE A UN COLLEGAMENTO SENZA AVERNE PROVA. Allungarla
+// riduce le strette di mano e allarga il buco in cui una stampa parte
+// verso un collegamento morto e si perde in silenzio (BUG-106). Al banco
+// il foglio perso costa più dei due secondi della stretta di mano.
 //
-// Perché breve. Questa finestra è una scommessa sul tempo, non una
-// verifica: se il collegamento cade due secondi dopo l'ultima stampa, fino
-// alla scadenza l'app crede a una cosa falsa, e i fogli mandati in quel
-// buco si perdono in silenzio. Allungarla riduce le strette di mano e
-// allarga la finestra in cui si può perdere una stampa. Al banco il foglio
-// perso costa più dei due secondi: uno scontrino che non esce lo si scopre
-// col cliente davanti, mentre una stampa un po' più lenta la si vede e
-// basta.
+// COL BATTITO (BUG-107) QUESTA FINESTRA È LA RETE DI RISERVA, non la
+// regola: con una risposta ogni mezzo minuto la prova è sempre fresca e
+// qui non si entra mai. Ci si entra solo quando i battiti sono rimasti
+// muti — cioè nel minuto e mezzo che il contatore dei muti impiega a
+// decidere — e allora la stampa che arriva in quel buco riparte da zero
+// invece di partire verso il vuoto. È l'ultima difesa, non la prima.
 //
-// Il prezzo, dichiarato: nelle ore lente ogni stampa che arriva dopo più di
-// un minuto di silenzio si paga una stretta di mano — uno o due secondi.
-// Durante il servizio, con le comande una dietro l'altra, non si paga
-// niente.
-//
-// E resta una scommessa. La misura giusta è chiedere alla stampante se c'è,
-// sul canale delle stampe: finché non lo si fa, questo numero è il meno
-// peggio, non la soluzione.
+// Il numero sta qui perché si possa cambiare senza andare a cercare: a
+// zero, si rifà la stretta di mano prima di ogni singola stampa.
 const FRESCHEZZA_COLLEGAMENTO = 60000
 let _provataAlle = 0
 
-// SI CHIEDE ALLA STAMPANTE, NON ALL'SDK — ed è la differenza fra le due
-// domande che all'inizio avevamo confuso. «Il socket è vivo?» all'SDK non
-// si può chiedere: mente (BUG-102). Ma il monitor a ogni giro scrive sulla
-// testina lo stato che la STAMPANTE ha risposto, e quando smette di
-// rispondere ci accende dentro il segno «nessuna risposta». Leggerlo costa
-// zero: nessuna attesa, nessun traffico in più, e non è un'opinione — è
-// quello che ha detto lei, al massimo dieci secondi fa.
+// LO STATO CHE LA STAMPANTE HA SCRITTO SULLA TESTINA. L'SDK ci mette il
+// segno «nessuna risposta» quando il monitor fallisce; il monitor da noi
+// è spento (BUG-105), quindi oggi questo segno non lo accende nessuno.
+// Leggerlo costa zero e resta qui per il giorno in cui il monitor tornasse
+// utile — ma nessuna decisione può dipendere SOLO da questo.
 //
 // La costante si prende dall'oggetto invece di scrivere il numero a mano:
 // è roba dell'SDK, e un giorno potrebbe non valere più uno.
@@ -773,13 +774,13 @@ function stampanteHaDettoDiNonRispondere(prn) {
 
 function collegamentoDaRifare() {
   if (!_printer) return false
-  // 1. QUELLO CHE HA DETTO LEI. Se il monitor gira, questo arriva entro un
-  //    giro: molto prima che la finestra scada.
+  // 1. QUELLO CHE HA SCRITTO LEI sulla testina, se mai qualcuno ce lo
+  //    scrivesse (vedi sopra).
   if (stampanteHaDettoDiNonRispondere(_printer)) return true
-  // 2. LA RETE DI RISERVA, per quando il monitor non c'è — firmware che non
-  //    lo sostiene, richiesta bloccata. Senza monitor lo stato non si
-  //    aggiorna mai, quindi il controllo qui sopra tace e a rispondere
-  //    resta il tempo passato dall'ultima risposta vera.
+  // 2. IL TEMPO DALL'ULTIMA RISPOSTA VERA — di una stampa o di un battito.
+  //    Coi battiti che rispondono non scade mai; scade solo quando la
+  //    stampante è muta da più di un minuto, e allora ripartire da zero è
+  //    la cosa giusta.
   return Date.now() - _provataAlle >= FRESCHEZZA_COLLEGAMENTO
 }
 
@@ -788,23 +789,23 @@ function collegamentoDaRifare() {
 // stampa dopo deve rifare la stretta di mano invece di parlare al vuoto.
 // Carta finita e coperchio aperto no — quella è viva e ci parla, il
 // collegamento è buono, e buttarlo vorrebbe dire una riconnessione inutile
-// nel mezzo del servizio.
-function guaioDellaStampante(motivo, { mollaIlCollegamento = false } = {}) {
+// nel mezzo del servizio. `chiudendo` è la differenza fra abbandonare e
+// chiudere, spiegata in `scordaConnessione`.
+function guaioDellaStampante(motivo, { mollaIlCollegamento = false, chiudendo = false } = {}) {
   _guasto = motivo
-  if (mollaIlCollegamento) scordaConnessione()
+  if (mollaIlCollegamento) scordaConnessione({ chiudendo })
   avvisaDellaStampante(motivo)
 }
 
-// Come per le stampe non riuscite: lo stesso guaio non si ripete entro un
-// minuto. Con la stampante spenta il monitor lo scoprirebbe ogni dieci
-// secondi, e sei strisce identiche al minuto sono il modo migliore per
-// smettere di leggerle.
-let _ultimoAvvisoStampante = { motivo: '', quando: 0 }
-
+// Lo stesso guaio non si ripete entro un minuto, e LA MEMORIA È UNA SOLA
+// con quella delle stampe non riuscite: «la carta è finita» detto da una
+// stampa fallita e, mezzo minuto dopo, dal battito che la trova ancora
+// finita è un fatto solo, e va detto una volta. Due strisce uguali con
+// due titoli diversi sono il modo migliore per smettere di leggerle.
 function avvisaDellaStampante(motivo) {
   const adesso = Date.now()
-  if (motivo === _ultimoAvvisoStampante.motivo && adesso - _ultimoAvvisoStampante.quando < FINESTRA_AVVISO) return
-  _ultimoAvvisoStampante = { motivo, quando: adesso }
+  if (motivo === _ultimoAvviso.motivo && adesso - _ultimoAvviso.quando < FINESTRA_AVVISO) return
+  _ultimoAvviso = { motivo, quando: adesso }
   notify('Stampante', motivo, { tag: 'stato-stampante' })
 }
 
@@ -826,30 +827,34 @@ function ascoltaLaStampante(prn) {
   //
   // Acceso il 06/09 in buona fede, tolto il 08/09 dopo una serata al banco:
   // «esce spesso questo avviso e la stampa è molto lenta, ci mette molti
-  // secondi per stampare la chiusura dell'ordine».
+  // secondi per stampare la chiusura dell'ordine». Ogni dieci secondi il
+  // monitor falliva, alzava `onpoweroff`, e noi buttavamo il collegamento:
+  // la stampa dopo doveva rifare la stretta di mano, che con un
+  // certificato auto-firmato su iPad costa secondi. Avvisi a raffica e
+  // stampe lente erano la stessa cosa vista da due lati. Questo è il
+  // FATTO, visto al banco.
   //
-  // PERCHÉ NON PUÒ FUNZIONARE DA QUI. `startMonitor()` interroga la
-  // stampante su un canale HTTP suo (`/cgi-bin/epos/service.cgi`), e per il
-  // browser è una richiesta verso un'ALTRA ORIGINE: l'app sta su un dominio
-  // pubblico, la stampante è un indirizzo sulla rete del locale. Una
-  // richiesta così ha bisogno del permesso esplicito dell'apparecchio, e la
-  // stampante non lo dà. Il collegamento delle stampe invece è un
-  // WebSocket, che quel permesso non lo chiede: ecco perché la carta usciva
-  // mentre il monitor giurava che non rispondeva.
+  // PERCHÉ FALLISSE È UN'IPOTESI, e va detto così. `startMonitor()`
+  // interroga la stampante su un canale HTTP suo
+  // (`/cgi-bin/epos/service.cgi`) con intestazioni (`SOAPAction`,
+  // `If-Modified-Since`) che per il browser fanno di quella richiesta verso
+  // un'altra origine una richiesta «da autorizzare prima»: se la stampante
+  // non risponde al permesso, la richiesta muore prima di partire. È
+  // l'ipotesi più semplice, ma NON è verificata — la stretta di mano di
+  // socket.io passa dalla stessa origine, senza quelle intestazioni, e
+  // funziona; quindi non è «la stampante blocca tutto», è al più «blocca
+  // quel tipo di richiesta». L'alternativa: la richiesta arriva e la
+  // stampante risponde `status="0"`, che l'SDK tratta come «nessuna
+  // risposta». Da qui non si distingue; si distinguerebbe solo con la
+  // console del browser aperta al banco mentre il monitor gira.
   //
-  // E IL DANNO NON ERA SOLO L'AVVISO FALSO. Ogni dieci secondi il monitor
-  // falliva, alzava `onpoweroff`, e noi buttavamo il collegamento: la
-  // stampa dopo doveva rifare la stretta di mano, che con un certificato
-  // auto-firmato su iPad costa secondi. Avvisi a raffica e stampe lente
-  // erano la stessa cosa vista da due lati.
-  //
-  // I GESTORI RESTANO ATTACCATI QUI SOPRA apposta: non costano niente e
-  // sono già pronti se un domani l'app girasse sulla stessa rete della
-  // stampante — o se si desse alla stampante il permesso che le manca. A
-  // dire se il collegamento è vivo resta il canale che l'app usa davvero:
-  // gli invii senza risposta (INVII_MUTI_PRIMA_DI_MOLLARE), che sono una
-  // prova vera perché passano dalla stessa strada delle stampe.
-  void INTERVALLO_MONITOR
+  // NON SERVE SAPERLO PER ANDARE AVANTI. La lezione vera è un'altra: una
+  // diagnostica che vive su un canale DIVERSO da quello che vuole
+  // diagnosticare può sbagliarsi per conto suo — e se le si dà il potere
+  // di buttare il collegamento, il suo errore diventa un guasto vero. Da
+  // qui il battito (BUG-107): la stessa domanda, ma sul canale delle
+  // stampe. I gestori qui sopra restano attaccati: non costano niente, e se
+  // un domani il monitor tornasse utile sono già pronti.
 }
 
 function fermaIlMonitor(prn) {
@@ -871,7 +876,7 @@ function fermaIlMonitor(prn) {
 //
 // L'eccezione serve però solo alla STRETTA DI MANO. Finché il collegamento
 // resta aperto non si ricontratta niente. Quindi lo si tiene vivo: un
-// controllo ogni mezzo minuto e una riconnessione appena l'app torna in primo
+// battito ogni mezzo minuto e una riconnessione appena l'app torna in primo
 // piano. Così la stretta di mano avviene una volta a inizio serata invece che
 // a ogni scontrino — e se il certificato è caduto lo si scopre allora, non
 // davanti al cliente.
@@ -886,6 +891,37 @@ function fermaBattito() {
   _battito = null
 }
 
+// IL BATTITO È UN LAVORO VUOTO SUL CANALE DELLE STAMPE (BUG-107) — il modo
+// Epson di chiedere lo stato senza stampare, vedi INTERVALLO_BATTITO. Si
+// mette IN FILA come una stampa qualunque: il builder è uno solo, e un
+// battito partito mentre un ticket è a metà composizione manderebbe via
+// mezza comanda (BUG-086). E si conta e si ascolta come una stampa: una
+// risposta rimette a zero i muti e rinfresca la prova; tre silenzi di fila
+// buttano il collegamento e lo dicono, con la stessa regola delle stampe.
+//
+// Niente registro delle stampe: non è una stampa, e riempire il registro
+// di un rigo ogni mezzo minuto lo renderebbe illeggibile.
+function battitoDellaStampante() {
+  const mio = _codaStampa.then(() => {
+    const prn = _printer
+    // Senza collegamento non c'è niente da provare — e NON lo si apre
+    // apposta: la stretta di mano costa, e la fa la prima stampa che serve.
+    if (!prn) return
+    // Puliti: se chi c'era prima si è fermato a metà, i suoi pezzi non
+    // partono col battito.
+    prn.clearCommandBuffer?.()
+    _inviati += 1
+    ascoltaLaRisposta(prn, _inviati, (res) => {
+      // «Non ce la faccio»: carta, coperchio, fuori linea. La strada è
+      // aperta (ha risposto), ma la stampa dopo non uscirebbe: si dice.
+      if (!res?.success) guaioDellaStampante(motivoDellaRisposta(res))
+    })
+    prn.send()
+  })
+  // Un battito che inciampa non deve fermare la stampa dopo.
+  _codaStampa = mio.catch(() => {})
+}
+
 function avviaBattito() {
   fermaBattito()
   _battito = setInterval(() => {
@@ -894,12 +930,13 @@ function avviaBattito() {
       // è certa e si libera tutto. Quando dice di sì non prova niente —
       // risponde così anche mentre sta soltanto provando a riconnettersi
       // (BUG-102), ed è per questo che a dire se la stampante è viva adesso
-      // è LEI, col monitor, non questa riga.
+      // è LEI, rispondendo al battito, non questa riga.
       if (_device && !_device.isConnected()) scordaConnessione()
+      battitoDellaStampante()
     } catch {
       /* SDK in uno stato strano: si lascia stare */
     }
-  }, 30000)
+  }, INTERVALLO_BATTITO)
 }
 
 // SCALDA LA CONNESSIONE: da chiamare quando si apre il gestionale o la cassa.
@@ -1012,12 +1049,39 @@ async function getPrinter() {
           _printer = devobj
           avviaBattito()
 
-          // Pulisce la connessione alla disconnessione così al prossimo
-          // invio si riconnette in automatico.
-          _printer.ondisconnect = () => {
-            _printer = null
-            _device = null
-            fermaBattito()
+          // L'SDK AVVISA QUANDO IL SOCKET CADE — MA LO DICE AL DISPOSITIVO,
+          // NON ALLA STAMPANTE (BUG-107). Fin dal primo giorno
+          // `ondisconnect` era attaccato a `devobj`, e nell'SDK Epson
+          // quell'evento lo alza solo `ePOSDevice` (nel `cleanup()`, dopo
+          // aver esaurito i tentativi di riconnessione): il gancio era
+          // appeso a un chiodo che non c'è, e non è scattato mai. Tutte le
+          // cadute RUMOROSE — stampante spenta, cavo staccato con la
+          // stampante che chiude — le scopriva il battito dopo, mai
+          // l'SDK, che pure le sapeva.
+          //
+          // Una caduta è «la stampante non risponde» come quella scoperta
+          // dal battito: si molla, si dice, e la stampa dopo rifà la
+          // stretta di mano. Qui non si chiude, perché è già chiuso.
+          dev.ondisconnect = () => {
+            // Chiuso DA NOI: `scordaConnessione` svuota `_device` prima di
+            // chiamare `disconnect()`, apposta per farci passare di qui
+            // senza fare niente. Non è una caduta.
+            if (_device !== dev) return
+            guaioDellaStampante('la stampante non risponde', { mollaIlCollegamento: true })
+          }
+          // STA PROVANDO A RICOLLEGARSI DA SOLO: il socket si è chiuso e
+          // l'SDK ci riprova cinque volte ogni tre secondi. In quel quarto
+          // di minuto `isConnected()` dice di sì, il dispositivo della
+          // stampante non è più agganciato al socket nuovo, e una stampa
+          // mandata lì dentro prende una strada che non arriva. Non si
+          // aspetta di vedere come va a finire: si chiude — così l'SDK
+          // smette di provarci — e la stampa dopo rifà la stretta di mano
+          // da zero, che è il gesto che sappiamo funzionare. Di regola
+          // questo arriva PRIMA di `ondisconnect`, che poi trova il
+          // dispositivo già dimenticato e non fa niente.
+          dev.onreconnecting = () => {
+            if (_device !== dev) return
+            guaioDellaStampante('la stampante non risponde', { mollaIlCollegamento: true, chiudendo: true })
           }
 
           // LA RISPOSTA FINIVA IN CONSOLE (BUG-098). Adesso torna al

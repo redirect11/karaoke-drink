@@ -11037,93 +11037,72 @@ requirements:
     test_cases: []
 
   - id: REQ-STAMPA-018
-    title: "Se la stampante è viva lo dice lei, non l'SDK"
-    area: "src/lib/printer.js (ascoltaLaStampante, avviaBattito, preparaStampante, smettiDiAscoltare)"
+    title: "Se la stampante è viva lo dice lei, sul canale delle stampe"
+    area: "src/lib/printer.js (battitoDellaStampante, avviaBattito, ascoltaLaStampante, getPrinter, preparaStampante, smettiDiAscoltare)"
     description: >
-      I segnali che la stampante alza da sé — `onpoweroff` quando smette di
-      rispondere, `onoffline` quando risponde ma non è in grado di stampare,
-      `oncoveropen`, `onpaperend`, `ononline` quando torna — sono ascoltati.
-      Prima di BUG-102 l'app non ne ascoltava nessuno: sapeva solo la
-      risposta ai singoli invii.
-      MA L'INTERROGAZIONE PERIODICA (`startMonitor`) NON SI ACCENDE, e la
-      ragione è in BUG-105: passa da un canale HTTP diverso da quello delle
-      stampe, e verso un'altra origine — l'app sta su un dominio pubblico, la
-      stampante su una rete locale — quindi fallisce sempre e dichiara morto
-      un collegamento che sta benissimo. Accesa il 06/09, tolta l'08/09 dopo
-      una serata di avvisi falsi e stampe lente. I gestori restano attaccati
-      perché non costano niente e sono pronti se un domani la topologia
-      cambiasse; oggi a farli scattare non c'è nessuno, e a dire se il
-      collegamento è vivo resta il canale che l'app usa davvero.
-      NON RISPONDE PIÙ = SI MOLLA IL COLLEGAMENTO, così la stampa dopo rifà
-      la stretta di mano invece di parlare al vuoto. Carta finita, coperchio
-      aperto e fuori linea NO: lì la stampante ci parla, il collegamento è
+      PROVATO VUOL DIRE UNA COSA SOLA: la stampante ha RISPOSTO a un invio —
+      una stampa o un battito — sul WebSocket da cui escono gli scontrini.
+      Non «l'SDK dice che il socket è su»: `isConnected()` vale solo al
+      contrario (quando dice di no la caduta è certa; quando dice di sì non
+      prova niente, perché risponde così anche mentre sta soltanto PROVANDO
+      a riconnettersi, BUG-102). Un invio mandato e mai confermato NON è una
+      prova: è il silenzio da cui nasce quel difetto.
+      IL BATTITO (BUG-107): ogni mezzo minuto (`INTERVALLO_BATTITO`) parte
+      un lavoro di stampa VUOTO sullo stesso canale delle stampe. È il modo
+      ufficiale Epson di chiedere lo stato senza stampare (manuale
+      ePOS-Print XML, p. 56). Si mette in fila nella coda delle stampe, si
+      conta e si ascolta come una stampa: una risposta azzera i muti e
+      rinfresca la prova; una risposta «non ce la faccio» (carta, coperchio,
+      fuori linea) avvisa senza buttare il collegamento; tre silenzi di fila
+      (`INVII_MUTI_PRIMA_DI_MOLLARE`, la stessa regola delle stampe) buttano
+      il collegamento e lo dicono. Uno solo no — resta un «non lo sappiamo»
+      (REQ-STAMPA-016). Il battito non riapre un collegamento mollato (la
+      stretta di mano costa: la fa la prima stampa che serve) e non entra
+      nel registro delle stampe.
+      I GANCI DELL'SDK STANNO SUL DISPOSITIVO (`ePOSDevice`), non sulla
+      testina, dove per un anno non sono scattati mai (BUG-107). Su
+      `onreconnecting` — il socket si è chiuso e l'SDK ci riprova da solo —
+      si molla, si CHIUDE (così l'SDK smette di provarci) e si avvisa; su
+      `ondisconnect` lo stesso senza chiudere. Il gancio di un dispositivo
+      già dimenticato non fa niente, e la chiusura fatta da noi (che alza
+      `ondisconnect` nello stesso giro) non passa per una caduta:
+      `scordaConnessione` dimentica PRIMA di chiudere.
+      I SEGNALI CHE LA STAMPANTE ALZA DA SÉ — `onpoweroff` quando smette di
+      rispondere, `onoffline`, `oncoveropen`, `onpaperend`, `ononline` — sono
+      ascoltati. NON RISPONDE PIÙ = SI MOLLA IL COLLEGAMENTO; carta,
+      coperchio e fuori linea NO: lì la stampante ci parla, il collegamento è
       buono, e buttarlo sarebbe una riconnessione inutile in mezzo al
-      servizio. Si avvisa e basta.
-      `isConnected()` VALE SOLO AL CONTRARIO. Quando dice di no la caduta è
-      certa; quando dice di sì non prova niente, perché nel codice Epson
-      risponde così anche mentre sta soltanto PROVANDO a riconnettersi. È il
-      motivo per cui il pallino restava verde con la stampante muta.
+      servizio. Si avvisa e basta, e lo stesso guaio non si ripete entro un
+      minuto.
+      MA L'INTERROGAZIONE PERIODICA (`startMonitor`) NON SI ACCENDE (BUG-105):
+      passa da un canale HTTP diverso da quello delle stampe e al banco
+      dichiarava morta una stampante che stampava; il perché è un'ipotesi
+      (permesso preventivo del browser verso un'altra origine) e resta
+      scritta come tale. Lo stato che l'SDK scrive sulla testina
+      (`ASB_NO_RESPONSE`) si legge comunque prima di stampare: costa zero e,
+      se mai qualcuno lo accendesse, vale subito.
+      LA FINESTRA DI UN MINUTO (`FRESCHEZZA_COLLEGAMENTO`, BUG-106) RESTA
+      COME RETE DI RISERVA: prima di stampare, se la stampante non ha
+      risposto da più di un minuto, si fa quello che fa «Test stampa» — si
+      butta il collegamento, chiudendolo, e se ne apre uno nuovo. Col battito
+      che risponde non scade mai; scade solo nel minuto e mezzo in cui i
+      battiti sono muti e il contatore non ha ancora deciso. Il numero non è
+      un'attesa: nessuna stampa aspetta mai. Una stretta di mano appena
+      riuscita vale come prova, o la prima stampa dopo una riconnessione ne
+      farebbe un'altra all'infinito. Perché non a ogni stampa: rifare la
+      stretta di mano ogni volta faceva fallire la prima stampa quando
+      l'eccezione del certificato era scaduta, cioè col cliente davanti.
+      SI CHIUDE, NON SI ABBANDONA, quando il collegamento può essere sano:
+      abbandonarlo lascerebbe sulla stampante una sessione mezza aperta, e
+      di sessioni contemporanee l'apparecchio ne regge poche. Quando invece
+      è appeso o muto si abbandona, perché `disconnect()` potrebbe appendersi
+      a sua volta.
       IL PALLINO DICE QUELLO CHE LA STAMPANTE HA RISPOSTO, non che in memoria
       esista un oggetto: `preparaStampante` riporta il guaio noto.
-      LA RETE PER QUANDO IL MONITOR NON C'È (firmware vecchio, domanda lunga
-      bloccata): tre invii di fila senza risposta valgono come «strada
-      chiusa». Uno solo no — quello resta un «non lo sappiamo» (REQ-STAMPA-016).
-      E NIENTE DI QUESTO PUÒ FERMARE UNA STAMPA: il monitor non passa dal
-      collegamento delle stampe, quando fallisce non lo butta giù, non alza
-      `onreceive` (quindi non sfasa il conto invii/risposte da cui dipende il
-      registro), e nessun lavoro lo aspetta. Un firmware che non lo sostiene
-      non impedisce di stampare.
-      PRIMA DI STAMPARE SI GUARDA COM'È MESSO IL COLLEGAMENTO, e si guarda
-      chiedendolo alla STAMPANTE. Il monitor da solo non basta per la stampa
-      che conta: se il collegamento muore tre secondi prima della chiusura di
-      cassa, dieci secondi non fanno in tempo — e la chiusura è proprio la
-      stampa che arriva dopo il buco più lungo, perché durante il servizio le
-      comande si susseguono e il collegamento resta caldo, mentre fra
-      l'ultimo scontrino e la chiusura passano ore.
-      IL SEGNALE COSTA ZERO. A ogni giro il monitor scrive sulla testina lo
-      stato che la stampante ha risposto, e quando smette di rispondere ci
-      accende dentro `ASB_NO_RESPONSE`. Leggerlo prima di stampare non
-      aspetta niente e non aggiunge traffico, e non è un'opinione dell'SDK: è
-      quello che ha detto lei, al massimo un giro fa. La costante si prende
-      dall'oggetto, non scritta a mano.
-      E COL MONITOR SPENTO (BUG-105) È IL TEMPO A RISPONDERE, sempre: quello
-      stato non lo aggiorna nessuno e il controllo qui sopra tace, quindi
-      vale l'ultima volta che la stampante ha RISPOSTO, e oltre
-      `FRESCHEZZA_COLLEGAMENTO` (un minuto) si riparte da zero.
-      UN MINUTO E NON DIECI (BUG-106): questa finestra è il tempo in cui si
-      crede a un collegamento SENZA PROVA, quindi allungarla non fa
-      risparmiare — allarga il buco in cui una stampa parte verso un
-      collegamento morto e si perde in silenzio. Al banco il foglio perso
-      costa più dei due secondi della stretta di mano. Il numero non è
-      un'attesa: nessuna stampa aspetta mai, decide solo se ricollegarsi
-      prima di mandare.
-      E RESTA UNA SCOMMESSA SUL TEMPO. La misura giusta è chiedere alla
-      stampante se c'è, sul CANALE DELLE STAMPE — `getPrintJobStatus()`
-      manda un lavoro vuoto e lei risponde sullo stesso WebSocket. Un
-      battito così renderebbe questa finestra inutile. Non è acceso perché
-      resta da verificare al banco se un lavoro vuoto faccia uscire carta. Provato vuol dire una cosa sola — ha risposto a un invio
-      — o una stretta di mano appena riuscita, che è di adesso. Un invio
-      mandato e mai confermato NON è una prova: è il silenzio da cui nasce
-      questo difetto.
-      IN TUTTI E DUE I CASI SI FA QUELLO CHE FA «TEST STAMPA»: si butta il
-      collegamento e se ne apre uno nuovo. È l'unico gesto che non chiede
-      niente a nessuno.
-      E LÌ SI CHIUDE, NON SI ABBANDONA. Di regola `scordaConnessione` non
-      chiama `disconnect()` — ci si arriva quando il collegamento è appeso, e
-      quella chiamata può appendersi a sua volta — ma qui il collegamento può
-      benissimo essere sano, e abbandonarlo lascerebbe sulla stampante una
-      sessione mezza aperta finché non scade da sé. Una alla volta non è un
-      problema; ripetuta a ogni pausa sì, perché di sessioni CONTEMPORANEE
-      l'apparecchio ne regge poche. Il numero di connessioni non è invece un
-      argomento contro il rifarle una dopo l'altra: quelle restano una alla
-      volta.
-      PERCHÉ NON A OGNI STAMPA COMUNQUE: la connessione si tiene viva apposta
-      — rifare la stretta di mano ogni volta faceva fallire la prima stampa
-      quando l'eccezione del certificato era scaduta, cioè col cliente
-      davanti — e ogni riconnessione azzera il conto degli invii senza
-      risposta, che è la terza rete. Con lo stato letto e la finestra si
-      riparte quando serve. La finestra è una costante da sola: a zero, si
-      riparte da capo prima di ogni stampa.
+      E NIENTE DI QUESTO PUÒ FERMARE UNA STAMPA: il battito è in fila come le
+      altre, un battito che inciampa non spezza la coda, gli eventi di stato
+      non alzano `onreceive` (quindi non sfasano il conto invii/risposte da
+      cui dipende il registro), e nessun lavoro aspetta nessuno.
     status: implemented
     generate_issue: false
     labels: [stampa]
