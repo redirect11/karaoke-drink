@@ -21,7 +21,6 @@ import { describe, it, expect, vi, beforeEach } from 'vitest'
 import {
   prodottoDaRigaOrdine,
   mancaNellaScheda,
-  prodottiDaCompletare,
   schedaCompletata,
   motivoNonMigrabile,
   magazzinoBloccato,
@@ -221,7 +220,6 @@ describe('il prodotto nato da un ordine è marcato DA COMPLETARE', () => {
       'quanto contiene un pezzo',
       'la soglia di riordino',
     ])
-    expect(prodottiDaCompletare([nato, { name: 'Y' }])).toEqual([nato])
   })
 
   // LA SCHEDA SI CHIUDE CON LA CATEGORIA: bastasse aprirla, il segno

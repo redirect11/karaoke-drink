@@ -12,7 +12,6 @@ import {
   subscribePosPrefs,
   savePosColors,
   subscribeSettings,
-  fetchMacroCategories,
   DEFAULT_SETTINGS,
   settingsIniziali,
 } from '../lib/api.js'
@@ -22,9 +21,6 @@ import { formatPrice } from '../lib/orderStatus.js'
 import { deleteDrinkImageByUrl } from '../lib/storage.js'
 import { formatQty, stockStatus } from '../lib/inventory.js'
 import MarginList from './MarginList.jsx'
-import MacroCategoryManager from './MacroCategoryManager.jsx'
-import EtichettaMacro from './EtichettaMacro.jsx'
-import { indiceMacro, macroDiCategoria } from '../lib/macros.js'
 import DrinkForm from './DrinkForm.jsx'
 import { saveDrinkFromForm } from '../lib/saveDrink.js'
 import CategoryRail from './CategoryRail.jsx'
@@ -329,18 +325,8 @@ export default function MenuManager() {
   const sezioni = [
     { id: 'catalogo', icona: '🍸', label: 'Modifica menù' },
     { id: 'categorie', icona: '🏷️', label: `Categorie (${categories.length})` },
-    { id: 'macro', icona: '🗂️', label: 'Macro-categorie' },
     { id: 'margini', icona: '📈', label: 'Marginalità listino' },
   ]
-
-  if (sezione === 'macro') {
-    return (
-      <div>
-        <Sottosezioni voci={sezioni} attiva={sezione} scegli={setSezione} />
-        <MacroMenuPanel categories={categories} />
-      </div>
-    )
-  }
 
   if (sezione === 'categorie') {
     return (
@@ -582,50 +568,6 @@ export default function MenuManager() {
   )
 }
 
-// ── MACRO-CATEGORIE DEL MENÙ ─────────────────────────────────────────
-//
-// Le stesse macro del magazzino, ma dall'altro lato del banco: qui si
-// raggruppa quello che si VENDE. Sono queste le righe di «Statistiche →
-// Mensile per macro»: ogni vendita ci conta INTERA, incasso e costo dei
-// suoi ingredienti insieme (REQ-MAG-015).
-//
-// GLI ELENCHI SONO DUE APPOSTA, e la domanda è chiusa (19/08, REQ-MAG-015):
-// uno per quello che si COMPRA, uno per quello che si VENDE. Un elenco solo
-// non reggerebbe — la Schweppes si compra in «birre e bibite» e si vende
-// dentro un Gin Tonic, che sta in «alcolici e distillati»: sono due tagli
-// diversi della stessa merce, non due nomi per la stessa cosa.
-//
-// L'aggancio «a quale macro di spesa corrisponde» (`macro_menu_id`) sta in
-// Magazzino, e questa tabella non lo legge: serve il giorno in cui gli
-// acquisti avranno la loro schermata, per mettere speso e incassato uno
-// accanto all'altro. Toglierlo adesso vorrebbe dire richiedere a mano un
-// lavoro già fatto, e chi l'ha compilato lo ha fatto una volta sola.
-//
-// Su `tana-drink-test` le macro ci sono (quattro d'acquisto e quattro di
-// vendita, con gli agganci); in produzione `macro_categories` è ancora
-// vuota e ci resta finché non arriva il via libera. Lì «Mensile per macro»
-// non mostra numeri ma il suo messaggio, che dice dove crearle: non è un
-// guasto, è un elenco che nessuno ha ancora riempito.
-function MacroMenuPanel({ categories }) {
-  const [macros, setMacros] = useState([])
-  // Solo le macro: le categorie le tiene aggiornate la sottoscrizione della
-  // pagina, e rileggerle qui sarebbe un giro in più per lo stesso dato.
-  const ricarica = async () => setMacros(await fetchMacroCategories('menu'))
-  useEffect(() => {
-    fetchMacroCategories('menu').then(setMacros).catch(() => {})
-  }, [])
-  return (
-    <MacroCategoryManager
-      ambito="menu"
-      macros={macros}
-      categories={categories}
-      onChange={ricarica}
-      aggiornaCategoria={updateCategory}
-      creaCategoria={createCategory}
-    />
-  )
-}
-
 // --- Gestione categorie -------------------------------------------------
 
 // L’elenco arriva dalla sottoscrizione della pagina: dopo una scrittura non
@@ -634,18 +576,6 @@ function MacroMenuPanel({ categories }) {
 function CategoryManager({ categories }) {
   const [name, setName] = useState('')
   const [busy, setBusy] = useState(false)
-  // LE MACRO SERVONO ANCHE QUI. Questo elenco mostrava nome, icona e
-  // colore: a quale gruppo appartenesse una categoria — o che non ne
-  // avesse nessuno — si scopriva solo aprendo il pannello delle macro.
-  // Solo le macro: le categorie le tiene aggiornate la sottoscrizione
-  // della pagina.
-  const [macros, setMacros] = useState([])
-  useEffect(() => {
-    fetchMacroCategories('menu')
-      .then(setMacros)
-      .catch(() => {})
-  }, [])
-  const indice = useMemo(() => indiceMacro(macros), [macros])
 
   async function add() {
     if (!name.trim()) return
@@ -706,7 +636,6 @@ function CategoryManager({ categories }) {
                 {c.icon || '•'}
               </span>
               {c.name}
-              <EtichettaMacro macro={macroDiCategoria(c, indice)} />
             </span>
             <span className="row" style={{ gap: 4 }}>
               <button className="btn ghost small" onClick={() => move(idx, -1)} disabled={idx === 0}>↑</button>

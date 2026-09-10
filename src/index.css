@@ -3618,42 +3618,58 @@ body.drawer-open .status-bell-float { display: none; }
   animation: flash-added 0.75s ease-out;
 }
 
-/* Macro-categorie: un blocco per macro con le categorie collegate. */
+/* Macro-categorie: un blocco per macro, chiuso o aperto sulle due colonne. */
 .macro-group {
   margin-top: 10px;
   padding: 8px 10px;
   border: 1px solid var(--line);
   border-radius: 10px;
 }
-.macro-group .chip-x {
-  background: none;
-  border: none;
-  color: inherit;
-  cursor: pointer;
-  padding: 0;
-  font-size: 0.8em;
-  opacity: 0.7;
-  line-height: 1;
-}
-.macro-group .chip-x:hover {
-  opacity: 1;
-}
 
-/* A QUALE MACRO APPARTIENE UNA CATEGORIA, negli elenchi delle categorie
-   (magazzino e menù). «Senza macro» ha lo STESSO PESO del nome di un
-   gruppo: non è un errore — ALTRO e BOTTIGLIE restano fuori apposta — e
-   qui il rosso vuol dire annullato o sbagliato. Cambia solo il corsivo,
-   che dice «questa è una constatazione, non un nome». */
-.etichetta-macro {
-  font-size: 0.72rem;
-  color: var(--muted);
-  border: 1px solid var(--line);
-  border-radius: 999px;
-  padding: 1px 8px;
+/* DENTRO UNA MACRO, DUE COLONNE: prodotti a sinistra, voci a destra —
+   «sinistra prodotti destra items» (Flavio, 09/09/2026). Sul telefono una
+   sotto l'altra. Ogni riga è un nome, l'eventuale «già altrove» e la
+   casella della percentuale: la casella sta a destra, sempre allo stesso
+   posto, perché si compila scorrendo la colonna con un dito solo. */
+.macro-apri {
+  display: inline-flex;
+  gap: 8px;
+  align-items: baseline;
+  padding-left: 0;
+}
+.macro-pesi {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 8px;
+}
+@media (max-width: 700px) {
+  .macro-pesi {
+    grid-template-columns: 1fr;
+  }
+}
+.macro-peso-riga {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 0;
+  border-top: 1px solid var(--line);
+  font-size: 0.9rem;
+}
+.macro-peso-riga.con-quota .macro-peso-nome {
+  font-weight: 600;
+}
+.macro-peso-nome {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
   white-space: nowrap;
 }
-.etichetta-macro.senza {
-  font-style: italic;
+.macro-peso-riga input[type='number'] {
+  width: 64px;
+  text-align: right;
+  padding: 4px 6px;
 }
 
 /* Dashboard mensile per macro: tabella mesi × metriche, scrollabile in orizz. */

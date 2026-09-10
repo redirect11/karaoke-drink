@@ -3,13 +3,11 @@ import {
   fetchOrdersBetween,
   fetchDrinks,
   fetchInventoryItems,
-  fetchCategories,
   fetchMacroCategories,
   subscribeSettings,
   DEFAULT_SETTINGS,
 } from '../lib/api.js'
-import { categoryToMacro } from '../lib/macros.js'
-import { macroMonthlyReport } from '../lib/macroStats.js'
+import { macroMonthlyReport, UNASSIGNED } from '../lib/macroStats.js'
 import Didascalia from './Didascalia.jsx'
 
 // BILANCIO → VENDUTO × INCASSATO: quanto ha incassato ogni gruppo di voci
@@ -21,11 +19,12 @@ import Didascalia from './Didascalia.jsx'
 // — due mestieri diversi, anche se i numeri escono dalla stessa cassa. Il
 // contenuto non è cambiato: sono cambiate la casa e due righe in più.
 //
-// La vendita di una voce va INTERA alla macro di quella voce, incasso e
-// costo insieme (vedi lib/macroStats.js): la Schweppes versata in un Gin
-// Tonic conta sui distillati, perché lì è stata venduta. Da qui non si
-// legge «quanto ho speso in bibite» — quella è la domanda degli ACQUISTI e
-// vive con le fatture, non in una tabella che parla del venduto.
+// La vendita di una voce va alla macro di quella voce, SECONDO LA QUOTA che
+// la voce ha lì (di solito il 100% in una sola), incasso e costo insieme
+// (vedi lib/macroStats.js): la Schweppes versata in un Gin Tonic conta sui
+// distillati, perché lì è stata venduta. Da qui non si legge «quanto ho
+// speso in bibite» — quella è la domanda degli ACQUISTI e vive con le
+// fatture, non in una tabella che parla del venduto.
 
 const MESI = ['GEN', 'FEB', 'MAR', 'APR', 'MAG', 'GIU', 'LUG', 'AGO', 'SET', 'OTT', 'NOV', 'DIC']
 const monthsOfYear = (year) => MESI.map((_, i) => `${year}-${String(i + 1).padStart(2, '0')}`)
@@ -41,7 +40,7 @@ export default function MacroMonthlyTab() {
   useEffect(() => subscribeSettings(setSettings, () => {}), [])
   const cutoff = settings.business_day_cutoff_hour
 
-  const [data, setData] = useState(null) // { orders, drinks, items, cats, macros }
+  const [data, setData] = useState(null) // { orders, drinks, items, macros }
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
@@ -51,15 +50,14 @@ export default function MacroMonthlyTab() {
     Promise.all([
       fetchOrdersBetween(`${year}-01-01`, `${year}-12-31`, cutoff).catch(() => []),
       fetchDrinks({}).catch(() => []),
-      // I prodotti servono ancora, ma solo per il COSTO di quello che è
-      // uscito: le categorie e le macro qui sono quelle del MENÙ.
+      // I prodotti servono solo per il COSTO di quello che è uscito: qui
+      // si guarda il lato delle VOCI di ogni macro (pesi_voci).
       fetchInventoryItems().catch(() => []),
-      fetchCategories().catch(() => []),
-      fetchMacroCategories('menu').catch(() => []),
+      fetchMacroCategories().catch(() => []),
     ])
-      .then(([orders, drinks, items, cats, macros]) => {
+      .then(([orders, drinks, items, macros]) => {
         if (!active) return
-        setData({ orders, drinks, items, cats, macros })
+        setData({ orders, drinks, items, macros })
         setLoading(false)
       })
       .catch((e) => active && (setError(e.message), setLoading(false)))
@@ -74,7 +72,6 @@ export default function MacroMonthlyTab() {
       orders: data.orders,
       drinksById: Object.fromEntries(data.drinks.map((d) => [d.id, d])),
       itemsById: Object.fromEntries(data.items.map((i) => [i.id, i])),
-      menuCatToMacro: categoryToMacro(data.cats),
       macros: data.macros,
       months: monthsOfYear(year),
       cutoffHour: cutoff,
@@ -93,17 +90,18 @@ export default function MacroMonthlyTab() {
       </div>
 
       <p className="muted small" style={{ margin: '0 0 10px' }}>
-        Ogni voce del menù conta <strong>intera</strong> sulla sua
-        macro-categoria: incasso e costo dei suoi ingredienti insieme. Valori
+        Ogni voce del menù conta sulla sua macro-categoria{' '}
+        <strong>secondo la quota</strong> che le è data lì: incasso e costo
+        dei suoi ingredienti insieme. Valori
         al <strong>netto IVA</strong> — l’incasso scorporato al{' '}
         {settings.sale_vat}% di rivendita (o all’aliquota della voce, dove ne
         ha una sua), il costo al netto dell’IVA d’acquisto.
       </p>
-      {report && report.rows.some((r) => r.id === 'none' && r.tot.incasso > 0) && (
+      {report && report.rows.some((r) => r.id === UNASSIGNED && r.tot.incasso > 0) && (
         <p className="muted small" style={{ margin: '-4px 0 10px' }}>
-          ℹ️ In <strong>“Non attribuito”</strong> finisce l’incasso dei drink
-          la cui categoria di menù non sta in nessuna macro: assegnala in{' '}
-          <strong>Menù → Macro-categorie</strong> e si sposta al posto suo.
+          ℹ️ In <strong>“Non attribuito”</strong> finisce l’incasso delle voci
+          che nessuna macro reclama per intero: dai loro la quota in{' '}
+          <strong>Magazzino → Macro-categorie</strong> e si sposta al posto suo.
         </p>
       )}
 
@@ -111,9 +109,9 @@ export default function MacroMonthlyTab() {
 
       {!loading && data && data.macros.length === 0 && (
         <div className="empty">
-          Nessuna macro-categoria di menù: creale in{' '}
-          <strong>Menù → Macro-categorie</strong> e collega le categorie dei
-          drink, poi qui vedrai incasso e costo per macro.
+          Nessuna macro-categoria: creale in{' '}
+          <strong>Magazzino → Macro-categorie</strong> e dai a ogni voce del
+          menù la sua quota, poi qui vedrai incasso e costo per macro.
         </div>
       )}
 

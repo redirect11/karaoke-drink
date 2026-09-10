@@ -18,6 +18,19 @@
 
 ### Per chi amministra
 
+- **Le macro-categorie sono un elenco solo, e dentro ci vanno i singoli
+  prodotti e le singole voci del menù, con una percentuale.** Si apre una
+  macro da **Magazzino → Macro-categorie** e si trovano due colonne in
+  ordine alfabetico: a sinistra i prodotti del magazzino, a destra le voci
+  del menù, ognuno con la casella della quota (100, 80, 60…). Un prodotto
+  può stare per il 60% in una macro e per il 40% in un'altra; accanto al
+  nome si legge quanto è già altrove, e la somma non passa cento. La
+  ricerca e il filtro «Solo senza macro» aiutano a compilare l'elenco.
+  Ogni casella si salva da sola, subito. «Venduto × Incassato» spartisce
+  incasso e costo secondo le quote delle voci. La sezione **Menù →
+  Macro-categorie** non c'è più, e le macro non si assegnano più alle
+  categorie: le quote vanno inserite a mano — le macro già create restano.
+
 - **Il ghiaccio nelle ricette passa a una volta e mezzo** (100 g → 150,
   200 g → 300) con uno script di manutenzione,
   `scripts/ghiaccio-per-uno-e-mezzo.js`: anteprima di serie, scrive solo

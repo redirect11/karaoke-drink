@@ -32,7 +32,7 @@ const DRINKS = [
     recipe_items: [{ inventory_item_id: 'i1', name: 'Rum', qty: 50, unit: 'ml' }],
   },
 ]
-const CATEGORIE = [{ id: 'c1', name: 'Cocktail', sort_order: 0, macro_id: 'm1' }]
+const CATEGORIE = [{ id: 'c1', name: 'Cocktail', sort_order: 0 }]
 const MAGAZZINO = [{ id: 'i1', name: 'Rum', unit: 'ml', qty: 3000, cost: 20, package_qty: 700 }]
 
 vi.mock('../../src/lib/api.js', () => ({
@@ -54,12 +54,6 @@ vi.mock('../../src/lib/api.js', () => ({
   subscribePosPrefs: vi.fn(() => () => {}),
   savePosColors: vi.fn(() => Promise.resolve()),
   subscribeSettings: vi.fn(() => () => {}),
-  fetchMacroCategories: vi.fn((ambito) =>
-    Promise.resolve(ambito === 'menu' ? [{ id: 'm1', name: 'Cocktail classici', sort_order: 0 }] : [])
-  ),
-  createMacroCategory: vi.fn(() => Promise.resolve({ id: 'm2', name: 'Nuova' })),
-  updateMacroCategory: vi.fn(() => Promise.resolve()),
-  deleteMacroCategory: vi.fn(() => Promise.resolve()),
   DEFAULT_SETTINGS: { stripe_menu: 'scorte' },
   settingsIniziali: () => ({ stripe_menu: 'scorte' }),
 }))
@@ -209,37 +203,6 @@ describe('l’IVA di vendita nella scheda del prodotto', () => {
 
     await waitFor(() => expect(salvaDrink).toHaveBeenCalled())
     expect(salvaDrink.mock.calls[0][0].form.sale_vat).toBe('22')
-  })
-})
-
-// ── LE CATEGORIE SENZA MACRO SI VEDONO A COLPO D'OCCHIO (REQ-UI-022) ──
-// Questo elenco mostrava nome, icona e colore: a quale gruppo appartenesse
-// una categoria — o che non ne avesse nessuno — si scopriva solo aprendo il
-// pannello delle macro, cioè da un'altra parte. E una categoria fuori
-// APPOSTA e una dimenticata si somigliavano troppo.
-describe('la macro di ogni categoria, nell’elenco delle categorie', () => {
-  it('accanto al nome c’è il suo gruppo, e dove manca lo dice', async () => {
-    // La sezione si sceglie dal menu a lato, che qui non c'è: si prende la
-    // funzione dalla stessa parte da cui la prende la barra.
-    let scegli = null
-    const stop = subscribeSottosezioni((st) => {
-      scegli = st.scegli
-    })
-    render(<MenuManager />)
-    await screen.findByText('Mojito')
-    // BOTTIGLIE resta fuori dalle macro ed è una scelta: una bottiglia
-    // intera non è la stessa cosa di un drink servito al banco.
-    act(() =>
-      filo.consegnaCategorie([...CATEGORIE, { id: 'c2', name: 'Bottiglie', sort_order: 1 }])
-    )
-    await waitFor(() => expect(scegli).toBeTruthy())
-    act(() => scegli('categorie'))
-
-    const cocktail = (await screen.findByText('Cocktail')).closest('.row')
-    expect(within(cocktail).getByText('Cocktail classici')).toBeInTheDocument()
-    const bottiglie = screen.getByText('Bottiglie').closest('.row')
-    expect(within(bottiglie).getByText('senza macro')).toBeInTheDocument()
-    stop()
   })
 })
 

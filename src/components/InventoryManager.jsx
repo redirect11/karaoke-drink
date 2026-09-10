@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
 import {
   fetchInventoryItems,
+  fetchDrinks,
   createInventoryItem,
   updateInventoryItem,
   deleteInventoryItem,
@@ -64,7 +65,6 @@ import {
   assortimentoDi,
   ETICHETTA_ASSORTIMENTO,
   mancaNellaScheda,
-  prodottiDaCompletare,
   schedaCompletata,
   costWithVat,
   stockValue,
@@ -78,8 +78,6 @@ import { cambioAMano, cambioDaAvvisare } from '../lib/statoAssortimento.js'
 import { formatPrice } from '../lib/orderStatus.js'
 import { parseSupplierList } from '../lib/warehouse.js'
 import MacroCategoryManager from './MacroCategoryManager.jsx'
-import EtichettaMacro from './EtichettaMacro.jsx'
-import { indiceMacro, macroDiCategoria } from '../lib/macros.js'
 import { useChiudiConIndietro } from '../lib/schermate.js'
 import { toastSuccess, toastError } from '../lib/toast.js'
 import StockCountPanel from './StockCountPanel.jsx'
@@ -239,65 +237,43 @@ export default function InventoryManager() {
 // altri motivi — e infatti erano finite lì.
 function CategoriePanel() {
   const [categories, setCategories] = useState([])
-  // LE MACRO SERVONO ANCHE QUI. Finora questo elenco mostrava il solo
-  // nome, e a quale gruppo appartenesse una categoria si andava a vedere
-  // nel pannello delle macro — cioè da un'altra parte, dopo essersi
-  // chiesti se valeva la pena.
-  const [macros, setMacros] = useState([])
-  const ricarica = async () => {
-    const [cats, macs] = await Promise.all([
-      fetchInventoryCategories(),
-      fetchMacroCategories('magazzino').catch(() => []),
-    ])
-    setCategories(cats)
-    setMacros(macs)
-  }
+  const ricarica = async () => setCategories(await fetchInventoryCategories())
   useEffect(() => {
     ricarica()
   }, [])
-  return <InvCategoryManager categories={categories} macros={macros} onChange={ricarica} />
+  return <InvCategoryManager categories={categories} onChange={ricarica} />
 }
 
+// LE MACRO STANNO QUI, E SOLO QUI. Dentro ogni macro ci vanno i singoli
+// prodotti del magazzino e le singole voci del menù (REQ-MAG-042): la
+// schermata ha bisogno di tutt'e due gli elenchi, completi — anche le voci
+// fuori menù, che hanno venduto nei mesi passati e nei conti ci sono.
+//
+// Si legge una volta sola, all'apertura: da lì in poi ogni gesto aggiorna
+// l'elenco sul posto con quello che il writer compone, senza rileggere.
 function MacroPanel() {
   const [macros, setMacros] = useState([])
-  const [categories, setCategories] = useState([])
-  // Le macro del MENÙ servono qui solo per l'aggancio: su ogni macro di
-  // spesa si sceglie a quale macro di vendita corrisponde.
-  const [macroMenu, setMacroMenu] = useState([])
-  // I PRODOTTI CON LA SCHEDA DA COMPLETARE SI GUARDANO QUI (REQ-MAG-032), coi
-  // conti che hanno un buco: una categoria senza macro e un prodotto senza
-  // categoria sono lo stesso buco visto da due lati (REQ-UI-022), e in tutti
-  // e due i casi una spesa vera non compare in «Acquisti × Fatturato».
-  const [daCompletare, setDaCompletare] = useState([])
-  const ricarica = async () => {
-    const [macs, cats, menu, items] = await Promise.all([
-      fetchMacroCategories('magazzino'),
-      fetchInventoryCategories(),
-      fetchMacroCategories('menu').catch(() => []),
-      // Il pannello deve reggere anche se il magazzino non risponde: le
-      // macro sono la cosa per cui si è entrati, i prodotti un di più.
-      fetchInventoryItems().catch(() => []),
-    ])
-    setMacros(macs)
-    setCategories(cats)
-    setMacroMenu(menu)
-    setDaCompletare(prodottiDaCompletare(items))
-  }
+  const [prodotti, setProdotti] = useState([])
+  const [voci, setVoci] = useState([])
   useEffect(() => {
-    ricarica()
+    let attivo = true
+    Promise.all([
+      fetchMacroCategories(),
+      // Il pannello deve reggere anche se un elenco non risponde: le macro
+      // sono la cosa per cui si è entrati, il resto arriva dopo.
+      fetchInventoryItems().catch(() => []),
+      fetchDrinks().catch(() => []),
+    ]).then(([macs, items, drinks]) => {
+      if (!attivo) return
+      setMacros(macs)
+      setProdotti(items)
+      setVoci(drinks)
+    })
+    return () => {
+      attivo = false
+    }
   }, [])
-  return (
-    <MacroCategoryManager
-      ambito="magazzino"
-      macros={macros}
-      categories={categories}
-      onChange={ricarica}
-      aggiornaCategoria={updateInventoryCategory}
-      creaCategoria={createInventoryCategory}
-      macroDiVendita={macroMenu}
-      prodottiDaCompletare={daCompletare}
-    />
-  )
+  return <MacroCategoryManager macros={macros} prodotti={prodotti} voci={voci} />
 }
 
 // I MOVIMENTI HANNO UNA SEZIONE LORO. Stavano in fondo alla lista dei
@@ -1321,10 +1297,9 @@ function ProductsPanel() {
 
 // --- Gestione categorie inventario --------------------------------------
 
-function InvCategoryManager({ categories, macros = [], onChange }) {
+function InvCategoryManager({ categories, onChange }) {
   const [name, setName] = useState('')
   const [busy, setBusy] = useState(false)
-  const indice = useMemo(() => indiceMacro(macros), [macros])
 
   async function add() {
     if (!name.trim()) return
@@ -1371,10 +1346,7 @@ function InvCategoryManager({ categories, macros = [], onChange }) {
       )}
       {categories.map((c, idx) => (
         <div className="row between" key={c.id} style={{ marginTop: 8 }}>
-          <span className="row" style={{ gap: 8, alignItems: 'center' }}>
-            {c.name}
-            <EtichettaMacro macro={macroDiCategoria(c, indice)} />
-          </span>
+          <span>{c.name}</span>
           <span className="row" style={{ gap: 4 }}>
             <button className="btn ghost small" onClick={() => move(idx, -1)} disabled={idx === 0}>↑</button>
             <button className="btn ghost small" onClick={() => move(idx, 1)} disabled={idx === categories.length - 1}>↓</button>

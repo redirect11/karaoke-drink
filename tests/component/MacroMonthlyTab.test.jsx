@@ -77,13 +77,11 @@ vi.mock('../../src/lib/api.js', () => ({
     { id: 'schweppes', unit: 'pz', cost: 0.5, vat: 0 },
     { id: 'redbull', unit: 'pz', cost: 1, vat: 0 },
   ],
-  fetchCategories: async () => [
-    { id: 'menu-alcolici', macro_id: 'mm-alc' },
-    { id: 'menu-bibite', macro_id: 'mm-bib' },
-  ],
+  // Le macro portano i pesi delle voci (REQ-MAG-042): ogni drink al 100%
+  // nella sua.
   fetchMacroCategories: async () => [
-    { id: 'mm-alc', name: 'Alcolici e distillati' },
-    { id: 'mm-bib', name: 'Birre e bibite' },
+    { id: 'mm-alc', name: 'Alcolici e distillati', pesi_voci: { gintonic: 100, jagerbomb: 100 } },
+    { id: 'mm-bib', name: 'Birre e bibite', pesi_voci: { 'schweppes-sola': 100 } },
   ],
 }))
 

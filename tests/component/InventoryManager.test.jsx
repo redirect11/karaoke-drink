@@ -97,12 +97,12 @@ const ITEMS = [
   },
 ]
 const CATS = [
-  // «Distillati» sta in una macro, ALTRO no — ed è una scelta, non una
-  // dimenticanza: è il caso che REQ-UI-022 deve far vedere a colpo d'occhio.
-  { id: 'c1', name: 'Distillati', sort_order: 0, macro_id: 'mag1' },
+  { id: 'c1', name: 'Distillati', sort_order: 0 },
   { id: 'c2', name: 'ALTRO', sort_order: 1 },
 ]
-const MACRO_MAG = [{ id: 'mag1', name: 'Alcolici', sort_order: 0 }]
+// Una macro con dentro il gin al 100% (REQ-MAG-042): i pesi stanno sulla
+// macro, non sulla categoria.
+const MACRO_MAG = [{ id: 'mag1', name: 'Alcolici', sort_order: 0, pesi_prodotti: { i1: 100 }, pesi_voci: {} }]
 const SUPS = [
   { id: 's1', name: 'NOVA' },
   { id: 's2', name: 'ENOFEL' },
@@ -138,7 +138,10 @@ vi.mock('../../src/lib/api.js', () => ({
   fetchSupplierPrices: vi.fn(async () => []),
   salvaRigaListino: vi.fn(async () => ({})),
   fetchStockMovements: vi.fn(async () => []),
-  fetchMacroCategories: vi.fn(async (ambito) => (ambito === 'magazzino' ? MACRO_MAG : [])),
+  fetchMacroCategories: vi.fn(async () => MACRO_MAG),
+  // Le voci del menù servono al pannello delle macro, che le elenca una a una.
+  fetchDrinks: vi.fn(async () => [{ id: 'd1', name: 'Negroni' }]),
+  impostaPesoMacro: vi.fn(),
   createInventoryItem: vi.fn(),
   updateInventoryItem: vi.fn(),
   deleteInventoryItem: vi.fn(),
@@ -453,48 +456,31 @@ describe('le unità nel modulo del prodotto (REQ-MAG-013)', () => {
   })
 })
 
-// ── LE CATEGORIE SENZA MACRO SI VEDONO A COLPO D'OCCHIO (REQ-UI-022) ──
-// ALTRO resta fuori dalle macro ed è una scelta: non si forza dentro un
-// gruppo per far tornare un elenco. Da lì nasce il bisogno opposto — una
-// categoria fuori APPOSTA e una dimenticata si somigliavano troppo, e
-// questo elenco è proprio quello da cui si esce convinti di aver sistemato
-// tutto. Prima mostrava il solo nome.
-describe('la macro di ogni categoria, nell’elenco delle categorie', () => {
-  it('accanto al nome c’è il suo gruppo, e dove manca lo dice', async () => {
-    const user = userEvent.setup()
-    mostra()
-    await aspettaLista()
-    await user.click(screen.getByRole('button', { name: /Categorie/ }))
-    const distillati = (await screen.findByText('Distillati')).closest('.row')
-    expect(within(distillati).getByText('Alcolici')).toBeInTheDocument()
-    const altro = screen.getByText('ALTRO').closest('.row')
-    expect(within(altro).getByText('senza macro')).toBeInTheDocument()
-  })
-})
-
-// ── L'ALTRO LATO DELLO STESSO BUCO (REQ-MAG-032) ─────────────────────
-//
-// Un prodotto nato da una consegna non ha categoria, quindi non ha macro
-// d'acquisto: la sua spesa non compare in «Acquisti × Fatturato» invece di
-// risultare sbagliata, che è peggio. Sta accanto alle categorie senza macro
-// perché è la stessa mancanza vista dall'altro lato, e si guardano nello
-// stesso momento.
-//
-// E IL NOME NON È QUELLO DEL TRAVASO: in magazzino «da sistemare» sono i
-// prodotti che il passaggio ai pezzi non sa convertire, e finché ce n'è uno
-// il magazzino resta in sola lettura. Questa lista non blocca niente.
-describe('i prodotti con la scheda da completare', () => {
-  it('si guardano insieme alle categorie senza macro', async () => {
+// ── LE MACRO STANNO IN MAGAZZINO, E DENTRO C'È ANCHE IL MENÙ (REQ-MAG-042) ──
+// Dal 09/09/2026 le macro sono un elenco solo: si apre una macro e si
+// trovano i singoli prodotti del magazzino a sinistra e le singole voci del
+// menù a destra. Il pannello tira su tutt'e tre gli elenchi.
+describe('il pannello delle macro-categorie', () => {
+  it('apre una macro coi prodotti da una parte e le voci del menù dall’altra', async () => {
     const user = userEvent.setup()
     mostra()
     await aspettaLista()
     await user.click(screen.getByRole('button', { name: /Macro-categorie/ }))
-    expect(await screen.findByText(/Prodotti con la scheda da completare/)).toBeInTheDocument()
-    expect(screen.getByText('Mezcal Verde')).toBeInTheDocument()
-    // Le categorie senza macro restano dov'erano: le due liste convivono.
-    expect(screen.getByText(/Categorie senza macro/)).toBeInTheDocument()
+    await user.click(await screen.findByRole('button', { name: /Alcolici/ }))
+    expect(screen.getByRole('spinbutton', { name: 'Gin Mare: quota in Alcolici' })).toHaveValue(100)
+    expect(screen.getByRole('spinbutton', { name: 'Negroni: quota in Alcolici' })).toBeInTheDocument()
   })
+})
 
+// ── LA SCHEDA DA COMPLETARE (REQ-MAG-032) ────────────────────────────
+//
+// Un prodotto nato da una consegna non ha categoria, contenuto del pezzo
+// né soglia: si riconosce nella lista e, aperto, dice cosa gli manca.
+//
+// E IL NOME NON È QUELLO DEL TRAVASO: in magazzino «da sistemare» sono i
+// prodotti che il passaggio ai pezzi non sa convertire, e finché ce n'è uno
+// il magazzino resta in sola lettura. Questa segnalazione non blocca niente.
+describe('i prodotti con la scheda da completare', () => {
   it('nella lista si riconoscono senza aprirli, e aperti dicono cosa manca', async () => {
     const user = userEvent.setup()
     mostra()

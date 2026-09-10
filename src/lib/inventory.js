@@ -1022,11 +1022,12 @@ export function prodottoDaRigaOrdine(riga) {
 }
 
 // Cosa manca a una scheda nata da un ordine, detto a chi deve compilarla.
-// Sono le tre cose che l'ordine non poteva sapere, e la prima è quella che
-// fa danno: senza categoria non c'è macro d'acquisto, e la spesa di quel
-// prodotto SPARISCE da «Bilancio → Acquisti × Fatturato» invece di
-// risultare sbagliata (REQ-MAG-022). È lo stesso buco delle categorie senza
-// macro (REQ-UI-022), visto dall'altro lato.
+// Sono le tre cose che l'ordine non poteva sapere. La categoria è quella che
+// decide dove il prodotto si trova negli elenchi e nei filtri; la macro,
+// invece, dal 09/09/2026 si dà al singolo prodotto (REQ-MAG-042) e non
+// dipende più dalla categoria — un prodotto nuovo va comunque attribuito
+// a mano, in Magazzino → Macro-categorie, se no la sua spesa resta «non
+// attribuita» (REQ-MAG-022).
 export function mancaNellaScheda(item) {
   const manca = []
   if (!item?.category_id) manca.push('la categoria')
@@ -1034,9 +1035,6 @@ export function mancaNellaScheda(item) {
   if (!(Number(item?.low_threshold) > 0)) manca.push('la soglia di riordino')
   return manca
 }
-
-export const prodottiDaCompletare = (items) =>
-  (items || []).filter((it) => it?.scheda_da_completare)
 
 // LA SCHEDA SI CHIUDE CON LA CATEGORIA, non col semplice fatto di averla
 // aperta. Bastasse un salvataggio qualunque, il segno sparirebbe dal

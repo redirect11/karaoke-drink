@@ -8,15 +8,20 @@ import {
   UNASSIGNED,
 } from '../../src/lib/macroStats.js'
 
-// LA REGOLA IN PROVA (REQ-MAG-015): una voce di menù conta INTERA sulla
-// macro di quella voce — incasso e costo di tutti i suoi ingredienti
-// insieme. Non si scompone niente sulle macro dei singoli prodotti.
+// LA REGOLA IN PROVA (REQ-MAG-015, REQ-MAG-042): una voce di menù conta
+// sulla macro di quella voce SECONDO LA QUOTA che ha lì — incasso e costo
+// di tutti i suoi ingredienti insieme, con la stessa quota. Di solito è il
+// 100% in una macro sola; non si scompone niente sulle macro dei singoli
+// prodotti.
 //
 // I due casi qui sotto sono quelli detti a voce, non inventati: la
 // SCHWEPPES comprata come bibita e versata in un Gin Tonic, e la RED BULL
 // comprata come bibita e versata in uno Jäger Bomb. Tutte e due, in quel
 // consumo, contano su «alcolici e distillati» — «l'ho venduta come se fosse
 // un distillato in quel momento». Vendute da sole restano bibite.
+//
+// Dal 09/09/2026 le macro sono un elenco solo, coi pesi sopra: `pesi_voci`
+// per quello che si vende, `pesi_prodotti` per quello che si compra.
 
 // ── MAGAZZINO: i prodotti e quanto costano (netti, IVA a parte) ────────
 const itemsById = {
@@ -25,20 +30,24 @@ const itemsById = {
   schweppes: { unit: 'pz', cost: 0.5, vat: 0, category_id: 'inv-bibite' },
   redbull: { unit: 'pz', cost: 1, vat: 0, category_id: 'inv-bibite' },
 }
-// Categorie di MAGAZZINO → macro di magazzino: servono solo agli ACQUISTI.
-const catToMacro = new Map([
-  ['inv-distillati', 'mag-alc'],
-  ['inv-bibite', 'mag-bib'],
-])
 
-// ── MENÙ: le categorie dei drink e le loro macro ───────────────────────
-const menuCatToMacro = new Map([
-  ['menu-alcolici', 'mm-alc'], // «alcolici e distillati»
-  ['menu-bibite', 'mm-bib'], // «birre e bibite»
-])
+// ── LE MACRO: un elenco solo, coi pesi delle voci e dei prodotti ────────
+// La Schweppes COMPRATA sta per il 60% fra le bibite e per il 40% fra i
+// distillati (è così che Flavio spartisce quello che spende); VENDUTA da
+// sola è una bibita al 100%, dentro un Gin Tonic segue il Gin Tonic.
 const macros = [
-  { id: 'mm-alc', name: 'Alcolici e distillati' },
-  { id: 'mm-bib', name: 'Birre e bibite' },
+  {
+    id: 'mm-alc',
+    name: 'Alcolici e distillati',
+    pesi_voci: { gintonic: 100, jagerbomb: 100 },
+    pesi_prodotti: { gin: 100, jager: 100, schweppes: 40 },
+  },
+  {
+    id: 'mm-bib',
+    name: 'Birre e bibite',
+    pesi_voci: { 'schweppes-sola': 100 },
+    pesi_prodotti: { schweppes: 60, redbull: 100 },
+  },
 ]
 
 // gin 0,03 €/ml → 5 cl = 1,50 · schweppes 0,50 → costo 2,00
@@ -75,7 +84,7 @@ const riga = (drink_id, qty, unit_price) => ({ drink_id, qty, unit_price })
 
 describe('lineByMacro: una vendita, una macro sola', () => {
   it('il Gin Tonic porta anche la Schweppes sui distillati, incasso e costo', () => {
-    const r = lineByMacro(riga('gintonic', 1, 8), ginTonic, itemsById, menuCatToMacro)
+    const [r] = lineByMacro(riga('gintonic', 1, 8), ginTonic, itemsById, macros)
     expect(r.macro).toBe('mm-alc')
     expect(r.incasso).toBeCloseTo(8, 2)
     // Tutto il costo del drink, Schweppes compresa: 1,50 + 0,50.
@@ -83,20 +92,20 @@ describe('lineByMacro: una vendita, una macro sola', () => {
   })
 
   it('lo Jäger Bomb porta la Red Bull sui distillati', () => {
-    const r = lineByMacro(riga('jagerbomb', 1, 6), jagerBomb, itemsById, menuCatToMacro)
+    const [r] = lineByMacro(riga('jagerbomb', 1, 6), jagerBomb, itemsById, macros)
     expect(r.macro).toBe('mm-alc')
     expect(r.costo).toBeCloseTo(1.8, 2)
   })
 
   it('la stessa Schweppes venduta da sola resta una bibita', () => {
-    const r = lineByMacro(riga('schweppes-sola', 1, 3), schweppesSola, itemsById, menuCatToMacro)
+    const [r] = lineByMacro(riga('schweppes-sola', 1, 3), schweppesSola, itemsById, macros)
     expect(r.macro).toBe('mm-bib')
     expect(r.incasso).toBeCloseTo(3, 2)
     expect(r.costo).toBeCloseTo(0.5, 2)
   })
 
   it('scorpora l’IVA di rivendita dall’incasso, non dal costo', () => {
-    const r = lineByMacro(riga('gintonic', 1, 11), ginTonic, itemsById, menuCatToMacro, {
+    const [r] = lineByMacro(riga('gintonic', 1, 11), ginTonic, itemsById, macros, {
       saleVat: 10,
     })
     expect(r.incasso).toBeCloseTo(10, 2)
@@ -105,13 +114,13 @@ describe('lineByMacro: una vendita, una macro sola', () => {
 
   it('il costo è al netto dell’IVA d’acquisto: si confronta con un incasso netto', () => {
     const conIva = { ...itemsById, schweppes: { ...itemsById.schweppes, vat: 22 } }
-    const r = lineByMacro(riga('gintonic', 1, 8), ginTonic, conIva, menuCatToMacro)
+    const [r] = lineByMacro(riga('gintonic', 1, 8), ginTonic, conIva, macros)
     // Col costo lordo la Schweppes peserebbe 0,61 invece di 0,50.
     expect(r.costo).toBeCloseTo(2, 2)
   })
 
   it('lo sconto abbassa l’incasso e NON il costo: il drink è costato lo stesso', () => {
-    const r = lineByMacro(riga('gintonic', 1, 8), ginTonic, itemsById, menuCatToMacro, {
+    const [r] = lineByMacro(riga('gintonic', 1, 8), ginTonic, itemsById, macros, {
       factor: 0.5,
     })
     expect(r.incasso).toBeCloseTo(4, 2)
@@ -119,13 +128,13 @@ describe('lineByMacro: una vendita, una macro sola', () => {
   })
 
   it('quantità multiple: incasso e costo vanno insieme', () => {
-    const r = lineByMacro(riga('gintonic', 3, 8), ginTonic, itemsById, menuCatToMacro)
+    const [r] = lineByMacro(riga('gintonic', 3, 8), ginTonic, itemsById, macros)
     expect(r.incasso).toBeCloseTo(24, 2)
     expect(r.costo).toBeCloseTo(6, 2)
   })
 
-  it('drink senza categoria di menù → «non attribuito», col suo incasso', () => {
-    const r = lineByMacro(riga('boh', 1, 5), { recipe_items: [] }, itemsById, menuCatToMacro)
+  it('drink senza peso in nessuna macro → «non attribuito», col suo incasso', () => {
+    const [r] = lineByMacro(riga('boh', 1, 5), { recipe_items: [] }, itemsById, macros)
     expect(r.macro).toBe(UNASSIGNED)
     expect(r.incasso).toBeCloseTo(5, 2)
     // Ricetta assente: il costo non si sa, e resta 0 — non è una perdita.
@@ -133,9 +142,29 @@ describe('lineByMacro: una vendita, una macro sola', () => {
   })
 
   it('riga libera senza drink di catalogo → non attribuita', () => {
-    const r = lineByMacro(riga(null, 1, 4), undefined, itemsById, menuCatToMacro)
+    const [r] = lineByMacro(riga(null, 1, 4), undefined, itemsById, macros)
     expect(r.macro).toBe(UNASSIGNED)
     expect(r.incasso).toBeCloseTo(4, 2)
+  })
+
+  // UNA VOCE CON L'80% IN UNA MACRO: l'incasso E il costo vanno all'80%
+  // lì, e il 20% che nessuno reclama resta «non attribuito» — non sparisce
+  // e non si conta due volte.
+  it('una voce all’80% porta lì l’80% di incasso e costo, il resto è non attribuito', () => {
+    const parziali = [{ id: 'mm-alc', name: 'Alcolici', pesi_voci: { gintonic: 80 } }]
+    const parti = lineByMacro(riga('gintonic', 1, 10), ginTonic, itemsById, parziali)
+    expect(parti).toEqual([
+      { macro: 'mm-alc', incasso: 8, costo: 1.6 },
+      { macro: UNASSIGNED, incasso: 2, costo: 0.4 },
+    ])
+  })
+
+  it('la ripartizione NON guarda i pesi dei prodotti: il costo segue la voce', () => {
+    // La Schweppes comprata sta al 60% fra le bibite, ma nel Gin Tonic
+    // tutto il suo costo va coi distillati, come l'incasso.
+    const parti = lineByMacro(riga('gintonic', 1, 8), ginTonic, itemsById, macros)
+    expect(parti).toHaveLength(1)
+    expect(parti[0]).toEqual({ macro: 'mm-alc', incasso: 8, costo: 2 })
   })
 })
 
@@ -145,7 +174,7 @@ describe('venditeByMacro', () => {
       { order_items: [riga('gintonic', 1, 8), riga('schweppes-sola', 1, 3)] },
       { order_items: [riga('jagerbomb', 2, 6)] },
     ]
-    const acc = venditeByMacro(orders, { drinksById, itemsById, menuCatToMacro })
+    const acc = venditeByMacro(orders, { drinksById, itemsById, macros })
     // Distillati: 8 + 12 di incasso, 2 + 3,60 di costo.
     expect(acc.get('mm-alc').incasso).toBeCloseTo(20, 2)
     expect(acc.get('mm-alc').costo).toBeCloseTo(5.6, 2)
@@ -156,40 +185,50 @@ describe('venditeByMacro', () => {
 
   it('legge le righe dalle comande se mancano gli order_items', () => {
     const orders = [{ comande: [{ items: [riga('gintonic', 1, 8)] }] }]
-    const acc = venditeByMacro(orders, { drinksById, itemsById, menuCatToMacro })
+    const acc = venditeByMacro(orders, { drinksById, itemsById, macros })
     expect(acc.get('mm-alc').incasso).toBeCloseTo(8, 2)
   })
 
   it('salta gli ordini annullati', () => {
     const orders = [{ status: 'annullato', order_items: [riga('gintonic', 1, 8)] }]
-    expect(venditeByMacro(orders, { drinksById, itemsById, menuCatToMacro }).size).toBe(0)
+    expect(venditeByMacro(orders, { drinksById, itemsById, macros }).size).toBe(0)
   })
 })
 
-// GLI ACQUISTI SONO UN'ALTRA DOMANDA e vivono per conto loro, sulle macro
-// di MAGAZZINO: «quanto ho speso in bibite» resta una domanda vera, ma è
-// delle fatture, non della tabella del venduto.
+// GLI ACQUISTI SONO UN'ALTRA DOMANDA e leggono l'ALTRO LATO della stessa
+// macro, i pesi dei PRODOTTI: «quanto ho speso in bibite» resta una
+// domanda vera, ma è delle fatture, non della tabella del venduto. Ed è
+// qui che un prodotto può stare per il 60% in una macro e per il 40%
+// nell'altra.
 describe('purchasesByMacro', () => {
   const pos = [
     {
       status: 'ricevuto',
       lines: [
         { item_id: 'gin', unit_cost: 21, qty_packages: 2 }, // 42 → distillati
-        { item_id: 'schweppes', unit_cost: 0.5, qty_packages: 24 }, // 12 → bibite
+        { item_id: 'schweppes', unit_cost: 0.5, qty_packages: 24 }, // 12 → 60/40
       ],
     },
     { status: 'inviato', lines: [{ item_id: 'gin', unit_cost: 21, qty_packages: 5 }] },
   ]
-  it('somma per macro di magazzino solo gli ordini ricevuti', () => {
-    const acc = purchasesByMacro(pos, { itemsById, catToMacro })
-    expect(acc.get('mag-alc')).toBeCloseTo(42, 2)
-    expect(acc.get('mag-bib')).toBeCloseTo(12, 2)
+  it('somma per macro, coi pesi dei prodotti, solo gli ordini ricevuti', () => {
+    const acc = purchasesByMacro(pos, { macros })
+    // 42 di gin + il 40% dei 12 di Schweppes.
+    expect(acc.get('mm-alc')).toBeCloseTo(46.8, 2)
+    expect(acc.get('mm-bib')).toBeCloseTo(7.2, 2)
   })
 
-  it('la Schweppes comprata resta una bibita: l’anagrafica non si tocca mai', () => {
-    const acc = purchasesByMacro(pos, { itemsById, catToMacro })
-    expect(acc.get('mag-bib')).toBeCloseTo(12, 2)
-    expect(acc.has('mm-alc')).toBe(false)
+  it('non si perde niente: la somma delle macro è la spesa ricevuta', () => {
+    const acc = purchasesByMacro(pos, { macros })
+    expect([...acc.values()].reduce((s, v) => s + v, 0)).toBeCloseTo(54, 2)
+  })
+
+  it('un prodotto senza peso in nessuna macro va a «non attribuito»', () => {
+    const acc = purchasesByMacro(
+      [{ status: 'ricevuto', lines: [{ item_id: 'ghiaccio', unit_cost: 2, qty_packages: 3 }] }],
+      { macros }
+    )
+    expect(acc.get(UNASSIGNED)).toBeCloseTo(6, 2)
   })
 })
 
@@ -210,7 +249,6 @@ describe('macroMonthlyReport', () => {
     orders,
     drinksById,
     itemsById,
-    menuCatToMacro,
     macros,
     months: ['2026-06', '2026-07'],
   })
@@ -265,7 +303,6 @@ describe('macroMonthlyReport', () => {
       ],
       drinksById,
       itemsById,
-      menuCatToMacro,
       macros,
       months: ['2026-07'],
     })
@@ -277,7 +314,6 @@ describe('macroMonthlyReport', () => {
       orders,
       drinksById,
       itemsById,
-      menuCatToMacro,
       macros,
       months: ['2026-06', '2026-07'],
       saleVat: 10,
@@ -314,7 +350,6 @@ describe('le due incidenze', () => {
     orders: ordini,
     drinksById,
     itemsById,
-    menuCatToMacro,
     macros,
     months: ['2026-06', '2026-07'],
   })
@@ -368,7 +403,6 @@ describe('le due incidenze', () => {
       ],
       drinksById,
       itemsById,
-      menuCatToMacro,
       macros,
       months: ['2026-07'],
     })
@@ -382,7 +416,6 @@ describe('le due incidenze', () => {
       orders: [],
       drinksById,
       itemsById,
-      menuCatToMacro,
       macros,
       months: ['2026-07'],
     })
@@ -397,6 +430,11 @@ describe('le due incidenze', () => {
 // rivende come un drink servito al banco. Mettere tutto al 10% gonfia il
 // netto, e dal netto scendono margine, incidenze e prime cost.
 describe('l’aliquota di vendita di una voce', () => {
+  // La bottiglia sta al 100% fra gli alcolici, come le altre voci.
+  const conBottiglia = [
+    { ...macros[0], pesi_voci: { ...macros[0].pesi_voci, bott: 100 } },
+    macros[1],
+  ]
   it('la voce che ne ha una sua vince sul valore del locale', () => {
     expect(aliquotaDiVendita({ sale_vat: 22 }, 10)).toBe(22)
   })
@@ -421,7 +459,7 @@ describe('l’aliquota di vendita di una voce', () => {
 
   it('scorpora la riga con l’aliquota della sua voce', () => {
     const bottiglia = { id: 'bott', category_id: 'menu-alcolici', sale_vat: 22, recipe_items: [] }
-    const r = lineByMacro({ drink_id: 'bott', qty: 1, unit_price: 122 }, bottiglia, itemsById, menuCatToMacro, {
+    const [r] = lineByMacro({ drink_id: 'bott', qty: 1, unit_price: 122 }, bottiglia, itemsById, conBottiglia, {
       saleVat: 10,
     })
     // 122 al 22% fa 100 netti; al 10% del locale ne farebbe 110,91.
@@ -440,8 +478,7 @@ describe('l’aliquota di vendita di una voce', () => {
       ],
       drinksById: { ...drinksById, bott: bottiglia },
       itemsById,
-      menuCatToMacro,
-      macros,
+      macros: conBottiglia,
       months: ['2026-07'],
       saleVat: 10,
     })

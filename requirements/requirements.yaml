@@ -3116,6 +3116,20 @@ requirements:
       vanno collegate alle categorie dei drink. Non è un guasto ed è lo
       stesso comportamento di prima; cambia solo il posto dove si va a
       crearle, che adesso è il menù e non il magazzino.
+      RIPENSATA IL 09/09/2026 (Flavio, nota vocale delle 12:22), e il
+      disegno nuovo sta in REQ-MAG-042. In due righe: l'elenco torna UNO
+      — la decisione del 19/08 sui «due elenchi» è superata —, dentro una
+      macro ci vanno i SINGOLI prodotti e le SINGOLE voci (non le
+      categorie), ognuno con una PERCENTUALE, e i pesi vivono sulla macro
+      (`pesi_prodotti`, `pesi_voci`). Con un elenco solo l'aggancio
+      `macro_menu_id` non serve più: il fatturato di una macro è il suo
+      incasso, e la spesa è la sua spesa. Le otto macro create su test il
+      19/08 (quattro d'acquisto e quattro di vendita) restano lì come macro
+      qualsiasi, da riempire o cancellare a mano; i campi `ambito` e
+      `macro_menu_id` restano sui documenti e non si leggono più. Nessuna
+      migrazione dei pesi: «questo vado a inserirlo io manualmente». La
+      regola del costo che segue il drink resta com'è, con la quota della
+      voce.
     status: implemented
     generate_issue: true
     labels: [magazzino, menu, statistiche]
@@ -4979,9 +4993,12 @@ requirements:
     title: "Macro-categorie: il magazzino letto per famiglie"
     area: "src/lib/macros.js, src/lib/macroStats.js, src/components/MacroCategoryManager.jsx"
     description: >
-      Le categorie di magazzino si raggruppano in macro-categorie (distillati,
-      birre, bibite…): servono a leggere consumi, valore e margini per famiglia
-      invece che articolo per articolo, e a capire dove se ne va il denaro.
+      Prodotti e voci del menù si raggruppano in poche macro-categorie
+      (distillati, birre, bibite…): servono a leggere consumi, valore e
+      margini per famiglia invece che articolo per articolo, e a capire
+      dove se ne va il denaro. Dal 09/09/2026 il legame è per singolo
+      prodotto o voce, con una percentuale (REQ-MAG-042): prima passava
+      dalla categoria.
     status: implemented
     generate_issue: false
     labels: [magazzino, statistiche]
@@ -6715,6 +6732,14 @@ requirements:
       tenuto in vita apposta per questo giorno. Dove l'aggancio non c'è, la
       colonna fatturato resta vuota e si dice perché: uno zero lì dentro si
       legge come «non ho incassato niente», che è un'altra cosa.
+      SUPERATO L'AGGANCIO (09/09/2026, REQ-MAG-042): con un elenco solo di
+      macro, il fatturato di una macro è il suo incasso (dai pesi delle
+      voci) e la spesa è la sua spesa (dai pesi dei prodotti), sulla stessa
+      riga senza niente da agganciare. `purchasesByMacro` spartisce già
+      ogni riga d'ordine secondo `pesi_prodotti` — un prodotto al 60/40 va
+      per il 60% in una macro e per il 40% nell'altra — e quello che
+      nessuna macro reclama resta sotto UNASSIGNED. La schermata è ancora
+      da fare.
       GLI ACQUISTI SENZA MACRO NON SPARISCONO. `purchasesByMacro` li
       raccoglie già sotto UNASSIGNED, e adesso quella riga serve davvero:
       ALTRO è una categoria di magazzino che resta fuori dalle macro APPOSTA
@@ -7328,6 +7353,15 @@ requirements:
       UNA MACRO CANCELLATA VALE COME NESSUNA MACRO, esatto come in
       `groupCategoriesByMacro`: il `macro_id` resta attaccato alla
       categoria, ma il gruppo non esiste più.
+      SUPERATA (09/09/2026, REQ-MAG-042): le categorie non portano più una
+      macro — il legame è per singolo prodotto o voce, con una percentuale
+      — quindi l'etichetta accanto alla categoria non ha più niente da
+      dire ed è stata tolta da tutti e due gli elenchi (`EtichettaMacro`
+      cancellato). Il bisogno di vedere «cosa manca» resta, e si soddisfa
+      dentro la macro: nelle due colonne c'è il filtro «Solo senza macro»,
+      che mostra i prodotti e le voci a cui nessuna macro ha ancora dato
+      una quota. I test citati sono quelli degli elenchi e della logica
+      pura, che restano.
     status: implemented
     generate_issue: true
     labels: [ux, magazzino, menu]
@@ -8776,6 +8810,10 @@ requirements:
       manca — la categoria, quanto contiene un pezzo, la soglia di riordino —
       in ambra, che vuol dire lavoro che manca (il rosso, in questa app, vuol
       dire annullato: DESIGN.md).
+      DAL 09/09/2026 LA LISTA ACCANTO ALLE MACRO NON C'E' PIU' (REQ-MAG-042):
+      la macro si da' al singolo prodotto, non alla categoria, quindi una
+      categoria che manca non toglie piu' niente ai conti. Restano la matita
+      nella lista e, nella scheda, l'elenco di cosa manca.
       LA SCHEDA SI CHIUDE CON LA CATEGORIA, non col semplice fatto di averla
       aperta. Bastasse un salvataggio qualunque, il segno sparirebbe dal
       prodotto guardato per un secondo e la spesa continuerebbe a non
@@ -11096,6 +11134,82 @@ requirements:
     labels: [menu, magazzino, script]
     test_cases:
       - tests/unit/ghiaccioPerUnoEMezzo.test.js
+
+  - id: REQ-MAG-042
+    title: "Le macro-categorie sono un elenco solo: prodotti e voci ci entrano uno a uno, con una percentuale"
+    area: "src/lib/macros.js, src/lib/macroStats.js, src/lib/api.js (impostaPesoMacro), src/components/MacroCategoryManager.jsx, src/components/InventoryManager.jsx (MacroPanel), src/components/MacroMonthlyTab.jsx"
+    description: >
+      Chiesto da Flavio il 09/09/2026 (nota vocale delle 12:22), dopo aver
+      provato le macro com'erano: «io già me ne sono create quattro …
+      clicco su una macro categoria e mi appaiono tutti i prodotti di
+      magazzino e tutti gli items del menu … con una percentuale: il 100%,
+      l'80%, il 60% … questo vado a inserirlo io manualmente … gli items
+      del menu vanno caricati al 100% … i prodotti di magazzino una parte
+      va in una macro categoria e una parte va nell'altra … sinistra
+      prodotti destra items … non mi mettere tutta la categoria bibite ma
+      le singole voci … tutti in ordine alfabetico … sempre con quello che
+      ricavo, quindi gli items del menu, e sia quello che spendo, quindi i
+      prodotti del magazzino».
+      TRE COSE CAMBIANO rispetto a REQ-MAG-015. (1) L'ELENCO È UNO: la
+      stessa macro tiene insieme quello che si spende e quello che si
+      incassa, così a fine mese i due numeri stanno sulla stessa riga senza
+      un aggancio da compilare a parte. (2) DENTRO CI VANNO I SINGOLI
+      prodotti e le singole voci, non le categorie. (3) OGNI LEGAME HA UNA
+      PERCENTUALE, intera da 1 a 100: una voce di solito sta al 100% in una
+      macro sola, un prodotto può stare per il 60% in una e per il 40%
+      nell'altra. Quello che le quote non coprono resta «non attribuito»:
+      non sparisce e non si conta due volte.
+      DOVE STANNO I PESI: sulla macro, in due mappe `pesi_prodotti` (id
+      prodotto → percentuale) e `pesi_voci` (id voce → percentuale). Sulla
+      macro e non sul prodotto perché è la macro che si apre per
+      compilarli ed è la macro che si cancella: sparita lei, spariscono i
+      suoi pesi e nessun prodotto resta a puntare un gruppo che non c'è
+      più. I campi `ambito` e `macro_menu_id` delle macro nate con la
+      1.4.8 restano sui documenti e non si leggono più; il `macro_id`
+      sulle categorie non si scrive più e non si legge più.
+      LA SCHERMATA: Magazzino → 🗂️ Macro-categorie (quella del Menù è
+      stata tolta: con un elenco solo non c'è un secondo posto). L'elenco
+      dice per ogni macro quanti prodotti e quante voci ha dentro; aperta,
+      mostra due colonne — a sinistra i prodotti del magazzino, a destra
+      le voci del menù — in ordine alfabetico, ognuno con la casella della
+      percentuale, la ricerca e il filtro «Solo senza macro». Accanto a
+      chi ha già una quota altrove si legge «40% altrove», e la casella
+      non lascia passare cento: un 100 scritto su un prodotto che sta già
+      al 40% in un'altra macro si riporta a 60.
+      LOCAL-FIRST, COME TUTTO IL RESTO: la casella si compila, si esce (o
+      Invio), e il numero resta lì all'istante. Tutti i writer delle macro
+      (`createMacroCategory`, `updateMacroCategory`, `impostaPesoMacro`,
+      `deleteMacroCategory`) scrivono in sottofondo (`bgWrite`) e tornano
+      subito il documento com'è dopo la scrittura, composto in memoria
+      (`macroConPeso`): la schermata sostituisce quello che aveva in lista
+      e non rilegge niente. L'id di una macro nuova lo fa il terminale
+      (`doc()` senza rete). `impostaPesoMacro` applica la stessa regola
+      della casella — `pesoAmmesso`, col tetto di cento meno quello che le
+      altre macro hanno già — e uno zero toglie il campo (`deleteField`).
+      È una lista lunga da riempire una casella dietro l'altra, e un giro
+      di rete a ogni casella la renderebbe inusabile; il test della
+      schermata gira con Firestore che non risponde mai.
+      I CONTI. Venduto × Incassato spartisce ogni riga venduta fra le macro
+      secondo `pesi_voci` della sua voce — incasso E costo con la stessa
+      quota, perché il costo segue il drink (REQ-MAG-015: la Schweppes nel
+      Gin Tonic conta sui distillati). Gli acquisti (`purchasesByMacro`,
+      per REQ-MAG-022) spartiscono ogni riga d'ordine secondo
+      `pesi_prodotti`. Se due persone scrivono insieme e la somma dei pesi
+      passa cento, la ripartizione la riporta a cento in proporzione: un
+      euro non si conta mai due volte.
+      NESSUNA MIGRAZIONE dei pesi dalle vecchie categorie: «questo vado a
+      inserirlo io manualmente». Su test le otto macro del 19/08 restano
+      come macro qualsiasi, da riempire o cancellare a mano; in produzione
+      `macro_categories` è ancora vuota.
+    status: implemented
+    generate_issue: false
+    labels: [magazzino, menu, statistiche]
+    test_cases:
+      - tests/unit/macros.test.js
+      - tests/unit/macroStats.test.js
+      - tests/component/MacroCategoryManager.test.jsx
+      - tests/component/MacroMonthlyTab.test.jsx
+      - tests/component/InventoryManager.test.jsx
 
   - id: REQ-STAMPA-018
     title: "Se la stampante è viva lo dice lei, sul canale delle stampe"

@@ -9,6 +9,7 @@ import {
   setDoc,
   updateDoc,
   deleteDoc,
+  deleteField,
   query,
   where,
   orderBy,
@@ -35,6 +36,7 @@ import {
   prodottoDaRigaOrdine,
 } from './inventory.js'
 import { consumptionDiff, purchaseOrderTotals } from './warehouse.js'
+import { LATI, macroConPeso, ordinaMacro, pesiPuliti, pesoAmmesso, quotaAltrove } from './macros.js'
 import {
   idRigaListino,
   livelloDi,
@@ -179,7 +181,6 @@ function mapCategory(snap) {
     sort_order: c.sort_order ?? 0,
     icon: c.icon ?? null, // emoji scelta per la categoria (opzionale)
     color: c.color ?? null, // colore custom (hex); null = colore automatico
-    macro_id: c.macro_id ?? null, // macro-categoria di appartenenza (inventario)
     created_at: toIso(c.created_at),
   }
 }
@@ -478,8 +479,8 @@ export async function fetchInventoryCategories() {
   return cats
 }
 
-export async function createInventoryCategory({ name, sort_order = 0, macro_id = null }) {
-  const ref = await addDoc(inventoryCategoriesCol, { name, sort_order, macro_id, created_at: serverTimestamp() })
+export async function createInventoryCategory({ name, sort_order = 0 }) {
+  const ref = await addDoc(inventoryCategoriesCol, { name, sort_order, created_at: serverTimestamp() })
   return mapCategory(await getDoc(ref))
 }
 
@@ -494,17 +495,22 @@ export async function deleteInventoryCategory(id) {
 }
 
 // --- MACRO-CATEGORIE ---
-// Raggruppano le categorie d'inventario (Distillati, Birre+Bibite, Vino…) per
-// i conti aggregati di acquisti/fatturato. Il legame vive sulla categoria
-// (campo macro_id), così una categoria sta in al più una macro.
-
-// DUE ELENCHI, NON UNO. Le macro nascono sul MAGAZZINO — raggruppano quello
-// che si compra — ma servono anche sul MENÙ, sulle categorie dei drink che
-// si vendono: sono due mestieri diversi (si compra «Distillati», si vende
-// «Cocktail classici») e mescolarli farebbe due somme sbagliate.
-// Stessa collezione, campo `ambito`: le righe vecchie non ce l'hanno e sono
-// tutte di magazzino, che è come stavano prima.
-export const AMBITI_MACRO = ['magazzino', 'menu']
+// Pochi gruppi (Distillati, Birre e bibite, Food…) per i conti di quello
+// che si spende e di quello che si incassa. UN ELENCO SOLO, e dentro ogni
+// macro i SINGOLI prodotti del magazzino e le SINGOLE voci del menù, ognuno
+// con la sua percentuale (lib/macros.js dice il perché: Flavio, 09/09/2026).
+//
+// I pesi stanno sul documento della macro, in due mappe `pesi_prodotti` e
+// `pesi_voci` (id → percentuale intera). I campi `ambito` e `macro_menu_id`
+// delle macro nate prima (1.4.8) restano sui documenti e non si leggono
+// più: quelle macro adesso sono macro come le altre, da riempire.
+//
+// TUTTI I WRITER QUI SOTTO SCRIVONO IN SOTTOFONDO E TORNANO SUBITO quello
+// che la schermata deve mostrare, composto in memoria (come le altre
+// spese, e per la stessa ragione: BUG-045). La schermata delle macro è una
+// lista lunga di caselle da compilare una dietro l'altra, e un giro di
+// rete a ogni gesto — o un `await` che offline non torna mai — la
+// renderebbe inusabile.
 
 function mapMacro(snap) {
   const m = snap.data() || {}
@@ -512,51 +518,56 @@ function mapMacro(snap) {
     id: snap.id,
     name: m.name ?? '',
     sort_order: m.sort_order ?? 0,
-    ambito: m.ambito === 'menu' ? 'menu' : 'magazzino',
-    // Solo sulle macro di magazzino: a quale macro di VENDITA corrisponde
-    // questa spesa. È l'aggancio che fa il confronto speso/incassato.
-    macro_menu_id: m.macro_menu_id ?? null,
+    pesi_prodotti: pesiPuliti(m.pesi_prodotti),
+    pesi_voci: pesiPuliti(m.pesi_voci),
     created_at: toIso(m.created_at),
   }
 }
 
-export async function fetchMacroCategories(ambito = 'magazzino') {
+export async function fetchMacroCategories() {
   const snap = await getDocs(macroCategoriesCol)
-  const list = snap.docs.map(mapMacro).filter((m) => m.ambito === ambito)
-  list.sort((a, b) => (a.sort_order - b.sort_order) || (a.name || '').localeCompare(b.name || ''))
-  return list
+  return ordinaMacro(snap.docs.map(mapMacro))
 }
 
-export async function createMacroCategory({ name, sort_order = 0, ambito = 'magazzino' }) {
-  const ref = await addDoc(macroCategoriesCol, {
-    name,
-    sort_order,
-    ambito: ambito === 'menu' ? 'menu' : 'magazzino',
-    created_at: serverTimestamp(),
-  })
-  return mapMacro(await getDoc(ref))
+// L'identificativo se lo fa il terminale (vedi creaAltraSpesa): con
+// `addDoc` si aspetta il server per sapere come si chiama il documento, e
+// senza rete quell'attesa non finisce mai.
+export function createMacroCategory({ name, sort_order = 0 }) {
+  const ref = doc(macroCategoriesCol)
+  bgWrite(() => setDoc(ref, { name, sort_order, created_at: serverTimestamp() }), 'macro-categoria')
+  return { id: ref.id, name, sort_order, pesi_prodotti: {}, pesi_voci: {}, created_at: new Date().toISOString() }
 }
 
-export async function updateMacroCategory(id, patch) {
-  const ref = doc(db, 'macro_categories', id)
-  await updateDoc(ref, patch)
-  return mapMacro(await getDoc(ref))
+export function updateMacroCategory(macro, patch) {
+  bgWrite(() => updateDoc(doc(db, 'macro_categories', macro.id), patch), 'macro-categoria')
+  return { ...macro, ...patch }
 }
 
-// Eliminando una macro, le sue categorie tornano "senza macro" (non si
-// perdono): si azzera macro_id su quelle che la puntano — quelle del
-// magazzino o quelle del menù, secondo l'ambito. E si sgancia da chi la
-// indicava come macro di vendita, altrimenti resterebbe un aggancio a un
-// gruppo che non esiste più e il confronto mostrerebbe una riga vuota.
-export async function deleteMacroCategory(id, ambito = 'magazzino') {
-  const collezione = ambito === 'menu' ? categoriesCol : inventoryCategoriesCol
-  const cats = await getDocs(query(collezione, where('macro_id', '==', id)))
-  await Promise.all(cats.docs.map((d) => updateDoc(d.ref, { macro_id: null })))
-  if (ambito === 'menu') {
-    const agganciate = await getDocs(query(macroCategoriesCol, where('macro_menu_id', '==', id)))
-    await Promise.all(agganciate.docs.map((d) => updateDoc(d.ref, { macro_menu_id: null })))
-  }
-  await deleteDoc(doc(db, 'macro_categories', id))
+// QUANTO DI UN PRODOTTO (o di una voce) STA IN QUESTA MACRO. Torna la macro
+// composta col peso nuovo, già riportato al tetto di cento meno quello che
+// le altre macro hanno preso: il vincolo sta qui e non solo nella casella,
+// così vale anche per uno script.
+//
+// `setDoc` con merge e non `updateDoc` col percorso «pesi_voci.<id>»: un
+// id di Firestore può avere caratteri che in un percorso a punti vanno
+// interpretati, e la mappa annidata li prende com'è. Uno zero TOGLIE il
+// campo: un peso a zero non è un peso.
+export function impostaPesoMacro(macros, macroId, lato, id, perc) {
+  const campo = LATI[lato]
+  const macro = (macros || []).find((m) => m.id === macroId)
+  if (!campo || !macro || !id) return null
+  const p = pesoAmmesso(perc, 100 - quotaAltrove(macros, lato, id, macroId))
+  const valore = p > 0 ? p : deleteField()
+  bgWrite(
+    () => setDoc(doc(db, 'macro_categories', macroId), { [campo]: { [id]: valore } }, { merge: true }),
+    'macro-categoria'
+  )
+  return macroConPeso(macro, lato, id, p)
+}
+
+// I pesi vivono sulla macro: cancellata lei, non resta niente che la punti.
+export function deleteMacroCategory(id) {
+  bgWrite(() => deleteDoc(doc(db, 'macro_categories', id)), 'macro-categoria')
 }
 
 // --- FORNITORI ---
