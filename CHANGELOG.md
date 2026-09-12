@@ -23,6 +23,12 @@
 
 ### Per chi amministra
 
+- **Alla consegna di un ordine ogni riga dice quanto costa** (pezzi ×
+  prezzo, che si rifà mentre si correggono le caselle), così il confronto
+  con la fattura si fa riga per riga e non solo sul netto in fondo. La
+  riga della finestra sta su due linee — nome e totale sopra, pezzi e
+  prezzo sotto — invece di schiacciare il nome in una colonnina.
+
 - **Le macro-categorie sono un elenco solo, e dentro ci vanno i singoli
   prodotti e le singole voci del menù, con una percentuale.** Si apre una
   macro da **Magazzino → Macro-categorie** e si trovano due colonne in

@@ -11254,6 +11254,38 @@ requirements:
       - tests/component/MacroMonthlyTab.test.jsx
       - tests/component/InventoryManager.test.jsx
 
+  - id: REQ-MAG-043
+    title: "Alla consegna ogni riga dice quanto costa, e sta su due linee"
+    area: "src/components/OrdiniListaPanel.jsx (DialogoConsegna), src/index.css (.consegna-riga)"
+    description: >
+      Flavio, 11/09/2026, con la fattura ENOFEL accanto al tablet (due
+      foto e tre vocali): «le bottiglie d'acqua costano 17 centesimi, ne ho
+      prese 24, dovrei sapere il totale; la stessa cosa la tequila, ne ho
+      prese 2, mi porta il prezzo dell'unità ma dovrebbe portare anche il
+      totale». Il netto in fondo c'era già, ma per trovare LA RIGA che non
+      torna con la fattura serve il totale di ogni riga — e deve seguire
+      quello che si scrive nelle caselle, perché è mentre si correggono
+      pezzi e prezzo che si fa il confronto.
+      OGNI RIGA MOSTRA PEZZI × PREZZO, ricalcolato a ogni battuta, e il
+      netto in fondo somma le sole righe spuntate: una riga senza spunta
+      non si carica, quindi non conta, ma il suo totale resta leggibile
+      perché è la riga che si sta decidendo.
+      E LA RIGA STA SU DUE LINEE. Nella seconda foto la finestra della
+      consegna aveva il nome ridotto a una colonnina di una parola per riga
+      («Acqua / Lete / chiesti / 24») con i pezzi sopra il nome: in una
+      scatola da 420 px, nome e due caselle sulla stessa linea non ci
+      stanno, e le caselle avevano una larghezza «divisa per lo zoom» che
+      sull'iPad le allargava ancora. Adesso sopra ci sono spunta, nome (che
+      può andare a capo) e totale; sotto, rientrati sotto il nome, i
+      «chiesti», la casella dei pezzi, «pz ×», la casella del prezzo e «€».
+      È la regola `.consegna-riga` in index.css: una griglia a due aree,
+      con le caselle di una misura loro.
+    status: implemented
+    generate_issue: false
+    labels: [magazzino, fornitori, ux]
+    test_cases:
+      - tests/component/CaricoOrdine.test.jsx
+
   - id: REQ-STAMPA-018
     title: "Se la stampante è viva lo dice lei, sul canale delle stampe"
     area: "src/lib/printer.js (battitoDellaStampante, avviaBattito, ascoltaLaStampante, getPrinter, preparaStampante, smettiDiAscoltare)"

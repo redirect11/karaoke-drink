@@ -16,7 +16,7 @@
 // sorveglia tests/unit/prodottoNuovoDaOrdine.test.js, sul codice vero.
 
 import { describe, it, expect, vi, beforeEach } from 'vitest'
-import { render, screen, waitFor, within } from '@testing-library/react'
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import '@testing-library/jest-dom/vitest'
 
@@ -175,6 +175,45 @@ describe('si decide SE e QUALI righe caricare', () => {
 // DA REQ-MAG-038 LE SCHERMATE SONO DUE: la consegna si fa dalla «Lista
 // ordini» (`vista="lista"`), la composizione dal «Nuovo ordine», che è
 // quello che il pannello mostra senza dirgli niente.
+// ── OGNI RIGA DICE QUANTO COSTA ──────────────────────────────────────
+// Flavio, 11/09/2026, con la fattura ENOFEL accanto al tablet: «le bottiglie
+// d'acqua costano 17 centesimi, ne ho prese 24, dovrei sapere il totale». Il
+// netto in fondo c'era già, ma per trovare la riga che non torna con la
+// fattura serve il totale di OGNI riga, e deve seguire quello che si scrive.
+describe('ogni riga dice quanto costa', () => {
+  beforeEach(() => {
+    stato.ordini = [ORDINE]
+  })
+
+  it('pezzi per prezzo, riga per riga, e il netto in fondo', async () => {
+    const user = userEvent.setup()
+    await apriConsegna(user)
+    expect(screen.getByLabelText('Totale di Campari')).toHaveTextContent('72,00 €')
+    expect(screen.getByLabelText('Totale di Gin Mare')).toHaveTextContent('60,00 €')
+    expect(screen.getByText('Totale netto').nextSibling).toHaveTextContent('177,00 €')
+  })
+
+  it('e si rifà mentre si correggono pezzi e prezzo', async () => {
+    const user = userEvent.setup()
+    await apriConsegna(user)
+    fireEvent.change(screen.getByLabelText('Pezzi ricevuti di Campari'), { target: { value: '5' } })
+    expect(screen.getByLabelText('Totale di Campari')).toHaveTextContent('60,00 €')
+    fireEvent.change(screen.getByLabelText('Prezzo di Campari'), { target: { value: '13.5' } })
+    expect(screen.getByLabelText('Totale di Campari')).toHaveTextContent('67,50 €')
+    expect(screen.getByText('Totale netto').nextSibling).toHaveTextContent('172,50 €')
+  })
+
+  // La riga senza spunta non si carica, quindi non conta nel netto; il suo
+  // totale resta leggibile, perché è la riga che si sta decidendo.
+  it('una riga senza spunta esce dal netto ma non dalla vista', async () => {
+    const user = userEvent.setup()
+    await apriConsegna(user)
+    await user.click(screen.getByLabelText('Carica Gin Mare'))
+    expect(screen.getByLabelText('Totale di Gin Mare')).toHaveTextContent('60,00 €')
+    expect(screen.getByText('Totale netto').nextSibling).toHaveTextContent('117,00 €')
+  })
+})
+
 describe('la casella dell’assortimento non c’è più', () => {
   const apri = (user, nome) =>
     user.click(screen.getByRole('button', { name: `Apri la scheda di ${nome} (senza fornitore)` }))

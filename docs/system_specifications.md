@@ -22,12 +22,12 @@ fallire la suite, e un requisito che cita un test inesistente pure.
 
 | | Quante | Cosa vuol dire |
 |---|---|---|
-| ✅ | 195 | fatto e coperto dai test |
+| ✅ | 196 | fatto e coperto dai test |
 | ⚠️  | 15 | fatto ma nessun test lo verifica |
 | ⬜ | 20 | da fare |
 | 🗑 | 7 | non più valido |
 
-**237 voci** in tutto. **210** descrivono il sistema com'è oggi e
+**238 voci** in tutto. **211** descrivono il sistema com'è oggi e
 stanno in «[Cosa fa il sistema](#cosa-fa-il-sistema)»; **20** sono lavori
 previsti e stanno in un capitolo a parte, perché un impegno preso non è una
 cosa che l'app fa; **10** difetti noti sono ancora aperti.
@@ -47,7 +47,7 @@ come «vero oggi», non come «garantito».
 | [Gruppi di conti](#gruppi-di-conti) | 4 | — | Più conti che vanno insieme — un tavolo, una comitiva — senza fonderli in uno. |
 | [Tavoli](#tavoli) | — | 2 | L’anagrafica dei tavoli e il modo in cui un ordine ci si aggancia. |
 | [Menù e catalogo](#menù-e-catalogo) | 11 | — | Il listino: drink, categorie, disponibilità, prezzi. |
-| [Magazzino](#magazzino) | 36 | 6 | Prodotti, ricette, scorte e consumi. Le quantità sono sempre in unità base. |
+| [Magazzino](#magazzino) | 37 | 6 | Prodotti, ricette, scorte e consumi. Le quantità sono sempre in unità base. |
 | [Cassa di serata e statistiche](#cassa-di-serata-e-statistiche) | 12 | 2 | La serata vista dai numeri: incassi, chiusura, statistiche, conti del locale. |
 | [Stampa](#stampa) | 17 | 1 | La stampante termica al banco: comande, scontrini, chiusure di cassa. |
 | [Vista cliente](#vista-cliente) | 6 | — | Quello che vede il cliente: vetrina, menù, stato del suo ordine. |
@@ -1682,6 +1682,14 @@ LA SCHERMATA: Magazzino → 🗂️ Macro-categorie (quella del Menù è stata t
 NESSUNA MIGRAZIONE dei pesi dalle vecchie categorie: «questo vado a inserirlo io manualmente». Su test le otto macro del 19/08 restano come macro qualsiasi, da riempire o cancellare a mano; in produzione `macro_categories` è ancora vuota.
 
 **Dove**: `src/lib/macros.js, src/lib/macroStats.js, src/lib/api.js (impostaPesoMacro), src/components/MacroCategoryManager.jsx, src/components/InventoryManager.jsx (MacroPanel), src/components/MacroMonthlyTab.jsx` · **Lo dimostrano**: `tests/unit/macros.test.js`, `tests/unit/macroStats.test.js`, `tests/component/MacroCategoryManager.test.jsx`, `tests/component/MacroMonthlyTab.test.jsx`, `tests/component/InventoryManager.test.jsx`
+
+#### REQ-MAG-043 — Alla consegna ogni riga dice quanto costa, e sta su due linee
+
+Flavio, 11/09/2026, con la fattura ENOFEL accanto al tablet (due foto e tre vocali): «le bottiglie d'acqua costano 17 centesimi, ne ho prese 24, dovrei sapere il totale; la stessa cosa la tequila, ne ho prese 2, mi porta il prezzo dell'unità ma dovrebbe portare anche il totale». Il netto in fondo c'era già, ma per trovare LA RIGA che non torna con la fattura serve il totale di ogni riga — e deve seguire quello che si scrive nelle caselle, perché è mentre si correggono pezzi e prezzo che si fa il confronto.
+
+OGNI RIGA MOSTRA PEZZI × PREZZO, ricalcolato a ogni battuta, e il netto in fondo somma le sole righe spuntate: una riga senza spunta non si carica, quindi non conta, ma il suo totale resta leggibile perché è la riga che si sta decidendo. E LA RIGA STA SU DUE LINEE. Nella seconda foto la finestra della consegna aveva il nome ridotto a una colonnina di una parola per riga («Acqua / Lete / chiesti / 24») con i pezzi sopra il nome: in una scatola da 420 px, nome e due caselle sulla stessa linea non ci stanno, e le caselle avevano una larghezza «divisa per lo zoom» che sull'iPad le allargava ancora. Adesso sopra ci sono spunta, nome (che può andare a capo) e totale; sotto, rientrati sotto il nome, i «chiesti», la casella dei pezzi, «pz ×», la casella del prezzo e «€». È la regola `.consegna-riga` in index.css: una griglia a due aree, con le caselle di una misura loro.
+
+**Dove**: `src/components/OrdiniListaPanel.jsx (DialogoConsegna), src/index.css (.consegna-riga)` · **Lo dimostrano**: `tests/component/CaricoOrdine.test.jsx`
 
 ### Cassa di serata e statistiche
 

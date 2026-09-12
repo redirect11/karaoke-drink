@@ -764,6 +764,18 @@ function DialogoFattura({ ordine, fatture, onCancel, onConfirm }) {
 // quello non ne ho» — e va scritto.
 //
 // Le righe già consegnate non compaiono: di lì si carica, non si ricarica.
+//
+// OGNI RIGA DICE QUANTO COSTA (Flavio, 11/09/2026, con la fattura ENOFEL in
+// mano: «le bottiglie d'acqua costano 17 centesimi, ne ho prese 24, dovrei
+// sapere il totale»). Pezzi × prezzo, ricalcolato mentre si scrive, così il
+// confronto con la riga della fattura si fa a colpo d'occhio: il netto in
+// fondo non basta a capire QUALE riga non torna.
+//
+// E LA RIGA STA SU DUE LINEE, non su una. Nella foto dello stesso giorno il
+// nome era ridotto a una colonnina di una parola per riga e i pezzi ci
+// finivano sopra: in una scatola da 420 px, due caselle e il nome sulla
+// stessa linea non ci stanno. Sopra spunta, nome e totale; sotto i chiesti e
+// le due caselle. È `.consegna-riga` in index.css.
 function DialogoConsegna({ ordine, suppliers, onCancel, onConfirm }) {
   const [prezzi, setPrezzi] = useState({})
   const [quantita, setQuantita] = useState({})
@@ -814,37 +826,38 @@ function DialogoConsegna({ ordine, suppliers, onCancel, onConfirm }) {
           </button>
         )}
         {righe.map(({ l, i }) => (
-          <div className="row between" key={i} style={{ alignItems: 'center', marginTop: 6, gap: 8 }}>
-            <label className="row grow" style={{ minWidth: 0, gap: 6, alignItems: 'center' }}>
+          <div className={`consegna-riga${scelti.has(i) ? '' : ' spenta'}`} key={i}>
+            <input
+              type="checkbox"
+              checked={scelti.has(i)}
+              aria-label={`Carica ${l.name}`}
+              onChange={(e) => spunta(i, e.target.checked)}
+            />
+            <span className="consegna-nome">{l.name}</span>
+            <strong className="consegna-totale" aria-label={`Totale di ${l.name}`}>
+              {formatPrice((Number(qta(i, l)) || 0) * (Number(prezzo(i, l)) || 0))}
+            </strong>
+            <span className="consegna-campi">
+              <span className="muted small">chiesti {l.qty_packages}</span>
               <input
-                type="checkbox"
-                checked={scelti.has(i)}
-                aria-label={`Carica ${l.name}`}
-                onChange={(e) => spunta(i, e.target.checked)}
+                type="number"
+                step="1"
+                min="0"
+                aria-label={`Pezzi ricevuti di ${l.name}`}
+                value={qta(i, l)}
+                onChange={(e) => setQuantita((q) => ({ ...q, [i]: e.target.value }))}
               />
-              <span style={{ minWidth: 0 }}>
-                {l.name}
-                <span className="muted small"> · chiesti {l.qty_packages}</span>
-              </span>
-            </label>
-            <input
-              type="number"
-              step="1"
-              min="0"
-              aria-label={`Pezzi ricevuti di ${l.name}`}
-              value={qta(i, l)}
-              onChange={(e) => setQuantita((q) => ({ ...q, [i]: e.target.value }))}
-              style={{ width: 'calc(72px / var(--zoom, 1))', textAlign: 'right' }}
-            />
-            <input
-              type="number"
-              step="0.01"
-              min="0"
-              aria-label={`Prezzo di ${l.name}`}
-              value={prezzo(i, l)}
-              onChange={(e) => setPrezzi((p) => ({ ...p, [i]: e.target.value }))}
-              style={{ width: 'calc(96px / var(--zoom, 1))', textAlign: 'right' }}
-            />
+              <span className="muted small">pz ×</span>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                aria-label={`Prezzo di ${l.name}`}
+                value={prezzo(i, l)}
+                onChange={(e) => setPrezzi((p) => ({ ...p, [i]: e.target.value }))}
+              />
+              <span className="muted small">€</span>
+            </span>
           </div>
         ))}
         <div className="row between" style={{ marginTop: 10 }}>

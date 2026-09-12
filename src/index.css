@@ -4183,6 +4183,56 @@ body.drawer-open .status-bell-float { display: none; }
   overflow-y: auto;
 }
 
+/* LA RIGA DELLA CONSEGNA (OrdiniListaPanel, DialogoConsegna): due linee,
+   perché in 420 px nome, pezzi e prezzo su una linea sola non ci stanno —
+   nella foto dell'11/09 il nome era una colonnina di una parola per riga con
+   i pezzi sopra. Sopra: spunta, nome (che può andare a capo) e totale della
+   riga; sotto, rientrate sotto il nome, le due caselle, con una misura loro
+   (la regola generale degli input è a tutta larghezza). */
+.consegna-riga {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  grid-template-areas:
+    'spunta nome totale'
+    '. campi campi';
+  column-gap: 8px;
+  row-gap: 4px;
+  align-items: center;
+  margin-top: 8px;
+}
+.consegna-riga > input[type='checkbox'] {
+  grid-area: spunta;
+  width: auto;
+  margin: 0;
+}
+.consegna-nome {
+  grid-area: nome;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.consegna-totale {
+  grid-area: totale;
+  white-space: nowrap;
+  font-variant-numeric: tabular-nums;
+}
+.consegna-campi {
+  grid-area: campi;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+.consegna-campi input[type='number'] {
+  width: 5.5em;
+  margin: 0;
+  text-align: right;
+}
+/* Una riga senza spunta non si carica: si vede, ma in secondo piano. */
+.consegna-riga.spenta .consegna-nome,
+.consegna-riga.spenta .consegna-totale {
+  opacity: 0.55;
+}
+
 .confirm-box {
   background: var(--bg-2);
   border: 1px solid rgba(255, 255, 255, 0.1);
