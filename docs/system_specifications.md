@@ -22,12 +22,12 @@ fallire la suite, e un requisito che cita un test inesistente pure.
 
 | | Quante | Cosa vuol dire |
 |---|---|---|
-| ✅ | 196 | fatto e coperto dai test |
+| ✅ | 197 | fatto e coperto dai test |
 | ⚠️  | 15 | fatto ma nessun test lo verifica |
 | ⬜ | 20 | da fare |
 | 🗑 | 7 | non più valido |
 
-**238 voci** in tutto. **211** descrivono il sistema com'è oggi e
+**239 voci** in tutto. **212** descrivono il sistema com'è oggi e
 stanno in «[Cosa fa il sistema](#cosa-fa-il-sistema)»; **20** sono lavori
 previsti e stanno in un capitolo a parte, perché un impegno preso non è una
 cosa che l'app fa; **10** difetti noti sono ancora aperti.
@@ -47,7 +47,7 @@ come «vero oggi», non come «garantito».
 | [Gruppi di conti](#gruppi-di-conti) | 4 | — | Più conti che vanno insieme — un tavolo, una comitiva — senza fonderli in uno. |
 | [Tavoli](#tavoli) | — | 2 | L’anagrafica dei tavoli e il modo in cui un ordine ci si aggancia. |
 | [Menù e catalogo](#menù-e-catalogo) | 11 | — | Il listino: drink, categorie, disponibilità, prezzi. |
-| [Magazzino](#magazzino) | 37 | 6 | Prodotti, ricette, scorte e consumi. Le quantità sono sempre in unità base. |
+| [Magazzino](#magazzino) | 38 | 6 | Prodotti, ricette, scorte e consumi. Le quantità sono sempre in unità base. |
 | [Cassa di serata e statistiche](#cassa-di-serata-e-statistiche) | 12 | 2 | La serata vista dai numeri: incassi, chiusura, statistiche, conti del locale. |
 | [Stampa](#stampa) | 17 | 1 | La stampante termica al banco: comande, scontrini, chiusure di cassa. |
 | [Vista cliente](#vista-cliente) | 6 | — | Quello che vede il cliente: vetrina, menù, stato del suo ordine. |
@@ -1682,6 +1682,14 @@ LA SCHERMATA: Magazzino → 🗂️ Macro-categorie (quella del Menù è stata t
 NESSUNA MIGRAZIONE dei pesi dalle vecchie categorie: «questo vado a inserirlo io manualmente». Su test le otto macro del 19/08 restano come macro qualsiasi, da riempire o cancellare a mano; in produzione `macro_categories` è ancora vuota.
 
 **Dove**: `src/lib/macros.js, src/lib/macroStats.js, src/lib/api.js (impostaPesoMacro), src/components/MacroCategoryManager.jsx, src/components/InventoryManager.jsx (MacroPanel), src/components/MacroMonthlyTab.jsx` · **Lo dimostrano**: `tests/unit/macros.test.js`, `tests/unit/macroStats.test.js`, `tests/component/MacroCategoryManager.test.jsx`, `tests/component/MacroMonthlyTab.test.jsx`, `tests/component/InventoryManager.test.jsx`
+
+#### REQ-MAG-044 — Un prodotto nasce scorta, e l'etichetta dice a chi serve spegnerla
+
+Flavio, 12/09/2026 (vocale delle 13:47): «alcuni prodotti non mi scarica il quantitativo ogni volta che lo vendo … ho comprato questa nuova tequila Agave Santa, l'ho associata a un item di menù, l'ho battuto, non è stato scaricato. Mi sono reso conto che stava spento il tasto "è una scorta, si scarica quando si usa". Ma perché sta questo tasto? Tutto bisogna che si scarica quando si usa. E poi leggo "spegnilo per il lavoro a servizio": che significa?». A COSA SERVE IL TASTO. C'è per la manodopera: il «Tempo di lavorazione» sta a listino e in ricetta per pesare sul costo del drink, ma non sta su nessuno scaffale — se fosse una scorta andrebbe a zero al primo drink e il menù direbbe «ingrediente esaurito» (REQ-MAG-016). Per tutto il resto dev'essere acceso, e Flavio ha ragione: «lascialo sempre attivo, e non deve nascere spento» (Daniele, 12/09).
+
+DUE COSE CAMBIANO. (1) L'ETICHETTA spiega a chi serve spegnerlo con parole comuni: «resta acceso per tutto quello che sta su uno scaffale; si spegne solo per la manodopera messa in ricetta per il costo (es. "Tempo di lavorazione"), che non finisce mai» — «lavoro a servizio» non lo capiva nessuno. (2) UN PRODOTTO NATO DA UN ORDINE è scorta PER ISCRITTO: `prodottoDaRigaOrdine` scrive `scorta: true` invece di lasciarlo dedurre dall'unità (`eScorta`), che un domani cambia risposta da sola. La scheda nuova partiva già accesa; sui prodotti esistenti la regola di lettura non cambia (un «Tempo di lavorazione» senza il campo resta manodopera), quindi nessuna migrazione. Perché l'Agave Santa fosse spenta non si è ricostruito: il tasto va riacceso a mano su quel prodotto.
+
+**Dove**: `src/lib/inventory.js (prodottoDaRigaOrdine), src/components/InventoryManager.jsx (scheda prodotto)` · **Lo dimostrano**: `tests/unit/prodottoNuovoDaOrdine.test.js`, `tests/component/InventoryManagerCard.test.jsx`
 
 #### REQ-MAG-043 — Alla consegna ogni riga dice quanto costa, e sta su due linee
 

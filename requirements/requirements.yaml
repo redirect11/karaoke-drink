@@ -11254,6 +11254,43 @@ requirements:
       - tests/component/MacroMonthlyTab.test.jsx
       - tests/component/InventoryManager.test.jsx
 
+  - id: REQ-MAG-044
+    title: "Un prodotto nasce scorta, e l'etichetta dice a chi serve spegnerla"
+    area: "src/lib/inventory.js (prodottoDaRigaOrdine), src/components/InventoryManager.jsx (scheda prodotto)"
+    description: >
+      Flavio, 12/09/2026 (vocale delle 13:47): «alcuni prodotti non mi
+      scarica il quantitativo ogni volta che lo vendo … ho comprato questa
+      nuova tequila Agave Santa, l'ho associata a un item di menù, l'ho
+      battuto, non è stato scaricato. Mi sono reso conto che stava spento
+      il tasto "è una scorta, si scarica quando si usa". Ma perché sta
+      questo tasto? Tutto bisogna che si scarica quando si usa. E poi
+      leggo "spegnilo per il lavoro a servizio": che significa?».
+      A COSA SERVE IL TASTO. C'è per la manodopera: il «Tempo di
+      lavorazione» sta a listino e in ricetta per pesare sul costo del
+      drink, ma non sta su nessuno scaffale — se fosse una scorta andrebbe
+      a zero al primo drink e il menù direbbe «ingrediente esaurito»
+      (REQ-MAG-016). Per tutto il resto dev'essere acceso, e Flavio ha
+      ragione: «lascialo sempre attivo, e non deve nascere spento»
+      (Daniele, 12/09).
+      DUE COSE CAMBIANO. (1) L'ETICHETTA spiega a chi serve spegnerlo con
+      parole comuni: «resta acceso per tutto quello che sta su uno
+      scaffale; si spegne solo per la manodopera messa in ricetta per il
+      costo (es. "Tempo di lavorazione"), che non finisce mai» — «lavoro a
+      servizio» non lo capiva nessuno. (2) UN PRODOTTO NATO DA UN ORDINE è
+      scorta PER ISCRITTO: `prodottoDaRigaOrdine` scrive `scorta: true`
+      invece di lasciarlo dedurre dall'unità (`eScorta`), che un domani
+      cambia risposta da sola. La scheda nuova partiva già accesa; sui
+      prodotti esistenti la regola di lettura non cambia (un «Tempo di
+      lavorazione» senza il campo resta manodopera), quindi nessuna
+      migrazione. Perché l'Agave Santa fosse spenta non si è ricostruito:
+      il tasto va riacceso a mano su quel prodotto.
+    status: implemented
+    generate_issue: false
+    labels: [magazzino, ux]
+    test_cases:
+      - tests/unit/prodottoNuovoDaOrdine.test.js
+      - tests/component/InventoryManagerCard.test.jsx
+
   - id: REQ-MAG-043
     title: "Alla consegna ogni riga dice quanto costa, e sta su due linee"
     area: "src/components/OrdiniListaPanel.jsx (DialogoConsegna), src/index.css (.consegna-riga)"

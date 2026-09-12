@@ -1018,6 +1018,12 @@ export function prodottoDaRigaOrdine(riga) {
     // legame vive da quando un prodotto può averne più d'uno.
     status: 'assortimento',
     scheda_da_completare: true,
+    // È UNA SCORTA, PER ISCRITTO. Quello che arriva con una consegna sta su
+    // uno scaffale e si scarica quando si usa: lasciarlo dedurre dall'unità
+    // (`eScorta`) vuol dire che un domani cambia risposta da solo. Flavio,
+    // 12/09/2026: una tequila nuova non si scaricava perché «stava spento il
+    // tasto», e nessuno l'aveva spento apposta.
+    scorta: true,
   }
 }
 

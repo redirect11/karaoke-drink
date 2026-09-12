@@ -2539,11 +2539,20 @@ function ItemForm({ initial, categories, suppliers, listini = [], defaultVat = 2
       )}
 
       {/* SI SCARICA DAL MAGAZZINO? Lo decide il prodotto: il ghiaccio finisce,
-          il tempo di lavorazione no. */}
+          il tempo di lavorazione no. L'ETICHETTA DICE A CHI SERVE SPEGNERLO:
+          «spegnilo per il lavoro a servizio» non lo capiva nessuno (Flavio,
+          12/09/2026: «che significa per il lavoro a servizio?»), e una
+          tequila nuova è rimasta con l'interruttore spento senza che si
+          vedesse — venduta per giorni, mai scaricata. */}
       <label className="row between" style={{ alignItems: 'center', gap: 8, marginTop: 8 }}>
         <span>
           È una scorta: si scarica quando si usa
-          <span className="muted small"> — spegnilo per il lavoro a servizio</span>
+          <span className="muted small">
+            {' '}
+            — resta acceso per tutto quello che sta su uno scaffale. Si spegne
+            solo per la manodopera messa in ricetta per il costo (es. «Tempo di
+            lavorazione»), che non finisce mai.
+          </span>
         </span>
         <input
           type="checkbox"

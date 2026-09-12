@@ -193,6 +193,13 @@ describe('il prodotto nato da un ordine è marcato DA COMPLETARE', () => {
     expect(prodottoDaRigaOrdine({ name: 'X', unit_cost: 5 }).vat).toBe(22)
   })
 
+  // Flavio, 12/09/2026: una tequila comprata da poco non si scaricava perché
+  // «stava spento il tasto» della scorta. Quello che arriva con una consegna
+  // sta su uno scaffale: nasce scorta per iscritto, non dedotto dall'unità.
+  it('nasce come scorta, scritto nero su bianco', () => {
+    expect(prodottoDaRigaOrdine({ name: 'X', unit_cost: 5 }).scorta).toBe(true)
+  })
+
   // LA TRAPPOLA DA NON CALPESTARE. La riga d'ordine porta un `package_size`
   // ma non dice di che misura sia quel contenuto: scriverlo così farebbe
   // rispondere `motivoNonMigrabile` e manderebbe IL MAGAZZINO INTERO in sola

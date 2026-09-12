@@ -23,6 +23,11 @@
 
 ### Per chi amministra
 
+- **«È una scorta: si scarica quando si usa» spiega a chi serve spegnerlo**
+  — solo alla manodopera messa in ricetta per il costo, che non finisce
+  mai; per tutto quello che sta su uno scaffale resta acceso. E un
+  prodotto nato da un ordine nasce scorta per iscritto.
+
 - **Alla consegna di un ordine ogni riga dice quanto costa** (pezzi ×
   prezzo, che si rifà mentre si correggono le caselle), così il confronto
   con la fattura si fa riga per riga e non solo sul netto in fondo. La
