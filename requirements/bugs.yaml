@@ -248,6 +248,10 @@ bugs:
       L'increment resta com'era; anche unitsInStock si ferma a zero, che è da
       lì che nasceva il «valore −0,67 €».
     in_produzione: true
+      SUPERATO IN PARTE IL 12/09/2026 (REQ-MAG-045): il carico NON riparte
+      piu' da zero — Flavio: «−1 piu' cinque deve fare quattro», perche' il
+      meno e' merce gia' bevuta e non ancora caricata. Lo scarico che non
+      scava sotto zero a mano, e il valore in euro da zero in su, restano.
     status: fixed
     generate_issue: true
     labels: [bug, hotfix, magazzino]
@@ -4485,6 +4489,11 @@ bugs:
       conserva il segno.
       NESSUNA MIGRAZIONE E NESSUNO SCRIPT: le giacenze di oggi restano quelle
       che sono, e il primo prodotto che esce da zero comincia a raccontarlo.
+      LA RISPOSTA A «CINQUE O SEI?» E' CAMBIATA IL 12/09/2026 (REQ-MAG-045):
+      QUATTRO su cinque, cioe' il carico si somma al meno. Flavio ha
+      guardato il caso di tutti i giorni — la merce arrivata e caricata il
+      giorno dopo — e non il residuo di arrotondamento. La vendita sotto
+      zero e il meno a schermo restano come qui.
     status: fixed
     in_produzione: false
     generate_issue: true

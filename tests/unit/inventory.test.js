@@ -35,7 +35,7 @@ import {
   copiaProdotto,
   fmtContenuto,
   scaricoPossibile,
-  giacenzaPerCarico,
+  giacenzaNonNegativa,
   BASE_UNITS,
   contentBase,
   unitaGenerica,
@@ -939,18 +939,19 @@ describe('lo scarico a mano non scende sotto zero', () => {
     expect(scaricoPossibile(10, -5)).toBe(0)
   })
 
-  // LA SECONDA REGOLA, che con la vendita sotto zero conta più di prima: il
-  // meno non è un debito da ripagare con la merce che arriva. Da uno scaffale
-  // vuoto non si versa — se un prodotto è uscito quando risultava finito, in
-  // frigo c'era davvero — quindi le sei bottiglie appena consegnate sullo
-  // scaffale ci sono tutte e sei, e il magazzino deve contarle tutte e sei.
-  it('il carico parte da quello che c’è, mai dal negativo', () => {
-    // Una bottiglia caricata su −0,04 deve valere UNA bottiglia: il buco
-    // di prima è un errore vecchio, non un debito da ripagare.
-    expect(giacenzaPerCarico(-0.04) + 1).toBe(1)
-    expect(giacenzaPerCarico(3)).toBe(3)
-    expect(giacenzaPerCarico(undefined)).toBe(0)
-    expect(giacenzaPerCarico('boh')).toBe(0)
+  // LA SECONDA REGOLA È CAMBIATA IL 12/09/2026. Dal 17/08 il carico
+  // ripartiva da zero («il meno non è un debito da ripagare con la merce che
+  // arriva»); Flavio ha chiesto il contrario: «se ho tre pezzi, ne consumo
+  // quattro, va a meno uno, e compro cinque pezzi: non me ne mette quattro,
+  // me ne mette cinque» — il meno è merce già bevuta e non ancora caricata,
+  // e il carico la chiude. Quello che resta da zero in su sono gli OGGETTI e
+  // i SOLDI: bottiglie da toccare e valore in euro. Il carico lo prova
+  // tests/unit/scritturaMagazzino.test.js, sul codice che scrive.
+  it('bottiglie e valore si contano da zero in su', () => {
+    expect(giacenzaNonNegativa(-0.04)).toBe(0)
+    expect(giacenzaNonNegativa(3)).toBe(3)
+    expect(giacenzaNonNegativa(undefined)).toBe(0)
+    expect(giacenzaNonNegativa('boh')).toBe(0)
   })
 
   it('e il valore in euro non è mai negativo: niente «valore −0,67 €»', () => {

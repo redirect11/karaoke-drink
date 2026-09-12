@@ -29,7 +29,7 @@ import {
   formatQty,
   qtyInStockUnit,
   scaricoPossibile,
-  giacenzaPerCarico,
+  giacenzaNonNegativa,
   articoloNormalizzato,
   patchNormalizza,
   caricoDaConfezioni,
@@ -996,11 +996,13 @@ function nonEsistePiu(errore) {
 // `qty` è già in unità base; può essere negativo per uno scarico manuale.
 export async function loadStock(itemId, qty, { reason = 'carico' } = {}) {
   const ref = doc(db, 'inventory_items', itemId)
-  // Un carico parte da quello che c'è, e quello che c'è non è mai negativo:
-  // una bottiglia caricata su −0,04 deve valere una bottiglia. Lo scarico a
-  // mano, dall'altra parte, non può scavare sotto lo zero.
+  // UN CARICO SI SOMMA A QUELLO CHE C'È, ANCHE SOTTO ZERO (Flavio,
+  // 12/09/2026): −1 più cinque pezzi fa quattro, perché il meno è merce già
+  // bevuta e non ancora caricata, e questo carico è quello che la chiude.
+  // Fino al 12/09 il carico ripartiva da zero (BUG-007). Lo scarico a mano,
+  // dall'altra parte, non può scavare sotto lo zero.
   const cur = await leggiArticoloPerScrittura(ref)
-  const partenza = giacenzaPerCarico(cur.stock)
+  const partenza = Number(cur.stock) || 0
   const nuovo = qty >= 0 ? partenza + qty : partenza - scaricoPossibile(partenza, -qty)
   await updateDoc(ref, { stock: nuovo })
   await addDoc(movementsCol, {
@@ -1022,12 +1024,13 @@ export async function receiveBottles(itemId, count, openQty = 0) {
   const ref = doc(db, 'inventory_items', itemId)
   const cur = await leggiArticoloPerScrittura(ref)
   const size = Number(cur.package_size) || 0
-  // Il carico riparte da zero se la giacenza era andata sotto: altrimenti la
-  // bottiglia appena comprata copre il buco e in magazzino ne risulta meno
-  // di una, mentre sullo scaffale c'è tutta.
-  const stock = giacenzaPerCarico(cur.stock)
-  const full = size ? Math.floor(stock / size) : 0
-  const hasOpen = size ? stock - full * size > 1e-9 : false
+  // La giacenza si somma com'è, anche sotto zero (Flavio, 12/09/2026, vedi
+  // `loadStock`); le bottiglie da contare sullo scaffale invece partono da
+  // zero, perché sotto zero non ce ne sono.
+  const stock = Number(cur.stock) || 0
+  const sulloScaffale = giacenzaNonNegativa(stock)
+  const full = size ? Math.floor(sulloScaffale / size) : 0
+  const hasOpen = size ? sulloScaffale - full * size > 1e-9 : false
   const withContent = full + (hasOpen ? 1 : 0)
 
   const addQty = count * size + openQty
@@ -4213,11 +4216,10 @@ async function depleteComandeInventory(entries) {
     // zero si cancellava proprio il numero che lo dice — quanto se n'è
     // versato senza che risultasse.
     //
-    // Il meno non è merce che manca: da uno scaffale vuoto non si versa.
-    // È la misura del buco di conteggio, e si chiude da sé al primo carico,
-    // che riparte da zero (giacenzaPerCarico): le bottiglie appena arrivate
-    // sullo scaffale ci sono tutte, e il magazzino deve contarle tutte.
-    // L'increment resta (commutativo, si accoda offline).
+    // Il meno è quasi sempre merce già bevuta e non ancora caricata: il
+    // carico che arriva dopo si SOMMA e chiude il buco (Flavio, 12/09/2026;
+    // fino a quel giorno il carico ripartiva da zero). L'increment resta
+    // (commutativo, si accoda offline).
     const scarico = Number(qty) || 0
     const newStock = (Number(cur.stock) || 0) - scarico
     bgWrite(() => updateDoc(doc(db, 'inventory_items', id), { stock: increment(-scarico) }), 'scarico scorta')

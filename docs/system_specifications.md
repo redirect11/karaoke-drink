@@ -22,12 +22,12 @@ fallire la suite, e un requisito che cita un test inesistente pure.
 
 | | Quante | Cosa vuol dire |
 |---|---|---|
-| ✅ | 197 | fatto e coperto dai test |
+| ✅ | 198 | fatto e coperto dai test |
 | ⚠️  | 15 | fatto ma nessun test lo verifica |
 | ⬜ | 20 | da fare |
 | 🗑 | 7 | non più valido |
 
-**239 voci** in tutto. **212** descrivono il sistema com'è oggi e
+**240 voci** in tutto. **213** descrivono il sistema com'è oggi e
 stanno in «[Cosa fa il sistema](#cosa-fa-il-sistema)»; **20** sono lavori
 previsti e stanno in un capitolo a parte, perché un impegno preso non è una
 cosa che l'app fa; **10** difetti noti sono ancora aperti.
@@ -47,7 +47,7 @@ come «vero oggi», non come «garantito».
 | [Gruppi di conti](#gruppi-di-conti) | 4 | — | Più conti che vanno insieme — un tavolo, una comitiva — senza fonderli in uno. |
 | [Tavoli](#tavoli) | — | 2 | L’anagrafica dei tavoli e il modo in cui un ordine ci si aggancia. |
 | [Menù e catalogo](#menù-e-catalogo) | 11 | — | Il listino: drink, categorie, disponibilità, prezzi. |
-| [Magazzino](#magazzino) | 38 | 6 | Prodotti, ricette, scorte e consumi. Le quantità sono sempre in unità base. |
+| [Magazzino](#magazzino) | 39 | 6 | Prodotti, ricette, scorte e consumi. Le quantità sono sempre in unità base. |
 | [Cassa di serata e statistiche](#cassa-di-serata-e-statistiche) | 12 | 2 | La serata vista dai numeri: incassi, chiusura, statistiche, conti del locale. |
 | [Stampa](#stampa) | 17 | 1 | La stampante termica al banco: comande, scontrini, chiusure di cassa. |
 | [Vista cliente](#vista-cliente) | 6 | — | Quello che vede il cliente: vetrina, menù, stato del suo ordine. |
@@ -838,6 +838,10 @@ DUE COSE RESTANO DA ZERO IN SU, e non è una svista. I SOLDI: un magazzino che v
 LE BOTTIGLIE DA TOCCARE: sono oggetti su uno scaffale, e «−1 piena più 750 ml nell'aperta» non è una cosa che si può andare a guardare (`bottleBreakdown`). Il meno lo porta `pezziInGiacenza`, che conta una quantità e non degli oggetti.
 
 LO SCARICO A MANO INVECE SI FERMA A ZERO (`scaricoPossibile`): lì c'è una persona che dichiara quanto ha tolto dallo scaffale, e da uno scaffale vuoto non si toglie niente.
+
+RIPENSATO IL 12/09/2026:
+
+IL CARICO NON RIPARTE PIU' DA ZERO (REQ-MAG-045). Flavio: «se ho tre pezzi, ne consumo quattro, va a meno uno, e compro cinque pezzi: non me ne mette quattro, me ne mette cinque». Il meno, al banco, e' quasi sempre merce gia' bevuta e non ancora caricata, e il carico che arriva e' proprio quello: si somma e chiude il buco. Le due cose «da zero in su» — soldi e bottiglie da toccare — restano.
 
 **Dove**: `src/lib/inventory.js computeConsumption, src/lib/comande.js, src/lib/api.js` · **Lo dimostrano**: `tests/unit/inventory.test.js`, `tests/unit/incassoOffline.test.js`, `tests/unit/comande.test.js`, `tests/unit/scritturaComande.test.js`, `tests/unit/impegnato.test.js`, `tests/unit/salaEMagazzino.test.js`, `tests/unit/magazzinoSottoZero.test.js`
 
@@ -1682,6 +1686,16 @@ LA SCHERMATA: Magazzino → 🗂️ Macro-categorie (quella del Menù è stata t
 NESSUNA MIGRAZIONE dei pesi dalle vecchie categorie: «questo vado a inserirlo io manualmente». Su test le otto macro del 19/08 restano come macro qualsiasi, da riempire o cancellare a mano; in produzione `macro_categories` è ancora vuota.
 
 **Dove**: `src/lib/macros.js, src/lib/macroStats.js, src/lib/api.js (impostaPesoMacro), src/components/MacroCategoryManager.jsx, src/components/InventoryManager.jsx (MacroPanel), src/components/MacroMonthlyTab.jsx` · **Lo dimostrano**: `tests/unit/macros.test.js`, `tests/unit/macroStats.test.js`, `tests/component/MacroCategoryManager.test.jsx`, `tests/component/MacroMonthlyTab.test.jsx`, `tests/component/InventoryManager.test.jsx`
+
+#### REQ-MAG-045 — Il carico si somma alla giacenza com'è, anche sotto zero
+
+Flavio, 12/09/2026 (vocale delle 12:46): «quando un prodotto va in negativo e vado ad aggiungere una quantità, la quantità parte comunque da zero. Se ho tre pezzi, ne consumo quattro, va a meno uno; compro cinque pezzi e me ne mette cinque, non quattro: il meno uno non me l'ha calcolato. Non è detto che un prodotto vada realmente in negativo: magari mi è arrivato e non l'ho caricato ancora, lo carico il giorno dopo, e si bilancia col carico». È IL CONTRARIO DI QUELLO DECISO IL 17/08 (BUG-007) e ribadito il 04/09 (BUG-101): allora il carico ripartiva da zero perché «da uno scaffale vuoto non si versa» e una bottiglia caricata su −0,04 doveva contarne una. Flavio guarda il caso di tutti i giorni, non il residuo di arrotondamento: il meno è merce già bevuta e non ancora caricata, e il carico che arriva è quello. Si somma, e il buco si chiude da sé. Il caso −0,04 + 1 = 0,96 resta, ed è accettato: è un centesimo di bottiglia, e per il magazzino conta più il pezzo intero che manca.
+
+DOVE SI SOMMA. Il carico a mano (`loadStock`) parte dalla giacenza com'è; il carico a confezioni (`receiveBottles`) idem, mentre le bottiglie da contare sullo scaffale partono da zero perché sotto zero non ce ne sono; la consegna di un ordine faceva già `increment`, che somma e basta. Lo scarico a mano resta fermo a zero (`scaricoPossibile`): lì una persona dichiara quanto ha tolto, e da uno scaffale vuoto non si toglie niente.
+
+COSA RESTA DA ZERO IN SU, e cambia nome per dirlo: `giacenzaPerCarico` diventa `giacenzaNonNegativa`, usata solo per contare OGGETTI (`bottleBreakdown`: «−1 piena più 750 ml nell'aperta» non vuol dire niente) e SOLDI (`unitsInStock`: un magazzino che vale meno di niente non vuol dire niente). Nessuna migrazione: le giacenze restano quelle, cambia solo cosa fa il prossimo carico.
+
+**Dove**: `src/lib/api.js (loadStock, receiveBottles, consegna), src/lib/inventory.js (giacenzaNonNegativa)` · **Lo dimostrano**: `tests/unit/scritturaMagazzino.test.js`, `tests/unit/inventory.test.js`
 
 #### REQ-MAG-044 — Un prodotto nasce scorta, e l'etichetta dice a chi serve spegnerla
 

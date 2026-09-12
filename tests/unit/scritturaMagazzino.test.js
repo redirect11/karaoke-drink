@@ -161,6 +161,33 @@ describe('a magazzino aggiornato le stesse strade scrivono', () => {
   }
 })
 
+// ── IL CARICO SI SOMMA ANCHE SOTTO ZERO ──────────────────────────────
+// Flavio, 12/09/2026: «se ho tre pezzi, ne consumo quattro, va a meno uno, e
+// compro cinque pezzi: non me ne mette quattro, me ne mette cinque». Il meno
+// è quasi sempre merce già bevuta e non ancora caricata, e il carico che
+// arriva è quello: deve chiudere il buco. Dal 17/08 al 12/09 il carico
+// ripartiva da zero (BUG-007), ed è la regola che qui si rovescia.
+describe('il carico parte dalla giacenza com’è, anche sotto zero', () => {
+  const sottoZero = { ...nuovo, stock: -1 }
+
+  it('a mano: −1 più cinque fa quattro', async () => {
+    stato.articolo = sottoZero
+    await api.loadStock('art-1', 5)
+    const s = stato.scritture.find((w) => w.col === 'inventory_items')
+    expect(s.patch.stock).toBe(4)
+  })
+
+  // Lo scarico a mano invece non scava sotto lo zero: lì c'è una persona che
+  // dichiara quanto ha tolto dallo scaffale, e da uno scaffale vuoto non si
+  // toglie niente.
+  it('lo scarico a mano si ferma a zero', async () => {
+    stato.articolo = { ...nuovo, stock: 2 }
+    await api.loadStock('art-1', -5)
+    const s = stato.scritture.find((w) => w.col === 'inventory_items')
+    expect(s.patch.stock).toBe(0)
+  })
+})
+
 describe('la regola del «in sola lettura» è una sola', () => {
   // `magazzinoBloccato` guarda gli articoli COME LI LEGGE L'APP, cioè già
   // passati da `articoloNormalizzato`: è quello che hanno in mano le due

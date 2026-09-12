@@ -23,6 +23,11 @@
 
 ### Per chi amministra
 
+- **Un carico si somma alla giacenza anche quando è sotto zero**: −1 più
+  cinque pezzi fa quattro, non cinque. Il meno è quasi sempre merce già
+  bevuta e caricata il giorno dopo, e il carico è quello che chiude il
+  buco. (Fino a oggi il carico ripartiva da zero.)
+
 - **«È una scorta: si scarica quando si usa» spiega a chi serve spegnerlo**
   — solo alla manodopera messa in ricetta per il costo, che non finisce
   mai; per tutto quello che sta su uno scaffale resta acceso. E un

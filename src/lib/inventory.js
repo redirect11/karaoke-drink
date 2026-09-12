@@ -200,7 +200,7 @@ export function bottleBreakdown(item) {
   // «−1 bottiglia, più 750 ml in quella aperta», che al banco non vuol dire
   // niente. Il meno lo porta `pezziInGiacenza`, che conta quantità e non
   // oggetti.
-  const stock = giacenzaPerCarico(item?.stock)
+  const stock = giacenzaNonNegativa(item?.stock)
   const total = Number(item?.bottles_total) || 0
   // Con la giacenza contata a PEZZI, "0,8" è una bottiglia aperta all'80%:
   // la parte intera sono le bottiglie piene, il resto è quanto c'è nella
@@ -629,7 +629,7 @@ export function unitsInStock(item) {
   // Il lavoro non sta sullo scaffale: quello che non è una scorta non è
   // giacenza e non entra nel valore del magazzino.
   if (!eScorta(item)) return 0
-  const stock = giacenzaPerCarico(item?.stock)
+  const stock = giacenzaNonNegativa(item?.stock)
   // Il pezzo conta se stesso — e così l'unità, quando è una scorta: un
   // sacchetto di ghiaccio è uno, non una frazione di confezione.
   if (item?.unit === 'pz' || unitaGenerica(item?.unit)) return stock
@@ -777,11 +777,22 @@ export function scaricoPossibile(stock, qty) {
   return Math.min(richiesta, giacenza)
 }
 
-// La giacenza da cui parte un CARICO, che non è mai negativa: comprando una
-// bottiglia e caricandola su −0,04 se ne deve contare UNA. Partendo dal
-// negativo il carico ne conta meno di una, sullo scaffale però c'è tutta, e
-// da quel momento il magazzino mente su quanto prodotto c'è davvero.
-export function giacenzaPerCarico(stock) {
+// LA GIACENZA DA ZERO IN SU, per contare OGGETTI e SOLDI: sotto zero non ci
+// sono bottiglie da toccare né un valore in euro («−1 piena più 750 ml
+// nell'aperta», «valore −0,67 €» non vogliono dire niente).
+//
+// NON È PIÙ LA GIACENZA DA CUI PARTE UN CARICO. Lo era dal 17/08/2026
+// (BUG-007: una bottiglia caricata su −0,04 doveva contarne una), e il
+// 12/09/2026 Flavio ha chiesto il contrario: «se ho tre pezzi, ne consumo
+// quattro, va a meno uno, e compro cinque pezzi: non me ne mette quattro, me
+// ne mette cinque. Non è detto che un prodotto vada realmente in negativo:
+// magari mi è arrivato e non l'ho caricato ancora, lo carico il giorno dopo,
+// e si bilancia col carico». Il meno, al banco, è quasi sempre merce già
+// bevuta e non ancora caricata: il carico che arriva è quello, e deve
+// chiudere il buco, non sommarsi a un conteggio azzerato. I carichi ora
+// partono dalla giacenza com'è (`loadStock`, `receiveBottles`, e la consegna
+// che già faceva `increment`).
+export function giacenzaNonNegativa(stock) {
   return Math.max(0, Number(stock) || 0)
 }
 

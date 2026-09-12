@@ -1965,6 +1965,12 @@ requirements:
       LO SCARICO A MANO INVECE SI FERMA A ZERO (`scaricoPossibile`): lì c'è
       una persona che dichiara quanto ha tolto dallo scaffale, e da uno
       scaffale vuoto non si toglie niente.
+      RIPENSATO IL 12/09/2026: IL CARICO NON RIPARTE PIU' DA ZERO (REQ-MAG-045).
+      Flavio: «se ho tre pezzi, ne consumo quattro, va a meno uno, e compro
+      cinque pezzi: non me ne mette quattro, me ne mette cinque». Il meno,
+      al banco, e' quasi sempre merce gia' bevuta e non ancora caricata, e
+      il carico che arriva e' proprio quello: si somma e chiude il buco. Le
+      due cose «da zero in su» — soldi e bottiglie da toccare — restano.
     status: implemented
     generate_issue: false
     labels: [magazzino, offline]
@@ -11253,6 +11259,45 @@ requirements:
       - tests/component/MacroCategoryManager.test.jsx
       - tests/component/MacroMonthlyTab.test.jsx
       - tests/component/InventoryManager.test.jsx
+
+  - id: REQ-MAG-045
+    title: "Il carico si somma alla giacenza com'è, anche sotto zero"
+    area: "src/lib/api.js (loadStock, receiveBottles, consegna), src/lib/inventory.js (giacenzaNonNegativa)"
+    description: >
+      Flavio, 12/09/2026 (vocale delle 12:46): «quando un prodotto va in
+      negativo e vado ad aggiungere una quantità, la quantità parte
+      comunque da zero. Se ho tre pezzi, ne consumo quattro, va a meno uno;
+      compro cinque pezzi e me ne mette cinque, non quattro: il meno uno
+      non me l'ha calcolato. Non è detto che un prodotto vada realmente in
+      negativo: magari mi è arrivato e non l'ho caricato ancora, lo carico
+      il giorno dopo, e si bilancia col carico».
+      È IL CONTRARIO DI QUELLO DECISO IL 17/08 (BUG-007) e ribadito il
+      04/09 (BUG-101): allora il carico ripartiva da zero perché «da uno
+      scaffale vuoto non si versa» e una bottiglia caricata su −0,04 doveva
+      contarne una. Flavio guarda il caso di tutti i giorni, non il residuo
+      di arrotondamento: il meno è merce già bevuta e non ancora caricata,
+      e il carico che arriva è quello. Si somma, e il buco si chiude da sé.
+      Il caso −0,04 + 1 = 0,96 resta, ed è accettato: è un centesimo di
+      bottiglia, e per il magazzino conta più il pezzo intero che manca.
+      DOVE SI SOMMA. Il carico a mano (`loadStock`) parte dalla giacenza
+      com'è; il carico a confezioni (`receiveBottles`) idem, mentre le
+      bottiglie da contare sullo scaffale partono da zero perché sotto zero
+      non ce ne sono; la consegna di un ordine faceva già `increment`, che
+      somma e basta. Lo scarico a mano resta fermo a zero
+      (`scaricoPossibile`): lì una persona dichiara quanto ha tolto, e da
+      uno scaffale vuoto non si toglie niente.
+      COSA RESTA DA ZERO IN SU, e cambia nome per dirlo: `giacenzaPerCarico`
+      diventa `giacenzaNonNegativa`, usata solo per contare OGGETTI
+      (`bottleBreakdown`: «−1 piena più 750 ml nell'aperta» non vuol dire
+      niente) e SOLDI (`unitsInStock`: un magazzino che vale meno di niente
+      non vuol dire niente). Nessuna migrazione: le giacenze restano quelle,
+      cambia solo cosa fa il prossimo carico.
+    status: implemented
+    generate_issue: false
+    labels: [magazzino]
+    test_cases:
+      - tests/unit/scritturaMagazzino.test.js
+      - tests/unit/inventory.test.js
 
   - id: REQ-MAG-044
     title: "Un prodotto nasce scorta, e l'etichetta dice a chi serve spegnerla"
