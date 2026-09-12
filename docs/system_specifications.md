@@ -5,7 +5,7 @@
 > `requirements/bugs.yaml` (i difetti), poi si rigenera con
 > `node scripts/requisiti.mjs --documento`.
 >
-> Generato il 10 settembre 2026.
+> Generato il 12 settembre 2026.
 
 Qui c'è scritto **cosa fa Tana Drink**, area per area: la cassa di «La Tana
 del Coniglio», quella che si usa al banco mentre il locale è pieno. Non è un
@@ -781,17 +781,21 @@ Chiesto da Flavio il 03/09/2026, con la foto: «l'unica cosa che cambia è che l
 
 **Dove**: `src/index.css` · ⚠️ **Nessun test lo verifica.**
 
-#### REQ-MENU-015 — Il ghiaccio nelle ricette passa a una volta e mezzo
+#### REQ-MENU-015 — Il ghiaccio nelle ricette si moltiplica: due volte la dose scritta
 
-Chiesto da Flavio il 09/09/2026, in un audio: «bisognerebbe moltiplicare tutte le quantita' di ghiaccio per 1,5. Quindi se ho 100 grammi diventano 150, se ho 200 diventano 300. Se e' possibile farlo in automatico bene, altrimenti lo faccio a mano». La dose scritta nelle ricette era piu' bassa del consumo vero al banco, e il magazzino del ghiaccio scendeva meno di quanto ne uscisse davvero. E' UNO SCRIPT DI MANUTENZIONE, non una funzione dell'app: si fa una volta, su dati che esistono gia'. Tocca SOLO le righe di ricetta (`recipe_items`) che puntano all'articolo del ghiaccio, e di quelle solo la quantita'; la ricetta in parole, il resto degli ingredienti e l'articolo in magazzino restano com'erano. Il magazzino gia' scalato non si ricalcola (lo snapshot resta quello che era).
+RIPENSATO IL 12/09/2026:
+
+NON PIU' ×1,5 MA ×2. Flavio, per iscritto: «moltiplicare ×2 l'ingrediente GHIACCIO HOSHIZAKI in tutte le ricette, ho fatto un errore di calcolo quindi va raddoppiato in tutte le ricette degli items di MENU dove e' presente». L'obiettivo si dice sempre RISPETTO ALLA DOSE ORIGINALE, quella scritta a mano: «×2» vuol dire che 100 g diventano 200, qualunque cosa ci sia scritto adesso. Sul test, dove il ×1,5 e' gia' passato il 10/09, si moltiplica per 4/3 (150 → 200, 300 → 400); in produzione, dove non e' passato niente, per 2 diretto — «in produzione faremo direttamente x2» (Daniele, 12/09).
+
+LA TABELLA DELLE DOSI NON BASTA PIU', e il «gia' fatto» cambia posto. Con il ×1,5 le dosi si riconoscevano da una tabella (100 → 150) e una riga gia' a 150 si lasciava stare; con il ×2 non funziona, perche' 200 e' insieme una dose di partenza e una d'arrivo. Il segno sta invece SULL'ARTICOLO DEL GHIACCIO: `ricette_fattore` dice a quante volte l'originale stanno le dosi adesso (1,5 dopo il primo script, 2 dopo questo), e `ricette_fattore_at` quando e' stato scritto. Lo script parte da li' — o da `--da <fattore>` se il segno manca, come su test dove il ×1,5 e' passato prima che il segno esistesse — moltiplica per quello che manca all'obiettivo (`--a`, 2 se non si dice altro) e alla fine scrive il segno nuovo. Rilanciato per sbaglio, trova il segno gia' a 2 e si ferma senza toccare niente. L'app non legge quel campo: e' memoria dello script, e basta. Lo script si chiama `scripts/ghiaccio-nelle-ricette.js`; la libreria che decide di quanto e cosa riscrivere (`fattoreDaApplicare`, `righeDaRiscrivere`) e' quella che si prova. Una riga di ghiaccio senza una dose vera (zero, o una scritta) si segnala e resta com'e'. Il resto vale come sotto: si toccano solo le righe di ricetta del ghiaccio e solo la quantita', anteprima di serie, produzione nominata a mano dopo il backup. ─── COM'ERA (09/09/2026) ─── Chiesto da Flavio il 09/09/2026, in un audio: «bisognerebbe moltiplicare tutte le quantita' di ghiaccio per 1,5. Quindi se ho 100 grammi diventano 150, se ho 200 diventano 300. Se e' possibile farlo in automatico bene, altrimenti lo faccio a mano». La dose scritta nelle ricette era piu' bassa del consumo vero al banco, e il magazzino del ghiaccio scendeva meno di quanto ne uscisse davvero. E' UNO SCRIPT DI MANUTENZIONE, non una funzione dell'app: si fa una volta, su dati che esistono gia'. Tocca SOLO le righe di ricetta (`recipe_items`) che puntano all'articolo del ghiaccio, e di quelle solo la quantita'; la ricetta in parole, il resto degli ingredienti e l'articolo in magazzino restano com'erano. Il magazzino gia' scalato non si ricalcola (lo snapshot resta quello che era).
 
 NON E' UN «PER 1,5»
 
 CIECO, ed e' la scelta che conta. Uno script che moltiplica si puo' lanciare due volte per sbaglio, e la seconda volta 100 grammi vanno a 225 senza che nessuno lo veda. Le dosi si riconoscono da una TABELLA — 100 → 150, 200 → 300 — e una riga gia' a 150 o 300 si lascia stare: rilanciato, lo script non fa niente. Una dose che non sta in tabella (un 220, un 80) si SEGNALA e non si tocca; per moltiplicare anche quelle c'e' `--anche-fuori-tabella`, da usare una volta sola guardando l'anteprima, perche' su quelle righe il «gia' fatto» non si riconosce. L'ANTEPRIMA E' IL DEFAULT: senza `--apply` non scrive niente, e stampa ricetta per ricetta cosa cambierebbe. Se di «ghiaccio» in magazzino ce n'e' piu' d'uno, si ferma e chiede quale (`--ghiaccio <id>`). Il progetto e' `tana-drink-test` se non si dice altro: la produzione si nomina a mano, dopo il backup.
 
-SUL TEST (10/09/2026): 87 ricette riscritte; 3 righe erano gia' a 150 o 300, 3 fuori tabella (Bramble 220, Rusty Nail 80, Black Russian 70) lasciate a Flavio.
+SUL TEST (10/09/2026): 87 ricette riscritte; 3 righe erano gia' a 150 o 300, 3 fuori tabella (Bramble 220, Rusty Nail 80, Black Russian 70) lasciate a Flavio. Nota per il passaggio a ×2 su test: quelle sei righe non sono a ×1,5 dell'originale, e con `--da 1.5` finiscono a 4/3 del loro valore e non a 2 — sono dati di prova, si sistemano a mano se servono. In produzione il problema non c'e'.
 
-**Dove**: `scripts/ghiaccio-per-uno-e-mezzo.js, scripts/lib-ghiaccio.js` · **Lo dimostrano**: `tests/unit/ghiaccioPerUnoEMezzo.test.js`
+**Dove**: `scripts/ghiaccio-nelle-ricette.js, scripts/lib-ghiaccio.js` · **Lo dimostrano**: `tests/unit/ghiaccioNelleRicette.test.js`
 
 ### Magazzino
 

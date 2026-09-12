@@ -11097,9 +11097,40 @@ requirements:
     test_cases: []
 
   - id: REQ-MENU-015
-    title: "Il ghiaccio nelle ricette passa a una volta e mezzo"
-    area: "scripts/ghiaccio-per-uno-e-mezzo.js, scripts/lib-ghiaccio.js"
+    title: "Il ghiaccio nelle ricette si moltiplica: due volte la dose scritta"
+    area: "scripts/ghiaccio-nelle-ricette.js, scripts/lib-ghiaccio.js"
     description: >
+      RIPENSATO IL 12/09/2026: NON PIU' ×1,5 MA ×2. Flavio, per iscritto:
+      «moltiplicare ×2 l'ingrediente GHIACCIO HOSHIZAKI in tutte le ricette,
+      ho fatto un errore di calcolo quindi va raddoppiato in tutte le
+      ricette degli items di MENU dove e' presente». L'obiettivo si dice
+      sempre RISPETTO ALLA DOSE ORIGINALE, quella scritta a mano: «×2» vuol
+      dire che 100 g diventano 200, qualunque cosa ci sia scritto adesso.
+      Sul test, dove il ×1,5 e' gia' passato il 10/09, si moltiplica per
+      4/3 (150 → 200, 300 → 400); in produzione, dove non e' passato
+      niente, per 2 diretto — «in produzione faremo direttamente x2»
+      (Daniele, 12/09).
+      LA TABELLA DELLE DOSI NON BASTA PIU', e il «gia' fatto» cambia posto.
+      Con il ×1,5 le dosi si riconoscevano da una tabella (100 → 150) e una
+      riga gia' a 150 si lasciava stare; con il ×2 non funziona, perche' 200
+      e' insieme una dose di partenza e una d'arrivo. Il segno sta invece
+      SULL'ARTICOLO DEL GHIACCIO: `ricette_fattore` dice a quante volte
+      l'originale stanno le dosi adesso (1,5 dopo il primo script, 2 dopo
+      questo), e `ricette_fattore_at` quando e' stato scritto. Lo script
+      parte da li' — o da `--da <fattore>` se il segno manca, come su test
+      dove il ×1,5 e' passato prima che il segno esistesse — moltiplica per
+      quello che manca all'obiettivo (`--a`, 2 se non si dice altro) e alla
+      fine scrive il segno nuovo. Rilanciato per sbaglio, trova il segno gia'
+      a 2 e si ferma senza toccare niente. L'app non legge quel campo: e'
+      memoria dello script, e basta.
+      Lo script si chiama `scripts/ghiaccio-nelle-ricette.js`; la libreria
+      che decide di quanto e cosa riscrivere (`fattoreDaApplicare`,
+      `righeDaRiscrivere`) e' quella che si prova. Una riga di ghiaccio senza
+      una dose vera (zero, o una scritta) si segnala e resta com'e'.
+      Il resto vale come sotto: si toccano solo le righe di ricetta del
+      ghiaccio e solo la quantita', anteprima di serie, produzione nominata
+      a mano dopo il backup.
+      ─── COM'ERA (09/09/2026) ───
       Chiesto da Flavio il 09/09/2026, in un audio: «bisognerebbe
       moltiplicare tutte le quantita' di ghiaccio per 1,5. Quindi se ho 100
       grammi diventano 150, se ho 200 diventano 300. Se e' possibile farlo
@@ -11128,12 +11159,15 @@ requirements:
       nomina a mano, dopo il backup.
       SUL TEST (10/09/2026): 87 ricette riscritte; 3 righe erano gia' a 150
       o 300, 3 fuori tabella (Bramble 220, Rusty Nail 80, Black Russian 70)
-      lasciate a Flavio.
+      lasciate a Flavio. Nota per il passaggio a ×2 su test: quelle sei
+      righe non sono a ×1,5 dell'originale, e con `--da 1.5` finiscono a 4/3
+      del loro valore e non a 2 — sono dati di prova, si sistemano a mano se
+      servono. In produzione il problema non c'e'.
     status: implemented
     generate_issue: false
     labels: [menu, magazzino, script]
     test_cases:
-      - tests/unit/ghiaccioPerUnoEMezzo.test.js
+      - tests/unit/ghiaccioNelleRicette.test.js
 
   - id: REQ-MAG-042
     title: "Le macro-categorie sono un elenco solo: prodotti e voci ci entrano uno a uno, con una percentuale"

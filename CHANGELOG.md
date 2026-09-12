@@ -31,11 +31,13 @@
   Macro-categorie** non c'è più, e le macro non si assegnano più alle
   categorie: le quote vanno inserite a mano — le macro già create restano.
 
-- **Il ghiaccio nelle ricette passa a una volta e mezzo** (100 g → 150,
-  200 g → 300) con uno script di manutenzione,
-  `scripts/ghiaccio-per-uno-e-mezzo.js`: anteprima di serie, scrive solo
-  con `--apply`, e rilanciato per sbaglio non moltiplica una seconda volta.
-  Le dosi fuori tabella le segnala e le lascia decidere a mano.
+- **Il ghiaccio nelle ricette raddoppia** (100 g → 200, 200 g → 400)
+  con uno script di manutenzione, `scripts/ghiaccio-nelle-ricette.js`:
+  l'obiettivo è sempre rispetto alla dose scritta in origine, un segno
+  sull'articolo del ghiaccio ricorda a che punto si è, e rilanciato per
+  sbaglio non moltiplica una seconda volta. Anteprima di serie, scrive solo
+  con `--apply`. (Era «una volta e mezzo» fino al 12/09: Flavio ha corretto
+  il calcolo.)
 
 ## 1.5.10
 
