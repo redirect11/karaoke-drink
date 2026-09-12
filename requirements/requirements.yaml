@@ -5032,6 +5032,15 @@ requirements:
       corrispondenza è una sola per tutti e due i modi, altrimenti cambiando
       impostazione lo stesso testo troverebbe prodotti diversi. Se non risponde
       niente lo dice, invece di lasciare la griglia apparentemente immobile.
+      DAL 12/09/2026 LA RICERCA SI AZZERA IN TUTTI E DUE I MODI. Flavio, per
+      iscritto: «negli ordini quando si cerca un item del menù, una volta
+      trovato e selezionato si cancella in automatico ciò che si è scritto
+      per cercarlo». In «filtra» la griglia restava ristretta sull'ultima
+      ricerca, e il prodotto dopo si cercava cancellando prima quella a
+      mano; adesso, toccata la card, la ricerca sparisce e la griglia torna
+      intera, come già faceva in «accendi». Il gesto sulle frecce +/− della
+      card non azzera niente: chi sta correggendo un numero non deve
+      vedersi la griglia cambiare fra un tocco e l'altro.
     status: implemented
     generate_issue: false
     labels: [pos, ux]

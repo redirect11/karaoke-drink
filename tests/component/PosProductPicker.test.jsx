@@ -67,6 +67,21 @@ describe('ricerca prodotti: filtra (come è sempre stato)', () => {
     await user.type(screen.getByLabelText('Cerca prodotto'), 'negro')
     expect(container.querySelector('.prodotto-acceso')).toBeNull()
   })
+
+  // Flavio, 12/09/2026: «quando si cerca un item del menù, una volta trovato
+  // e selezionato si cancella in automatico ciò che si è scritto per
+  // cercarlo». Prima valeva solo nel modo «accendi»: qui la griglia restava
+  // filtrata su «negro» e il prodotto dopo si cercava cancellando a mano.
+  it('toccando una card la ricerca si azzera e le card tornano tutte', async () => {
+    const user = userEvent.setup()
+    const { onAdd, cards } = mostra()
+    const ricerca = screen.getByLabelText('Cerca prodotto')
+    await user.type(ricerca, 'negro')
+    await user.click(screen.getByText('Negroni'))
+    expect(onAdd).toHaveBeenCalledWith(expect.objectContaining({ id: '2' }))
+    expect(ricerca).toHaveValue('')
+    expect(cards()).toHaveLength(4)
+  })
 })
 
 describe('ricerca prodotti: accendi e porta lì', () => {

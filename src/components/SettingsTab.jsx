@@ -176,7 +176,8 @@ export default function SettingsTab({ role = null }) {
                 portandocisi sopra. Il secondo modo serve a chi la griglia la conosce
                 a memoria e non vuole vederla cambiare sotto le dita; mostra tutti i
                 prodotti mentre si cerca, perché quello giusto può stare in
-                un&apos;altra categoria. Toccando una card la ricerca si azzera da sé.
+                un&apos;altra categoria. In tutti e due i modi, toccando una card la
+                ricerca si azzera da sé.
               </p>
               <SceltaModo
                 valore={settings.pos_search || 'filtra'}

@@ -4,6 +4,11 @@
 
 ### Per chi sta al banco
 
+- **Nel conto, scelto il prodotto cercato, la ricerca si svuota da sé** e
+  la griglia torna intera — anche nel modo «filtra», dove prima restava
+  ristretta sull'ultima ricerca e bisognava cancellarla a mano prima di
+  cercare il prodotto dopo.
+
 - **«Nuovo ordine» si apre vuoto.** Prima la schermata arrivava con già
   spuntato tutto quello sotto soglia e in assortimento — a magazzino pieno
   erano ottantasei righe da togliere una alla volta prima di cominciare.

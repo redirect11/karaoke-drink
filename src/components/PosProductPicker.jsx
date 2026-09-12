@@ -620,10 +620,15 @@ export default function PosProductPicker({
                 favorite={favSet.has(d.id)}
                 onToggleFav={() => toggleFav(d.id)}
                 onAdd={() => {
-                  // Scelto un prodotto, la ricerca ha finito il suo lavoro:
-                  // lasciarla scritta vorrebbe dire ritrovarsi il catalogo
-                  // intero e una card accesa al prodotto dopo.
-                  if (ricercaEvidenzia && query) setQuery('')
+                  // Scelto un prodotto, la ricerca ha finito il suo lavoro.
+                  // Valeva già per «accendi» (si ritrovava il catalogo
+                  // intero con una card accesa al prodotto dopo); dal
+                  // 12/09/2026 anche per «filtra», su richiesta di Flavio:
+                  // «una volta trovato e selezionato si cancella in
+                  // automatico ciò che si è scritto per cercarlo». Se no
+                  // la griglia restava filtrata e il prodotto dopo si
+                  // cercava cancellando a mano quello di prima.
+                  if (query) setQuery('')
                   onAdd(d)
                 }}
                 onSetQty={(nq) => onSetQty(d, nq)}
