@@ -115,7 +115,7 @@ vi.mock('../../src/components/SupplierInvoicesPanel.jsx', () => ({
 }))
 
 import InventoryManager from '../../src/components/InventoryManager.jsx'
-import { createInventoryItem, loadStock, adjustStock, createSupplier, salvaRigaListino } from '../../src/lib/api.js'
+import { createInventoryItem, updateInventoryItem, loadStock, adjustStock, createSupplier, salvaRigaListino } from '../../src/lib/api.js'
 
 // Apre la vista a CARD (il default è la lista) e aspetta il prodotto.
 // Card e lista sono DUE ICONE, e si cercano dalla loro etichetta: sulla linea
@@ -334,7 +334,6 @@ describe('la scheda prodotto: l’unità è sempre il pezzo', () => {
       // lo dice il contenuto, e due risposte alla stessa domanda litigano.
       resa: null,
       resa_unit: null,
-      scorta: true,
       cost: 12,
       stock: 3,
       low_threshold: 2,
@@ -410,44 +409,41 @@ describe('la scheda prodotto: l’unità è sempre il pezzo', () => {
   })
 })
 
-// ── QUELLO CHE NON È MERCE NON SI SCARICA ────────────────────────────
-// «Tempo di Lavorazione» sta a listino per mettere il lavoro nel costo del
-// drink, ma non sta su nessuno scaffale. Se si scaricasse, al primo Daiquiri
-// andrebbe a zero, il menù direbbe «Ingrediente esaurito» e il drink
-// sparirebbe dalla carta. Con l'unità bloccata sul pezzo a dirlo non può più
-// essere l'unità di misura: lo dice il prodotto, con una casella.
-describe('la casella «è una scorta»', () => {
-  it('spenta, il prodotto non ha giacenza iniziale né soglia', async () => {
+// ── TUTTO SI SCARICA: LA CASELLA «È UNA SCORTA» NON C'È PIÙ ──────────
+// Era nata per il «Tempo di Lavorazione», che nei dati veri non è mai
+// esistito, e ha lasciato una tequila nuova spenta e mai scaricata (Flavio,
+// 12/09/2026). Daniele: «togli proprio quel tasto, in effetti non serve».
+describe('la casella «è una scorta» non c’è più', () => {
+  it('un prodotto nuovo nasce con giacenza iniziale e soglia, e senza il campo', async () => {
     const user = userEvent.setup()
     createInventoryItem.mockClear()
     render(<InventoryManager />)
     await screen.findByText('Campari')
     await user.click(screen.getByRole('button', { name: '+ Nuovo prodotto' }))
-    await user.type(screen.getByLabelText('Nome *'), 'Tempo di Lavorazione')
-    await user.type(screen.getByLabelText(/Costo €\/pz/), '0.5')
-    await user.click(screen.getByRole('checkbox', { name: /È una scorta/ }))
-    expect(screen.queryByLabelText(/Quantità iniziale/)).toBeNull()
-    expect(screen.queryByLabelText(/Soglia di avviso/)).toBeNull()
+    expect(screen.queryByRole('checkbox', { name: /È una scorta/ })).toBeNull()
+    await user.type(screen.getByLabelText('Nome *'), 'Agave Santa')
+    await user.type(screen.getByLabelText(/Costo €\/pz/), '30')
+    await user.type(screen.getByLabelText(/Quantità iniziale/), '2')
+    await user.type(screen.getByLabelText(/Soglia di avviso/), '1')
     await user.click(screen.getByRole('button', { name: 'Salva' }))
     await waitFor(() => expect(createInventoryItem).toHaveBeenCalled())
-    expect(createInventoryItem.mock.calls.at(-1)[0]).toMatchObject({
-      name: 'Tempo di Lavorazione',
-      unit: 'pz',
-      scorta: false,
-      stock: 0,
-      low_threshold: 0,
-    })
+    const salvato = createInventoryItem.mock.calls.at(-1)[0]
+    expect(salvato).toMatchObject({ name: 'Agave Santa', unit: 'pz', stock: 2, low_threshold: 1 })
+    expect(salvato).not.toHaveProperty('scorta')
   })
 
-  it('riaprendo il lavoro già a listino resta spenta', async () => {
-    // Il «Tempo di Lavorazione» salvato prima (unità generiche, senza campo
-    // `scorta`) non deve diventare merce solo perché si riapre la scheda.
+  it('anche riaprendo un prodotto che era spento: la soglia c’è, il campo no', async () => {
     const user = userEvent.setup()
+    updateInventoryItem.mockClear()
     render(<InventoryManager />)
     await screen.findByText('Campari')
     await user.click(screen.getByRole('button', { name: /Tempo di Lavorazione/ }))
     await user.click(screen.getByRole('button', { name: '✏️ Modifica' }))
-    expect(screen.getByRole('checkbox', { name: /È una scorta/ })).not.toBeChecked()
+    expect(screen.queryByRole('checkbox', { name: /È una scorta/ })).toBeNull()
+    expect(screen.getByLabelText(/Soglia di avviso/)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'Salva' }))
+    await waitFor(() => expect(updateInventoryItem).toHaveBeenCalled())
+    expect(updateInventoryItem.mock.calls.at(-1)[1]).not.toHaveProperty('scorta')
   })
 })
 

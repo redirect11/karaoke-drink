@@ -40,7 +40,6 @@ import {
   contentBase,
   unitaGenerica,
   resaUso,
-  eScorta,
   unitaMovimento,
   fromStockUnit,
 } from '../../src/lib/inventory.js'
@@ -165,12 +164,6 @@ describe('haGiacenza', () => {
     expect(haGiacenza({ stock: -0.04 })).toBe(false)
   })
 
-  it('e quello che non è una scorta non c’è né manca', () => {
-    const lavoro = { name: 'Tempo di Lavorazione', unit: 'pz', scorta: false, stock: 12 }
-    expect(haGiacenza(lavoro)).toBe(false)
-    expect(stockStatus(lavoro)).toBe('ok') // e non risulta nemmeno esaurito
-    expect(inventorySummary([lavoro])).toEqual({ total: 1, inScorta: 0, low: 0, empty: 0 })
-  })
 })
 
 describe('filterItems', () => {
@@ -837,28 +830,20 @@ describe('articolo in unità generiche (U)', () => {
     expect(costPerUnit({ unit: 'ml', package_size: 700, cost: 10, vat: 22 }, 'U')).toBeNull()
   })
 
-  it('NON È UNA SCORTA: non è mai esaurito, nemmeno a zero', () => {
-    // Se fosse «esaurito», il menù direbbe «Ingrediente esaurito» e il
-    // drink sparirebbe dalla carta al primo che se ne fa.
-    expect(stockStatus(tempo)).toBe('ok')
-    expect(stockStatus({ ...tempo, stock: 0, low_threshold: 10 })).toBe('ok')
-    expect(stockStatus({ ...tempo, stock: -5 })).toBe('ok')
-    // E nemmeno «in scorta»: non sta su nessuno scaffale, quindi non è né
-    // disponibile né esaurito.
-    expect(inventorySummary([tempo])).toEqual({ total: 1, inScorta: 0, low: 0, empty: 0 })
+  // DAL 12/09/2026 SI SCARICA COME TUTTO IL RESTO. Prima «non era una
+  // scorta»: mai esaurito, mai in giacenza, mai nel valore del magazzino.
+  // Quel prodotto nei dati veri non c'era, e l'interruttore che lo
+  // permetteva ha lasciato una tequila spenta e mai scaricata (REQ-MAG-044).
+  it('a zero è esaurito, e in giacenza vale quello che costa', () => {
+    expect(stockStatus({ ...tempo, stock: 0, low_threshold: 10 })).toBe('empty')
+    expect(stockStatus({ ...tempo, stock: 3, low_threshold: 10 })).toBe('low')
+    expect(inventorySummary([{ ...tempo, stock: 12 }])).toEqual({ total: 1, inScorta: 1, low: 0, empty: 0 })
+    expect(unitsInStock({ ...tempo, stock: 100 })).toBe(100)
   })
 
-  it('e non vale niente in magazzino: il lavoro non sta sullo scaffale', () => {
-    expect(unitsInStock({ ...tempo, stock: 100 })).toBe(0)
-    expect(stockValue({ ...tempo, stock: 100 })).toBe(0)
-  })
-
-  // LA REGOLA STA SUL PRODOTTO, NON SULL'UNITÀ. Il consumo conta tutto
-  // quello che la ricetta chiede — manodopera compresa, che serve al costo
-  // del drink — e chi scrive la giacenza toglie solo quello che è una
-  // scorta. Prima si filtrava qui, sull'unità: e il GHIACCIO, contato a
-  // unità ma scorta vera, non si scaricava mai.
-  it('la manodopera si conta nel consumo, ma non è una scorta', () => {
+  // Il consumo conta tutto quello che la ricetta chiede. Prima si filtrava
+  // qui, sull'unità: e il GHIACCIO, contato a unità, non si scaricava mai.
+  it('la manodopera si conta nel consumo come tutto il resto', () => {
     const drinks = {
       daiquiri: {
         recipe_items: [
@@ -870,20 +855,15 @@ describe('articolo in unità generiche (U)', () => {
     const cons = computeConsumption([{ drink_id: 'daiquiri', qty: 2 }], drinks)
     expect(cons).toContainEqual({ inventory_item_id: 'rum', name: 'Rum', unit: 'ml', qty: 100 })
     expect(cons.some((c) => c.inventory_item_id === 'tempo')).toBe(true)
-    // È `eScorta` a dire chi tocca la giacenza: il tempo no, il rum sì.
-    expect(eScorta(tempo)).toBe(false)
-    expect(eScorta({ unit: 'ml' })).toBe(true)
   })
 
-  it('ma un prodotto a unità PUÒ essere una scorta: il ghiaccio finisce', () => {
-    // Si conta a unità come la manodopera, ma sta in un freezer e a
-    // mezzanotte è finito: chi lo usa vuole vederlo scendere.
-    const ghiaccio = { unit: 'U', scorta: true, stock: 40, low_threshold: 10 }
-    expect(eScorta(ghiaccio)).toBe(true)
+  it('e un prodotto a unità finisce come gli altri: il ghiaccio', () => {
+    // Si conta a unità, sta in un freezer e a mezzanotte è finito: chi lo
+    // usa vuole vederlo scendere.
+    const ghiaccio = { unit: 'U', stock: 40, low_threshold: 10 }
     expect(stockStatus(ghiaccio)).toBe('ok')
     expect(stockStatus({ ...ghiaccio, stock: 5 })).toBe('low')
     expect(stockStatus({ ...ghiaccio, stock: 0 })).toBe('empty')
-    // E vale qualcosa in magazzino, al contrario del tempo di lavoro.
     expect(unitsInStock({ ...ghiaccio, stock: 40 })).toBe(40)
   })
 
@@ -1168,7 +1148,6 @@ describe('filterItems: in scorta', () => {
     { id: 'a', name: 'Gin', stock: 100, low_threshold: 10 },
     { id: 'b', name: 'Vodka', stock: 5, low_threshold: 10 },
     { id: 'c', name: 'Rum', stock: 0, low_threshold: 10 },
-    { id: 'd', name: 'Tempo di Lavorazione', scorta: false, stock: 3 },
   ]
 
   it('lascia quello che c’è, con dentro anche quello che sta finendo', () => {
@@ -1179,7 +1158,7 @@ describe('filterItems: in scorta', () => {
   it('e le altre lenti restano quelle di prima', () => {
     expect(filterItems(items, { status: 'low' }).map((i) => i.id)).toEqual(['b'])
     expect(filterItems(items, { status: 'empty' }).map((i) => i.id)).toEqual(['c'])
-    expect(filterItems(items, { status: 'all' })).toHaveLength(4)
+    expect(filterItems(items, { status: 'all' })).toHaveLength(3)
   })
 })
 

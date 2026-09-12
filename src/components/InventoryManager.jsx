@@ -51,7 +51,6 @@ import {
   magazzinoBloccato,
   motivoNonMigrabile,
   fromStockUnit,
-  eScorta,
   stockStatus,
   bottleSummary,
   bottleBreakdown,
@@ -2239,12 +2238,6 @@ function ItemForm({ initial, categories, suppliers, listini = [], defaultVat = 2
     bottles: '',
     open_content: '',
   })
-  // SI SCARICA DAL MAGAZZINO? Lo decide il prodotto, non la sua unità: il
-  // ghiaccio si conta a unità e finisce eccome, il tempo di lavorazione sta
-  // a listino ma non su nessuno scaffale. Se rispondesse sempre «sì», al
-  // primo drink la manodopera andrebbe a zero e il menù direbbe
-  // «Ingrediente esaurito», facendo sparire il drink dalla carta.
-  const [scorta, setScorta] = useState(initial ? eScorta(initial) : true)
   const [saving, setSaving] = useState(false)
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e.target.value }))
   const num = (v) => Number(String(v).replace(',', '.')) || 0
@@ -2310,9 +2303,8 @@ function ItemForm({ initial, categories, suppliers, listini = [], defaultVat = 2
         // due risposte alla stessa domanda (resaUso preferisce la resa).
         resa: null,
         resa_unit: null,
-        scorta,
         // La soglia si scrive in pezzi, come la giacenza.
-        low_threshold: scorta ? num(form.low_threshold) : 0,
+        low_threshold: num(form.low_threshold),
       }
       // Il fornitore viaggia a parte perché non è più un campo del
       // prodotto: chi salva ne fa una riga di listino (REQ-MAG-029).
@@ -2538,31 +2530,11 @@ function ItemForm({ initial, categories, suppliers, listini = [], defaultVat = 2
         </div>
       )}
 
-      {/* SI SCARICA DAL MAGAZZINO? Lo decide il prodotto: il ghiaccio finisce,
-          il tempo di lavorazione no. L'ETICHETTA DICE A CHI SERVE SPEGNERLO:
-          «spegnilo per il lavoro a servizio» non lo capiva nessuno (Flavio,
-          12/09/2026: «che significa per il lavoro a servizio?»), e una
-          tequila nuova è rimasta con l'interruttore spento senza che si
-          vedesse — venduta per giorni, mai scaricata. */}
-      <label className="row between" style={{ alignItems: 'center', gap: 8, marginTop: 8 }}>
-        <span>
-          È una scorta: si scarica quando si usa
-          <span className="muted small">
-            {' '}
-            — resta acceso per tutto quello che sta su uno scaffale. Si spegne
-            solo per la manodopera messa in ricetta per il costo (es. «Tempo di
-            lavorazione»), che non finisce mai.
-          </span>
-        </span>
-        <input
-          type="checkbox"
-          className="toggle"
-          checked={scorta}
-          onChange={(e) => setScorta(e.target.checked)}
-        />
-      </label>
-
-      {!isEdit && scorta && (
+      {/* NIENTE PIÙ «È UNA SCORTA» (12/09/2026): tutto quello che sta in
+          magazzino si scarica quando si usa. L'interruttore, nato per la
+          manodopera che non è mai stata censita, aveva lasciato una tequila
+          spenta e mai scaricata. Il perché per esteso è in lib/inventory.js. */}
+      {!isEdit && (
         <>
           <label htmlFor="ibottles">Quantità iniziale (pz)</label>
           <input id="ibottles" type="number" step="any" min="0" value={form.bottles} onChange={set('bottles')} />
@@ -2587,25 +2559,19 @@ function ItemForm({ initial, categories, suppliers, listini = [], defaultVat = 2
         </>
       )}
 
-      {/* Niente soglia per quello che non è una scorta: non finisce, quindi
-          non c'è niente da avvisare e niente da riordinare al fornitore. */}
-      {scorta && (
-        <>
-          <label htmlFor="ithr">Soglia di avviso (pz)</label>
-          <input
-            id="ithr"
-            type="number"
-            step="any"
-            min="0"
-            value={form.low_threshold}
-            onChange={set('low_threshold')}
-            placeholder="Es. 2 se vuoi l’avviso quando ne restano due"
-          />
-          <p className="muted small" style={{ margin: '2px 0 8px' }}>
-            Sotto questo livello l’articolo compare fra quelli in esaurimento.
-          </p>
-        </>
-      )}
+      <label htmlFor="ithr">Soglia di avviso (pz)</label>
+      <input
+        id="ithr"
+        type="number"
+        step="any"
+        min="0"
+        value={form.low_threshold}
+        onChange={set('low_threshold')}
+        placeholder="Es. 2 se vuoi l’avviso quando ne restano due"
+      />
+      <p className="muted small" style={{ margin: '2px 0 8px' }}>
+        Sotto questo livello l’articolo compare fra quelli in esaurimento.
+      </p>
 
       {avviso && (
         <div className="banner" role="alert" style={{ marginTop: 8 }}>

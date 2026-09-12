@@ -32,7 +32,7 @@
 // comanda viene scaricata esce di qui ed entra nella giacenza, senza
 // contarsi due volte e senza sparire per un battito.
 
-import { computeConsumption, qtyInStockUnit, eScorta } from './inventory.js'
+import { computeConsumption, qtyInStockUnit } from './inventory.js'
 import { ORDER_STATUSES } from './orderStatus.js'
 import { contoChiuso } from './comande.js'
 
@@ -83,10 +83,6 @@ export function impegnatoPerArticolo(ordini, drinksById, itemsById, opzioni) {
   for (const c of consumoImpegnato(ordini, drinksById, opzioni)) {
     const item = itemsById?.[c.inventory_item_id]
     if (!item) continue
-    // Quello che non è una scorta non si impegna: la manodopera promessa dai
-    // conti aperti non toglie niente da nessuno scaffale, e messa qui
-    // farebbe comparire una previsione per una cosa che non finisce mai.
-    if (!eScorta(item)) continue
     out[c.inventory_item_id] = (out[c.inventory_item_id] || 0) + qtyInStockUnit(c.qty, c.unit, item)
   }
   return out

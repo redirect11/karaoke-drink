@@ -22,7 +22,6 @@ import {
   pezziInGiacenza,
   qtyInStockUnit,
   costPerUnit,
-  eScorta,
   entryUnits,
 } from '../../src/lib/inventory.js'
 import { recipeCost } from '../../src/lib/pricing.js'
@@ -50,7 +49,6 @@ describe('la bottiglia contata a volume si legge a pezzi', () => {
       content_unit: 'ml',
       stock: 3,
       low_threshold: 1,
-      scorta: true,
     })
     // Il prezzo non si tocca: era il costo della confezione, ed è il costo
     // del pezzo.
@@ -139,31 +137,24 @@ describe('lo sfuso comprato in una misura e usato in un’altra', () => {
 describe('quello che si contava a «U»', () => {
   // Una U era già una cosa che si conta — il sacco, la confezione — quindi
   // sei U fanno sei pezzi: qui non c'è niente da dividere.
-  it('il ghiaccio a sacchi si legge sei pezzi, e resta una scorta', () => {
-    const ghiaccio = { name: 'Ghiaccio', unit: 'U', scorta: true, stock: 6, cost: 2, vat: 22 }
+  it('il ghiaccio a sacchi si legge sei pezzi', () => {
+    const ghiaccio = { name: 'Ghiaccio', unit: 'U', stock: 6, cost: 2, vat: 22 }
     const letto = articoloNormalizzato(ghiaccio)
     expect(letto).toMatchObject({
       unit: 'pz',
       package_size: 1,
       content_unit: 'U',
       stock: 6,
-      scorta: true,
     })
     expect(stockValue(letto)).toBeCloseTo(stockValue(ghiaccio), 9)
   })
 
-  it('il tempo di lavorazione resta NON scorta, scritto nero su bianco', () => {
-    // Il guaio da evitare: «si scarica dal magazzino?» aveva un valore di
-    // partenza legato all'unità, e quello che si contava a U non si
-    // scaricava. Leggendolo a pezzi cambierebbe risposta da solo: la
-    // manodopera andrebbe a zero al primo drink e il menù farebbe sparire
-    // dalla carta i drink che la usano.
+  // Dal 12/09/2026 il campo `scorta` non si scrive più (tutto si scarica):
+  // il travaso non lo aggiunge, e se c'era lo lascia dov'è.
+  it('il travaso non scrive più «scorta», e il costo a unità non cambia', () => {
     const lavoro = { name: 'Tempo di Lavorazione', unit: 'U', stock: 0, cost: 0.5, vat: 22 }
     const letto = articoloNormalizzato(lavoro)
-    expect(eScorta(lavoro)).toBe(false)
-    expect(letto.scorta).toBe(false)
-    expect(eScorta(letto)).toBe(false)
-    // E un minuto di lavoro costa quello che costava.
+    expect(patchNormalizza(lavoro)).not.toHaveProperty('scorta')
     expect(costPerUnit(letto, 'U')).toBeCloseTo(costPerUnit(lavoro, 'U'), 9)
   })
 })

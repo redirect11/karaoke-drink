@@ -25,7 +25,6 @@ import { ORDER_STATUSES } from './orderStatus.js'
 import { splitAmounts } from './groups.js'
 import {
   computeConsumption,
-  eScorta,
   formatQty,
   qtyInStockUnit,
   scaricoPossibile,
@@ -213,7 +212,6 @@ function mapItem(snap) {
     // questo campo il «Tempo di Lavorazione», appena l'unità passa al pezzo,
     // ridiventerebbe merce — a zero al primo drink, e il menù farebbe
     // sparire dalla carta i drink che lo usano.
-    scorta: typeof i.scorta === 'boolean' ? i.scorta : null,
     bottles_total: Number(i.bottles_total) || 0,
     low_threshold: Number(i.low_threshold) || 0,
     category_id: i.category_id ?? null,
@@ -4118,10 +4116,6 @@ function riallineaInSottofondo(orderId, comandaId) {
         const sn = invSnaps[idx]
         if (!sn.exists()) continue
         const curItem = sn.data()
-        // QUELLO CHE NON È UNA SCORTA NON SI TOCCA: la manodopera entra nel
-        // costo del drink, non nel magazzino. Lo dice il prodotto, non la sua
-        // unità — il ghiaccio si conta a unità e si scarica eccome.
-        if (!eScorta(curItem)) continue
         // Il delta si applica com'è, nei due versi. Fermarlo a zero non
         // toglieva soltanto il meno: una comanda RIDOTTA porta un delta
         // negativo, cioè merce che torna sullo scaffale, e il freno lo
@@ -4208,8 +4202,6 @@ async function depleteComandeInventory(entries) {
   const lowStock = []
   for (const [id, qty] of Object.entries(delta)) {
     const cur = itemsById[id]
-    // Come sopra: si scarica solo quello che sta davvero su uno scaffale.
-    if (!eScorta(cur)) continue
     // SI SCENDE SOTTO ZERO, ed è voluto (BUG-101). Un prodotto che continua a
     // uscire dopo essere finito non è finito davvero: è arrivato senza che
     // nessuno lo caricasse, o l'ultimo inventario era vecchio. Fermandosi a
@@ -4931,10 +4923,6 @@ async function stornaScorte(orderId, consumption) {
       // che rimetterci dentro pezzi darebbe un numero senza senso.
       if (!s.exists() || patchNormalizza(s.data())) continue
       const cur = s.data()
-      // Si rimette a posto solo quello che era stato tolto: se non è una
-      // scorta non era mai uscito dal magazzino, e rimetterlo dentro
-      // regalerebbe giacenza dal nulla.
-      if (!eScorta(cur)) continue
       bgWrite(() => updateDoc(doc(db, 'inventory_items', c.inventory_item_id), {
         stock: increment(qtyInStockUnit(c.qty, c.unit, cur)),
       }), 'storno scorta')

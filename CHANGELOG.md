@@ -28,10 +28,12 @@
   bevuta e caricata il giorno dopo, e il carico è quello che chiude il
   buco. (Fino a oggi il carico ripartiva da zero.)
 
-- **«È una scorta: si scarica quando si usa» spiega a chi serve spegnerlo**
-  — solo alla manodopera messa in ricetta per il costo, che non finisce
-  mai; per tutto quello che sta su uno scaffale resta acceso. E un
-  prodotto nato da un ordine nasce scorta per iscritto.
+- **La casella «È una scorta: si scarica quando si usa» non c'è più**:
+  tutto quello che sta in magazzino si scarica quando si usa, è esaurito a
+  zero e vale quello che costa. L'interruttore era nato per la manodopera
+  messa in ricetta per il costo, che nei dati del locale non è mai
+  esistita, e aveva lasciato una tequila nuova spenta e mai scaricata.
+  Giacenza iniziale e soglia di avviso si chiedono sempre.
 
 - **Alla consegna di un ordine ogni riga dice quanto costa** (pezzi ×
   prezzo, che si rifà mentre si correggono le caselle), così il confronto

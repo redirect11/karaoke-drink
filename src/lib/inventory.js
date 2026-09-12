@@ -285,21 +285,19 @@ export function bottleSummary(item) {
   }
 }
 
-// ── SI SCARICA DAL MAGAZZINO? ────────────────────────────────────────
+// ── TUTTO QUELLO CHE STA IN MAGAZZINO SI SCARICA QUANDO SI USA ───────
 //
-// Lo decide IL PRODOTTO, non la sua unità di misura. La regola stava
-// sull'unità — «quello che si conta a unità generiche non si scarica» — ed è
-// giusta per la manodopera, che non sta su nessuno scaffale, ma non per il
-// GHIACCIO: si conta a unità e finisce eccome, e chi lo finisce a mezzanotte
-// vorrebbe averlo visto scendere.
-//
-// Il valore di partenza resta quello di prima, così i prodotti già in
-// magazzino non cambiano comportamento: le unità generiche non sono una
-// scorta finché qualcuno non dice il contrario, tutto il resto sì.
-export function eScorta(item) {
-  if (typeof item?.scorta === 'boolean') return item.scorta
-  return !unitaGenerica(item?.unit)
-}
+// Fino al 12/09/2026 c'era un interruttore per prodotto («È una scorta: si
+// scarica quando si usa», `scorta`), pensato per la manodopera: il «Tempo di
+// lavorazione» messo in ricetta per il costo non sta su nessuno scaffale, e
+// se si fosse scaricato sarebbe andato a zero al primo drink facendo sparire
+// il drink dalla carta. Quel prodotto NON È MAI ESISTITO nei dati veri: né
+// in produzione né su test c'era un articolo con lo scarico spento. In
+// compenso l'interruttore ha fatto un danno: una tequila nuova è rimasta
+// spenta senza che si vedesse, venduta per giorni e mai scaricata. Flavio:
+// «tutto bisogna che si scarica quando si usa». Daniele: «togli proprio
+// quel tasto, in effetti non serve». Il campo `scorta` sui documenti non si
+// legge più.
 
 // ── LEGGERE UN ARTICOLO SCRITTO COL MODELLO VECCHIO ──────────────────
 //
@@ -329,11 +327,7 @@ export function eScorta(item) {
 //   lavora vuol dire buttare via l'altra: se una ricetta dosava nella misura
 //   buttata, da quel momento scarica un chilo dove voleva un grammo. Quelli
 //   restano come sono, e li si sistema a mano.
-//   `scorta` VA SCRITTA. «Si scarica dal magazzino?» aveva un valore di
-//   partenza legato all'unità: quello che si contava a «U» non era una
-//   scorta. Portando tutto a pezzi quel valore cambierebbe risposta da solo,
-//   e il «Tempo di Lavorazione» diventerebbe merce: andrebbe a zero al primo
-//   drink e il menù farebbe sparire dalla carta i drink che lo usano.
+//   (`scorta` non si scrive più: dal 12/09/2026 tutto si scarica.)
 //
 // NIENTE ALTRO SI TOCCA: prezzi, ricette e voci di menù restano dove sono —
 // in produzione sono stati sistemati a mano, uno per uno.
@@ -374,7 +368,6 @@ export function patchNormalizza(item) {
     content_unit: resaValida ? resaBase : unitaGenerica(unit) ? UNITA_GENERICA : unit,
     resa: null,
     resa_unit: null,
-    scorta: eScorta(item),
   }
 }
 
@@ -474,13 +467,6 @@ export function statoTravaso(items) {
 
 // Stato scorta di un item: 'empty' (≤0), 'low' (≤ soglia), 'ok'.
 export function stockStatus(item) {
-  // Quello che non è una scorta non finisce mai: la manodopera non sta su
-  // nessuno scaffale. Se rispondesse 'empty' — e a giacenza zero
-  // risponderebbe sempre — il menù direbbe «Ingrediente esaurito» e il drink
-  // che la usa sparirebbe dalla carta, oltre a finire nelle proposte
-  // d'ordine al fornitore. Il ghiaccio, che invece è una scorta anche se si
-  // conta a unità, passa di qui come tutti gli altri.
-  if (!eScorta(item)) return 'ok'
   const stock = Number(item?.stock) || 0
   if (stock <= 0) return 'empty'
   if (stock <= (Number(item?.low_threshold) || 0)) return 'low'
@@ -509,13 +495,8 @@ export const ETICHETTA_SCORTA = {
 // «In esaurimento» è una lente più stretta dentro la stessa famiglia, non
 // un'altra famiglia — e chi guarda cosa c'è vuole vedere anche l'ultima
 // bottiglia di gin, che è proprio quella che gli serve sapere.
-//
-// Quello che NON È UNA SCORTA — il tempo di lavorazione, il lavoro a
-// servizio — non sta né di qua né di là: non ha giacenza, non è né
-// disponibile né esaurito. Metterlo fra i disponibili vorrebbe dire dire
-// che c'è sullo scaffale una cosa che sullo scaffale non ci va.
 export function haGiacenza(item) {
-  return eScorta(item) && (Number(item?.stock) || 0) > 0
+  return (Number(item?.stock) || 0) > 0
 }
 
 // Conteggi per i chip di riepilogo: totale prodotti, in scorta, in
@@ -626,12 +607,9 @@ export function costWithVat(cost, vat = 22) {
 // magazzino si leggeva «valore −0,67 €», cioè un magazzino che vale meno di
 // niente. Quello che manca è un errore da correggere, non un credito.
 export function unitsInStock(item) {
-  // Il lavoro non sta sullo scaffale: quello che non è una scorta non è
-  // giacenza e non entra nel valore del magazzino.
-  if (!eScorta(item)) return 0
   const stock = giacenzaNonNegativa(item?.stock)
-  // Il pezzo conta se stesso — e così l'unità, quando è una scorta: un
-  // sacchetto di ghiaccio è uno, non una frazione di confezione.
+  // Il pezzo conta se stesso — e così l'unità: un sacchetto di ghiaccio è
+  // uno, non una frazione di confezione.
   if (item?.unit === 'pz' || unitaGenerica(item?.unit)) return stock
   const size = Number(item?.package_size) || 0
   return size > 0 ? stock / size : 0
@@ -894,9 +872,8 @@ export function computeConsumption(orderItems, drinksById) {
     const mult = Number(oi.qty) || 0
     for (const ri of recipe) {
       if (!ri.inventory_item_id) continue
-      // QUI SI CONTA TUTTO QUELLO CHE LA RICETTA CHIEDE, manodopera compresa:
-      // cosa poi vada tolto dalla giacenza lo decide il PRODOTTO (eScorta),
-      // e lo decide chi scrive la giacenza, che l'articolo ce l'ha in mano.
+      // QUI SI CONTA TUTTO QUELLO CHE LA RICETTA CHIEDE, e tutto si toglie
+      // dalla giacenza (dal 12/09/2026 non c'è più un «non è una scorta»).
       // Filtrare qui sull'unità significava che il ghiaccio — contato a
       // unità ma scorta vera — non si scaricava mai.
       const add = (Number(ri.qty) || 0) * mult
@@ -1029,12 +1006,6 @@ export function prodottoDaRigaOrdine(riga) {
     // legame vive da quando un prodotto può averne più d'uno.
     status: 'assortimento',
     scheda_da_completare: true,
-    // È UNA SCORTA, PER ISCRITTO. Quello che arriva con una consegna sta su
-    // uno scaffale e si scarica quando si usa: lasciarlo dedurre dall'unità
-    // (`eScorta`) vuol dire che un domani cambia risposta da solo. Flavio,
-    // 12/09/2026: una tequila nuova non si scaricava perché «stava spento il
-    // tasto», e nessuno l'aveva spento apposta.
-    scorta: true,
   }
 }
 

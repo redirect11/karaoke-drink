@@ -2319,6 +2319,13 @@ requirements:
       leggere a chi ordina — e la lista compare da due ingredienti veri in su.
       Restano visibili dove servono a chi gestisce: ricetta, costi, margini e
       prezzo consigliato.
+      SUPERATA IN PARTE (12/09/2026, REQ-MAG-044): «un articolo in U NON E'
+      UNA SCORTA» non vale piu'. Tutto quello che sta in magazzino si
+      scarica, e' esaurito a zero e vale quello che costa: la manodopera
+      censita a listino nei dati veri non e' mai esistita, e l'interruttore
+      che la permetteva ha lasciato una tequila spenta e mai scaricata.
+      Restano l'unita' generica «U» come misura e la sua esclusione dalla
+      lista ingredienti in carta.
     status: implemented
     generate_issue: false
     labels: [magazzino, prezzi, menu]
@@ -11300,35 +11307,37 @@ requirements:
       - tests/unit/inventory.test.js
 
   - id: REQ-MAG-044
-    title: "Un prodotto nasce scorta, e l'etichetta dice a chi serve spegnerla"
-    area: "src/lib/inventory.js (prodottoDaRigaOrdine), src/components/InventoryManager.jsx (scheda prodotto)"
+    title: "Tutto quello che sta in magazzino si scarica: via la casella «È una scorta»"
+    area: "src/lib/inventory.js (stockStatus, haGiacenza, unitsInStock, patchNormalizza), src/lib/api.js (scarico, riallineo, storno), src/lib/impegnato.js, src/components/InventoryManager.jsx (scheda prodotto)"
     description: >
       Flavio, 12/09/2026 (vocale delle 13:47): «alcuni prodotti non mi
       scarica il quantitativo ogni volta che lo vendo … ho comprato questa
       nuova tequila Agave Santa, l'ho associata a un item di menù, l'ho
       battuto, non è stato scaricato. Mi sono reso conto che stava spento
       il tasto "è una scorta, si scarica quando si usa". Ma perché sta
-      questo tasto? Tutto bisogna che si scarica quando si usa. E poi
-      leggo "spegnilo per il lavoro a servizio": che significa?».
-      A COSA SERVE IL TASTO. C'è per la manodopera: il «Tempo di
-      lavorazione» sta a listino e in ricetta per pesare sul costo del
-      drink, ma non sta su nessuno scaffale — se fosse una scorta andrebbe
-      a zero al primo drink e il menù direbbe «ingrediente esaurito»
-      (REQ-MAG-016). Per tutto il resto dev'essere acceso, e Flavio ha
-      ragione: «lascialo sempre attivo, e non deve nascere spento»
-      (Daniele, 12/09).
-      DUE COSE CAMBIANO. (1) L'ETICHETTA spiega a chi serve spegnerlo con
-      parole comuni: «resta acceso per tutto quello che sta su uno
-      scaffale; si spegne solo per la manodopera messa in ricetta per il
-      costo (es. "Tempo di lavorazione"), che non finisce mai» — «lavoro a
-      servizio» non lo capiva nessuno. (2) UN PRODOTTO NATO DA UN ORDINE è
-      scorta PER ISCRITTO: `prodottoDaRigaOrdine` scrive `scorta: true`
-      invece di lasciarlo dedurre dall'unità (`eScorta`), che un domani
-      cambia risposta da sola. La scheda nuova partiva già accesa; sui
-      prodotti esistenti la regola di lettura non cambia (un «Tempo di
-      lavorazione» senza il campo resta manodopera), quindi nessuna
-      migrazione. Perché l'Agave Santa fosse spenta non si è ricostruito:
-      il tasto va riacceso a mano su quel prodotto.
+      questo tasto? Tutto bisogna che si scarica quando si usa». E
+      Daniele, lo stesso giorno: «togli proprio quel tasto che disabilita
+      lo scarico, in effetti non serve».
+      A COSA SERVIVA. L'interruttore (`scorta`, REQ-MAG-016) era nato per
+      la manodopera: un «Tempo di lavorazione» messo in ricetta per pesare
+      sul costo del drink, che non sta su nessuno scaffale — se si fosse
+      scaricato sarebbe andato a zero al primo drink e il menù avrebbe
+      detto «ingrediente esaurito» (REQ-MAG-012). PRIMA DI TOGLIERLO SI E'
+      GUARDATO NEI DATI: né in produzione (400 articoli) né su test (388)
+      esiste un prodotto con lo scarico spento, e nessuno si affida alla
+      vecchia regola dell'unità «U». La manodopera censita a listino non
+      c'è mai stata; l'interruttore invece un danno l'ha fatto.
+      COSA CAMBIA. La casella sparisce dalla scheda e il campo `scorta`
+      non si scrive né si legge più: giacenza iniziale e soglia di avviso
+      si chiedono sempre; `stockStatus`, `haGiacenza` e `unitsInStock` non
+      hanno più l'eccezione «non è una scorta»; lo scarico delle comande,
+      il riallineo di una comanda modificata, lo storno all'annullo e
+      l'impegnato toccano tutti gli ingredienti della ricetta; il travaso
+      (`patchNormalizza`) non scrive più il campo. Nessuna migrazione: i
+      documenti che hanno `scorta: true` lo tengono e nessuno lo guarda.
+      Se un giorno servisse davvero un ingrediente «solo per il costo»,
+      la strada non è un interruttore sul magazzino ma una voce di costo
+      fuori dal magazzino — e allora si scrive un requisito suo.
     status: implemented
     generate_issue: false
     labels: [magazzino, ux]
